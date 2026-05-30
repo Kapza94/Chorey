@@ -1,0 +1,107 @@
+import { fireEvent, render, screen } from "@testing-library/react-native";
+
+import { ChildDashboardScreen } from "@/features/child-dashboard/child-dashboard-screen";
+
+describe("ChildDashboardScreen", () => {
+  it("welcomes the child and shows buckets", () => {
+    render(<ChildDashboardScreen childName="Mina" />);
+
+    expect(screen.getByText("Hi Mina")).toBeOnTheScreen();
+    expect(screen.getByText("Spend")).toBeOnTheScreen();
+    expect(screen.getByText("Savings")).toBeOnTheScreen();
+    expect(screen.getByText("Giving")).toBeOnTheScreen();
+  });
+
+  it("shows assigned chores", () => {
+    render(
+      <ChildDashboardScreen
+        childName="Mina"
+        chores={[
+          {
+            id: "chore-1",
+            title: "Load dishwasher",
+            rewardCents: 250,
+            status: "assigned",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Load dishwasher")).toBeOnTheScreen();
+    expect(screen.getByText("2.50")).toBeOnTheScreen();
+    expect(screen.getByText("Ready to do")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Submit Load dishwasher")).toBeOnTheScreen();
+  });
+
+  it("shows done state after submission", () => {
+    render(
+      <ChildDashboardScreen
+        childName="Mina"
+        chores={[
+          {
+            id: "chore-1",
+            title: "Load dishwasher",
+            rewardCents: 250,
+            status: "submitted",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByLabelText("Done check")).toBeOnTheScreen();
+    expect(screen.getByText("Done")).toBeOnTheScreen();
+    expect(screen.getByText("Waiting for parent")).toBeOnTheScreen();
+  });
+
+  it("shows sending state while submitting", () => {
+    render(
+      <ChildDashboardScreen
+        childName="Mina"
+        chores={[
+          {
+            id: "chore-1",
+            title: "Load dishwasher",
+            rewardCents: 250,
+            status: "assigned",
+          },
+        ]}
+        submittingChoreId="chore-1"
+      />,
+    );
+
+    expect(screen.getByText("Sending...")).toBeOnTheScreen();
+  });
+
+  it("submits an assigned chore", () => {
+    const onSubmitChore = jest.fn();
+
+    render(
+      <ChildDashboardScreen
+        childName="Mina"
+        chores={[
+          {
+            id: "chore-1",
+            title: "Load dishwasher",
+            rewardCents: 250,
+            status: "assigned",
+          },
+        ]}
+        onSubmitChore={onSubmitChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Submit Load dishwasher"));
+
+    expect(onSubmitChore).toHaveBeenCalledWith("chore-1");
+  });
+
+  it("goes back from child dashboard", () => {
+    const onBack = jest.fn();
+
+    render(<ChildDashboardScreen childName="Mina" onBack={onBack} />);
+
+    fireEvent.press(screen.getByLabelText("Go back"));
+
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
