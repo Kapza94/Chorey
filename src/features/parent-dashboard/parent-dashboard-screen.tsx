@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { CheckCircleIcon } from "@/components/status-icons";
 import { BucketBalances, formatReward } from "@/features/chores/money";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
+import type { HouseholdPurchaseRequest } from "@/features/spend-wishlist/spend-wishlist-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
 
 type DashboardChore = {
@@ -18,8 +19,10 @@ type Props = {
   childName?: string;
   chores?: DashboardChore[];
   onApproveChore?: (choreId: string) => void;
+  onApprovePurchaseRequest?: (requestId: string) => void;
   onCreateChore?: () => void;
   onOpenChildAccess?: () => void;
+  purchaseRequests?: HouseholdPurchaseRequest[];
 };
 
 function getChoreState(status: ChoreStatus, childName: string) {
@@ -72,8 +75,10 @@ export function ParentDashboardScreen({
   childName = "Your child",
   chores = [],
   onApproveChore,
+  onApprovePurchaseRequest,
   onCreateChore,
   onOpenChildAccess,
+  purchaseRequests = [],
 }: Props) {
   return (
     <ScrollView
@@ -264,6 +269,102 @@ export function ParentDashboardScreen({
           );
         })}
       </View>
+
+      {purchaseRequests.length > 0 ? (
+        <View style={{ gap: choreyTheme.spacing.md }}>
+          <Text
+            style={{
+              color: choreyTheme.colors.ink1,
+              fontSize: 18,
+              fontWeight: "900",
+            }}
+          >
+            Purchase requests
+          </Text>
+
+          {purchaseRequests.map((request) => (
+            <View
+              key={request.id}
+              style={{
+                backgroundColor: choreyTheme.colors.spendSoft,
+                borderColor: choreyTheme.colors.spend,
+                borderRadius: choreyTheme.radii.lg,
+                borderWidth: 1,
+                gap: choreyTheme.spacing.md,
+                padding: choreyTheme.spacing.lg,
+                ...choreyTheme.shadows.card,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: choreyTheme.spacing.md,
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ flex: 1, gap: choreyTheme.spacing.xs }}>
+                  <Text
+                    style={{
+                      color: choreyTheme.colors.ink1,
+                      fontSize: 19,
+                      fontWeight: "900",
+                    }}
+                  >
+                    {request.itemName}
+                  </Text>
+                  <Text
+                    style={{
+                      color: choreyTheme.colors.inkMuted,
+                      fontSize: 14,
+                      fontWeight: "800",
+                    }}
+                  >
+                    Requested by {request.childName}
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    color: choreyTheme.colors.ink1,
+                    fontSize: 18,
+                    fontVariant: ["tabular-nums"],
+                    fontWeight: "900",
+                  }}
+                >
+                  {formatReward(request.targetCents)}
+                </Text>
+              </View>
+              {request.status === "pending" ? (
+                <Pressable
+                  accessibilityLabel={`Approve purchase ${request.itemName}`}
+                  accessibilityRole="button"
+                  onPress={() => onApprovePurchaseRequest?.(request.id)}
+                  style={({ pressed }) => ({
+                    alignItems: "center",
+                    backgroundColor: pressed
+                      ? choreyTheme.colors.primaryPressed
+                      : choreyTheme.colors.primary,
+                    borderColor: choreyTheme.colors.primaryPressed,
+                    borderRadius: choreyTheme.radii.pill,
+                    borderWidth: 1,
+                    paddingVertical: 13,
+                    ...choreyTheme.shadows.button,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: choreyTheme.colors.cream1,
+                      fontSize: 15,
+                      fontWeight: "900",
+                    }}
+                  >
+                    Approve purchase
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <View style={{ gap: choreyTheme.spacing.md }}>
         <Text

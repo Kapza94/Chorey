@@ -44,6 +44,42 @@ describe("ChildDashboardScreen", () => {
     expect(screen.getByLabelText("Submit Load dishwasher")).toBeOnTheScreen();
   });
 
+  it("shows spend wishlist and creates a wishlist item", () => {
+    const onCreateWishlistItem = jest.fn();
+    const onRequestPurchase = jest.fn();
+
+    render(
+      <ChildDashboardScreen
+        childName="Mina"
+        onCreateWishlistItem={onCreateWishlistItem}
+        onRequestPurchase={onRequestPurchase}
+        wishlistItems={[
+          {
+            id: "wish-1",
+            name: "Football",
+            status: "active",
+            targetCents: 2500,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Spend wishlist")).toBeOnTheScreen();
+    expect(screen.getByText("Football")).toBeOnTheScreen();
+    expect(screen.getByText("25.00")).toBeOnTheScreen();
+
+    fireEvent.changeText(screen.getByLabelText("Wishlist item name"), "Skates");
+    fireEvent.changeText(screen.getByLabelText("Wishlist target"), "30.00");
+    fireEvent.press(screen.getByLabelText("Add wishlist item"));
+    fireEvent.press(screen.getByLabelText("Request Football"));
+
+    expect(onCreateWishlistItem).toHaveBeenCalledWith({
+      name: "Skates",
+      targetCents: 3000,
+    });
+    expect(onRequestPurchase).toHaveBeenCalledWith("wish-1");
+  });
+
   it("shows done state after submission", () => {
     render(
       <ChildDashboardScreen

@@ -1,18 +1,23 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { CheckCircleIcon } from "@/components/status-icons";
 import type { ChildChore } from "@/features/chores/child-chore-actions";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
 import { BucketBalances, formatReward } from "@/features/chores/money";
+import type { SpendWishlistItem } from "@/features/spend-wishlist/spend-wishlist-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
 
 type Props = {
   bucketBalances?: BucketBalances;
   childName?: string;
   chores?: ChildChore[];
+  onCreateWishlistItem?: (input: { name: string; targetCents: number }) => void;
+  onRequestPurchase?: (wishlistItemId: string) => void;
   onBack?: () => void;
   onSubmitChore?: (choreId: string) => void;
   submittingChoreId?: string | null;
+  wishlistItems?: SpendWishlistItem[];
 };
 
 function getStatusLabel(status: ChoreStatus) {
@@ -51,10 +56,23 @@ export function ChildDashboardScreen({
   },
   childName = "there",
   chores = [],
+  onCreateWishlistItem,
+  onRequestPurchase,
   onBack,
   onSubmitChore,
   submittingChoreId,
+  wishlistItems = [],
 }: Props) {
+  const [wishlistName, setWishlistName] = useState("");
+  const [wishlistTarget, setWishlistTarget] = useState("");
+
+  function handleCreateWishlistItem() {
+    const targetCents = Math.round(Number(wishlistTarget || "0") * 100);
+    onCreateWishlistItem?.({ name: wishlistName, targetCents });
+    setWishlistName("");
+    setWishlistTarget("");
+  }
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -125,6 +143,163 @@ export function ChildDashboardScreen({
           Your chores will appear here. Every approved reward follows the 40 /
           40 / 20 split.
         </Text>
+      </View>
+
+      <View style={{ gap: choreyTheme.spacing.md }}>
+        <Text
+          style={{
+            color: choreyTheme.colors.ink1,
+            fontSize: 18,
+            fontWeight: "900",
+          }}
+        >
+          Spend wishlist
+        </Text>
+
+        <View
+          style={{
+            backgroundColor: choreyTheme.colors.surface,
+            borderColor: choreyTheme.colors.borderSoft,
+            borderRadius: choreyTheme.radii.lg,
+            borderWidth: 1,
+            gap: choreyTheme.spacing.md,
+            padding: choreyTheme.spacing.lg,
+            ...choreyTheme.shadows.card,
+          }}
+        >
+          <TextInput
+            accessibilityLabel="Wishlist item name"
+            onChangeText={setWishlistName}
+            placeholder="What do you want to buy?"
+            placeholderTextColor={choreyTheme.colors.inkMuted}
+            style={{
+              backgroundColor: choreyTheme.colors.surface,
+              borderColor: choreyTheme.colors.borderSoft,
+              borderRadius: choreyTheme.radii.md,
+              borderWidth: 1,
+              color: choreyTheme.colors.ink1,
+              fontSize: 16,
+              paddingHorizontal: choreyTheme.spacing.lg,
+              paddingVertical: 14,
+            }}
+            value={wishlistName}
+          />
+          <TextInput
+            accessibilityLabel="Wishlist target"
+            keyboardType="decimal-pad"
+            onChangeText={setWishlistTarget}
+            placeholder="Target amount"
+            placeholderTextColor={choreyTheme.colors.inkMuted}
+            style={{
+              backgroundColor: choreyTheme.colors.surface,
+              borderColor: choreyTheme.colors.borderSoft,
+              borderRadius: choreyTheme.radii.md,
+              borderWidth: 1,
+              color: choreyTheme.colors.ink1,
+              fontSize: 16,
+              paddingHorizontal: choreyTheme.spacing.lg,
+              paddingVertical: 14,
+            }}
+            value={wishlistTarget}
+          />
+          <Pressable
+            accessibilityLabel="Add wishlist item"
+            accessibilityRole="button"
+            onPress={handleCreateWishlistItem}
+            style={({ pressed }) => ({
+              alignItems: "center",
+              backgroundColor: pressed
+                ? choreyTheme.colors.primaryPressed
+                : choreyTheme.colors.primary,
+              borderColor: choreyTheme.colors.primaryPressed,
+              borderRadius: choreyTheme.radii.pill,
+              borderWidth: 1,
+              paddingVertical: 14,
+              ...choreyTheme.shadows.button,
+            })}
+          >
+            <Text
+              style={{
+                color: choreyTheme.colors.cream1,
+                fontSize: 15,
+                fontWeight: "900",
+              }}
+            >
+              Add wishlist item
+            </Text>
+          </Pressable>
+        </View>
+
+        {wishlistItems.map((item) => (
+          <View
+            key={item.id}
+            style={{
+              backgroundColor: choreyTheme.colors.spendSoft,
+              borderColor: choreyTheme.colors.spend,
+              borderRadius: choreyTheme.radii.lg,
+              borderWidth: 1,
+              gap: choreyTheme.spacing.md,
+              padding: choreyTheme.spacing.lg,
+              ...choreyTheme.shadows.card,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                gap: choreyTheme.spacing.md,
+              }}
+            >
+              <Text
+                style={{
+                  color: choreyTheme.colors.ink1,
+                  flex: 1,
+                  fontSize: 18,
+                  fontWeight: "900",
+                }}
+              >
+                {item.name}
+              </Text>
+              <Text
+                style={{
+                  color: choreyTheme.colors.ink1,
+                  fontSize: 18,
+                  fontVariant: ["tabular-nums"],
+                  fontWeight: "900",
+                }}
+              >
+                {formatReward(item.targetCents)}
+              </Text>
+            </View>
+            {item.status === "active" ? (
+              <Pressable
+                accessibilityLabel={`Request ${item.name}`}
+                accessibilityRole="button"
+                onPress={() => onRequestPurchase?.(item.id)}
+                style={({ pressed }) => ({
+                  alignItems: "center",
+                  backgroundColor: pressed
+                    ? choreyTheme.colors.primarySoft
+                    : choreyTheme.colors.surface,
+                  borderColor: choreyTheme.colors.borderMedium,
+                  borderRadius: choreyTheme.radii.pill,
+                  borderWidth: 1,
+                  paddingVertical: 13,
+                })}
+              >
+                <Text
+                  style={{
+                    color: choreyTheme.colors.ink1,
+                    fontSize: 15,
+                    fontWeight: "900",
+                  }}
+                >
+                  Request purchase
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ))}
       </View>
 
       <View style={{ gap: choreyTheme.spacing.md }}>

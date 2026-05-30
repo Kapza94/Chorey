@@ -9,6 +9,12 @@ import {
   submitChoreForChild,
 } from "@/features/chores/default-child-chore-actions";
 import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
+import {
+  createWishlistItemForChild,
+  listWishlistForChild,
+  requestWishlistPurchase,
+} from "@/features/spend-wishlist/default-spend-wishlist-actions";
+import type { SpendWishlistItem } from "@/features/spend-wishlist/spend-wishlist-actions";
 
 const emptyBalances: BucketBalances = {
   givingCents: 0,
@@ -26,6 +32,7 @@ export default function ChildDashboardRoute() {
     ? params.childName[0]
     : params.childName;
   const [chores, setChores] = useState<ChildChore[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<SpendWishlistItem[]>([]);
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
   const [submittingChoreId, setSubmittingChoreId] = useState<string | null>(
@@ -42,10 +49,12 @@ export default function ChildDashboardRoute() {
     Promise.all([
       listChoresForChild(accessCode),
       getBucketBalancesForChild(accessCode),
-    ]).then(([nextChores, nextBalances]) => {
+      listWishlistForChild(accessCode),
+    ]).then(([nextChores, nextBalances, nextWishlistItems]) => {
       if (mounted) {
         setChores(nextChores);
         setBucketBalances(nextBalances);
+        setWishlistItems(nextWishlistItems);
       }
     });
 
@@ -59,7 +68,31 @@ export default function ChildDashboardRoute() {
       bucketBalances={bucketBalances}
       childName={childName}
       chores={chores}
+      onCreateWishlistItem={async (input) => {
+        if (!accessCode) {
+          return;
+        }
+
+        const item = await createWishlistItemForChild({
+          accessCode,
+          name: input.name,
+          targetCents: input.targetCents,
+        });
+        setWishlistItems((current) => [item, ...current]);
+      }}
       onBack={() => router.back()}
+      onRequestPurchase={async (wishlistItemId) => {
+        if (!accessCode) {
+          return;
+        }
+
+        await requestWishlistPurchase({ accessCode, wishlistItemId });
+        setWishlistItems((current) =>
+          current.map((item) =>
+            item.id === wishlistItemId ? { ...item, status: "requested" } : item,
+          ),
+        );
+      }}
       onSubmitChore={async (choreId) => {
         if (!accessCode) {
           return;
@@ -77,6 +110,7 @@ export default function ChildDashboardRoute() {
         }
       }}
       submittingChoreId={submittingChoreId}
+      wishlistItems={wishlistItems}
     />
   );
 }

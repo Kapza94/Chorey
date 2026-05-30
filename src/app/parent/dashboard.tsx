@@ -9,6 +9,11 @@ import {
 } from "@/features/chores/default-chore-actions";
 import { getBucketBalancesForHousehold } from "@/features/ledger/default-ledger-actions";
 import { ParentDashboardScreen } from "@/features/parent-dashboard/parent-dashboard-screen";
+import {
+  approvePurchaseRequestForHousehold,
+  listPurchaseRequestsForHousehold,
+} from "@/features/spend-wishlist/default-spend-wishlist-actions";
+import type { HouseholdPurchaseRequest } from "@/features/spend-wishlist/spend-wishlist-actions";
 
 const emptyBalances: BucketBalances = {
   givingCents: 0,
@@ -62,6 +67,9 @@ export default function ParentDashboardRoute() {
         ]
       : [],
   );
+  const [purchaseRequests, setPurchaseRequests] = useState<
+    HouseholdPurchaseRequest[]
+  >([]);
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
 
@@ -76,10 +84,12 @@ export default function ParentDashboardRoute() {
       Promise.all([
         listChoresForHousehold(householdId),
         getBucketBalancesForHousehold(householdId),
-      ]).then(([nextChores, nextBalances]) => {
+        listPurchaseRequestsForHousehold(householdId),
+      ]).then(([nextChores, nextBalances, nextPurchaseRequests]) => {
         if (mounted) {
           setChores(nextChores);
           setBucketBalances(nextBalances);
+          setPurchaseRequests(nextPurchaseRequests);
         }
       });
 
@@ -107,6 +117,19 @@ export default function ParentDashboardRoute() {
         );
         setBucketBalances(nextBalances);
       }}
+      onApprovePurchaseRequest={async (requestId) => {
+        if (!householdId) {
+          return;
+        }
+
+        await approvePurchaseRequestForHousehold({ householdId, requestId });
+        const [nextRequests, nextBalances] = await Promise.all([
+          listPurchaseRequestsForHousehold(householdId),
+          getBucketBalancesForHousehold(householdId),
+        ]);
+        setPurchaseRequests(nextRequests);
+        setBucketBalances(nextBalances);
+      }}
       onCreateChore={() =>
         router.push({
           pathname: "/parent/chores/new",
@@ -114,6 +137,7 @@ export default function ParentDashboardRoute() {
         })
       }
       onOpenChildAccess={() => router.push("/child/access")}
+      purchaseRequests={purchaseRequests}
     />
   );
 }
