@@ -9,6 +9,8 @@ import {
 } from "@/features/chores/default-chore-actions";
 import { getBucketBalancesForHousehold } from "@/features/ledger/default-ledger-actions";
 import { ParentDashboardScreen } from "@/features/parent-dashboard/parent-dashboard-screen";
+import { getActiveSettlementPeriod } from "@/features/settlement/default-settlement-actions";
+import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 
 const emptyBalances: BucketBalances = {
   givingCents: 0,
@@ -64,6 +66,8 @@ export default function ParentDashboardRoute() {
   );
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
+  const [settlementPeriod, setSettlementPeriod] =
+    useState<SettlementPeriod | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -76,10 +80,12 @@ export default function ParentDashboardRoute() {
       Promise.all([
         listChoresForHousehold(householdId),
         getBucketBalancesForHousehold(householdId),
-      ]).then(([nextChores, nextBalances]) => {
+        getActiveSettlementPeriod(householdId),
+      ]).then(([nextChores, nextBalances, nextSettlementPeriod]) => {
         if (mounted) {
           setChores(nextChores);
           setBucketBalances(nextBalances);
+          setSettlementPeriod(nextSettlementPeriod);
         }
       });
 
@@ -114,6 +120,13 @@ export default function ParentDashboardRoute() {
         })
       }
       onOpenChildAccess={() => router.push("/child/access")}
+      onReviewSettlement={() =>
+        router.push({
+          pathname: "/parent/settlement",
+          params: { childAccessCode, childName, childProfileId, householdId },
+        })
+      }
+      settlementPeriod={settlementPeriod ?? undefined}
     />
   );
 }

@@ -154,14 +154,14 @@ Verify:
 
 ## Phase 4: Settlement
 
-Goal: households can use weekly or monthly settlement periods and parents can settle each bucket separately.
+Goal: households can use weekly or monthly settlement periods, review the period, and mark all buckets settled with one parent action.
 
 Red:
 
 - Unit test settlement frequency can be weekly or monthly only.
 - Unit test frequency changes apply only to future periods.
 - Integration test active settlement period is generated.
-- Integration test Spend, Savings, and Giving can settle independently.
+- Integration test one settlement confirmation marks Spend, Savings, and Giving settled.
 - Integration test free history is limited.
 
 Green:
@@ -170,14 +170,15 @@ Green:
 - Create settlement_periods and settlement_bucket_statuses tables.
 - Add scheduled job or service for creating settlement periods.
 - Build settlement summary screen.
-- Build bucket-by-bucket settlement confirmation.
+- Build settlement review screen with one Mark all settled action.
 - Add limited history behavior for free tier.
 
 Verify:
 
 - Parent chooses weekly or monthly.
 - Chorey creates the correct active period.
-- Parent marks Spend settled without requiring Savings/Giving to settle.
+- Parent reviews Spend, Savings, Giving, and the total before settling.
+- Parent marks all buckets settled with one action.
 - Settled periods appear in history according to entitlement.
 
 ## Phase 5: Spend Wishlist

@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { CheckCircleIcon } from "@/components/status-icons";
 import { BucketBalances, formatReward } from "@/features/chores/money";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
+import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
 
 type DashboardChore = {
@@ -20,6 +21,8 @@ type Props = {
   onApproveChore?: (choreId: string) => void;
   onCreateChore?: () => void;
   onOpenChildAccess?: () => void;
+  onReviewSettlement?: () => void;
+  settlementPeriod?: SettlementPeriod;
 };
 
 function getChoreState(status: ChoreStatus, childName: string) {
@@ -74,7 +77,19 @@ export function ParentDashboardScreen({
   onApproveChore,
   onCreateChore,
   onOpenChildAccess,
+  onReviewSettlement,
+  settlementPeriod,
 }: Props) {
+  const settlementTotal =
+    bucketBalances.spendCents +
+    bucketBalances.savingsCents +
+    bucketBalances.givingCents;
+  const isSettlementComplete = settlementPeriod
+    ? Object.values(settlementPeriod.bucketStatuses).every(
+        (status) => status === "settled",
+      )
+    : false;
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -264,6 +279,91 @@ export function ParentDashboardScreen({
           );
         })}
       </View>
+
+      {settlementPeriod ? (
+        <View
+          style={{
+            backgroundColor: choreyTheme.colors.surface,
+            borderColor: choreyTheme.colors.borderSoft,
+            borderRadius: choreyTheme.radii.lg,
+            borderWidth: 1,
+            gap: choreyTheme.spacing.md,
+            padding: choreyTheme.spacing.lg,
+            ...choreyTheme.shadows.card,
+          }}
+        >
+          <View style={{ gap: choreyTheme.spacing.xs }}>
+            <Text
+              style={{
+                color: choreyTheme.colors.ink1,
+                fontSize: 18,
+                fontWeight: "900",
+              }}
+            >
+              Settlement
+            </Text>
+            <Text
+              style={{
+                color: choreyTheme.colors.inkMuted,
+                fontSize: 14,
+                fontWeight: "800",
+              }}
+            >
+              {settlementPeriod.frequency === "weekly" ? "Weekly" : "Monthly"}{" "}
+              period
+            </Text>
+            <Text
+              style={{
+                color: choreyTheme.colors.ink1,
+                fontSize: 24,
+                fontVariant: ["tabular-nums"],
+                fontWeight: "900",
+              }}
+            >
+              {isSettlementComplete
+                ? "All settled"
+                : `${formatReward(settlementTotal)} ready to settle`}
+            </Text>
+            <Text
+              style={{
+                color: choreyTheme.colors.inkMuted,
+                fontSize: 14,
+              }}
+            >
+              {settlementPeriod.startsOn} to {settlementPeriod.endsOn}
+            </Text>
+          </View>
+
+          {!isSettlementComplete ? (
+            <Pressable
+              accessibilityLabel="Review settlement"
+              accessibilityRole="button"
+              onPress={onReviewSettlement}
+              style={({ pressed }) => ({
+                alignItems: "center",
+                backgroundColor: pressed
+                  ? choreyTheme.colors.primaryPressed
+                  : choreyTheme.colors.primary,
+                borderColor: choreyTheme.colors.primaryPressed,
+                borderRadius: choreyTheme.radii.pill,
+                borderWidth: 1,
+                paddingVertical: 14,
+                ...choreyTheme.shadows.button,
+              })}
+            >
+              <Text
+                style={{
+                  color: choreyTheme.colors.cream1,
+                  fontSize: 15,
+                  fontWeight: "900",
+                }}
+              >
+                Review settlement
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={{ gap: choreyTheme.spacing.md }}>
         <Text

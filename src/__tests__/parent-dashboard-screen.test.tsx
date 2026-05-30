@@ -106,6 +106,42 @@ describe("ParentDashboardScreen", () => {
     expect(screen.getByText("Settled into 40 / 40 / 20")).toBeOnTheScreen();
   });
 
+  it("summarizes settlement and opens review", () => {
+    const onReviewSettlement = jest.fn();
+
+    render(
+      <ParentDashboardScreen
+        bucketBalances={{
+          givingCents: 200,
+          savingsCents: 400,
+          spendCents: 400,
+        }}
+        childName="Mina"
+        onReviewSettlement={onReviewSettlement}
+        settlementPeriod={{
+          bucketStatuses: {
+            giving: "pending",
+            savings: "settled",
+            spend: "pending",
+          },
+          endsOn: "2026-06-05",
+          frequency: "weekly",
+          id: "period-1",
+          startsOn: "2026-05-30",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Settlement")).toBeOnTheScreen();
+    expect(screen.getByText("Weekly period")).toBeOnTheScreen();
+    expect(screen.getByText("2026-05-30 to 2026-06-05")).toBeOnTheScreen();
+    expect(screen.getByText("10.00 ready to settle")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Review settlement"));
+
+    expect(onReviewSettlement).toHaveBeenCalledTimes(1);
+  });
+
   it("shows the child access code when present", () => {
     render(<ParentDashboardScreen childAccessCode="123456" childName="Mina" />);
 
