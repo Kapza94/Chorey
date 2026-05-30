@@ -11,13 +11,24 @@ describe("ParentDashboardScreen", () => {
   });
 
   it("shows the fixed 40 / 40 / 20 bucket split", () => {
-    render(<ParentDashboardScreen childName="Mina" />);
+    render(
+      <ParentDashboardScreen
+        bucketBalances={{
+          givingCents: 200,
+          savingsCents: 400,
+          spendCents: 400,
+        }}
+        childName="Mina"
+      />,
+    );
 
     expect(screen.getByText("Spend")).toBeOnTheScreen();
     expect(screen.getAllByText("40%")).toHaveLength(2);
     expect(screen.getByText("Savings")).toBeOnTheScreen();
     expect(screen.getByText("Giving")).toBeOnTheScreen();
     expect(screen.getByText("20%")).toBeOnTheScreen();
+    expect(screen.getAllByText("Virtual balance 4.00")).toHaveLength(2);
+    expect(screen.getByText("Virtual balance 2.00")).toBeOnTheScreen();
   });
 
   it("starts chore creation from the dashboard", () => {

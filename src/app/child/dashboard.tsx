@@ -3,10 +3,18 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { ChildDashboardScreen } from "@/features/child-dashboard/child-dashboard-screen";
 import type { ChildChore } from "@/features/chores/child-chore-actions";
+import type { BucketBalances } from "@/features/chores/money";
 import {
   listChoresForChild,
   submitChoreForChild,
 } from "@/features/chores/default-child-chore-actions";
+import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
+
+const emptyBalances: BucketBalances = {
+  givingCents: 0,
+  savingsCents: 0,
+  spendCents: 0,
+};
 
 export default function ChildDashboardRoute() {
   const router = useRouter();
@@ -18,6 +26,8 @@ export default function ChildDashboardRoute() {
     ? params.childName[0]
     : params.childName;
   const [chores, setChores] = useState<ChildChore[]>([]);
+  const [bucketBalances, setBucketBalances] =
+    useState<BucketBalances>(emptyBalances);
   const [submittingChoreId, setSubmittingChoreId] = useState<string | null>(
     null,
   );
@@ -29,9 +39,13 @@ export default function ChildDashboardRoute() {
       return;
     }
 
-    listChoresForChild(accessCode).then((nextChores) => {
+    Promise.all([
+      listChoresForChild(accessCode),
+      getBucketBalancesForChild(accessCode),
+    ]).then(([nextChores, nextBalances]) => {
       if (mounted) {
         setChores(nextChores);
+        setBucketBalances(nextBalances);
       }
     });
 
@@ -42,6 +56,7 @@ export default function ChildDashboardRoute() {
 
   return (
     <ChildDashboardScreen
+      bucketBalances={bucketBalances}
       childName={childName}
       chores={chores}
       onBack={() => router.back()}

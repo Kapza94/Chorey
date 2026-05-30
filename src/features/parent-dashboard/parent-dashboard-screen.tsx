@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { CheckCircleIcon } from "@/components/status-icons";
-import { formatReward } from "@/features/chores/money";
+import { BucketBalances, formatReward } from "@/features/chores/money";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
 
@@ -13,6 +13,7 @@ type DashboardChore = {
 };
 
 type Props = {
+  bucketBalances?: BucketBalances;
   childAccessCode?: string;
   childName?: string;
   chores?: DashboardChore[];
@@ -62,6 +63,11 @@ function getChoreState(status: ChoreStatus, childName: string) {
 }
 
 export function ParentDashboardScreen({
+  bucketBalances = {
+    givingCents: 0,
+    savingsCents: 0,
+    spendCents: 0,
+  },
   childAccessCode,
   childName = "Your child",
   chores = [],
@@ -205,6 +211,12 @@ export function ParentDashboardScreen({
       <View style={{ gap: choreyTheme.spacing.md }}>
         {(["spend", "savings", "giving"] as const).map((bucket) => {
           const bucketTheme = choreyTheme.buckets[bucket];
+          const balance =
+            bucket === "spend"
+              ? bucketBalances.spendCents
+              : bucket === "savings"
+                ? bucketBalances.savingsCents
+                : bucketBalances.givingCents;
 
           return (
             <View
@@ -236,7 +248,7 @@ export function ParentDashboardScreen({
                     fontSize: 14,
                   }}
                 >
-                  Virtual balance 0.00
+                  Virtual balance {formatReward(balance)}
                 </Text>
               </View>
               <Text

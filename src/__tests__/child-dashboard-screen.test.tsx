@@ -4,12 +4,23 @@ import { ChildDashboardScreen } from "@/features/child-dashboard/child-dashboard
 
 describe("ChildDashboardScreen", () => {
   it("welcomes the child and shows buckets", () => {
-    render(<ChildDashboardScreen childName="Mina" />);
+    render(
+      <ChildDashboardScreen
+        bucketBalances={{
+          givingCents: 200,
+          savingsCents: 400,
+          spendCents: 400,
+        }}
+        childName="Mina"
+      />,
+    );
 
     expect(screen.getByText("Hi Mina")).toBeOnTheScreen();
     expect(screen.getByText("Spend")).toBeOnTheScreen();
     expect(screen.getByText("Savings")).toBeOnTheScreen();
     expect(screen.getByText("Giving")).toBeOnTheScreen();
+    expect(screen.getAllByText("4.00")).toHaveLength(2);
+    expect(screen.getByText("2.00")).toBeOnTheScreen();
   });
 
   it("shows assigned chores", () => {

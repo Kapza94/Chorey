@@ -2,11 +2,19 @@ import { useCallback, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import type { CreatedChore } from "@/features/chores/chore-actions";
+import type { BucketBalances } from "@/features/chores/money";
 import {
   approveChoreForHousehold,
   listChoresForHousehold,
 } from "@/features/chores/default-chore-actions";
+import { getBucketBalancesForHousehold } from "@/features/ledger/default-ledger-actions";
 import { ParentDashboardScreen } from "@/features/parent-dashboard/parent-dashboard-screen";
+
+const emptyBalances: BucketBalances = {
+  givingCents: 0,
+  savingsCents: 0,
+  spendCents: 0,
+};
 
 export default function ParentDashboardRoute() {
   const router = useRouter();
@@ -54,6 +62,8 @@ export default function ParentDashboardRoute() {
         ]
       : [],
   );
+  const [bucketBalances, setBucketBalances] =
+    useState<BucketBalances>(emptyBalances);
 
   useFocusEffect(
     useCallback(() => {
@@ -63,9 +73,13 @@ export default function ParentDashboardRoute() {
         return;
       }
 
-      listChoresForHousehold(householdId).then((nextChores) => {
+      Promise.all([
+        listChoresForHousehold(householdId),
+        getBucketBalancesForHousehold(householdId),
+      ]).then(([nextChores, nextBalances]) => {
         if (mounted) {
           setChores(nextChores);
+          setBucketBalances(nextBalances);
         }
       });
 
@@ -77,6 +91,7 @@ export default function ParentDashboardRoute() {
 
   return (
     <ParentDashboardScreen
+      bucketBalances={bucketBalances}
       childAccessCode={childAccessCode}
       childName={childName}
       chores={chores}
@@ -86,9 +101,11 @@ export default function ParentDashboardRoute() {
         }
 
         const approved = await approveChoreForHousehold({ householdId, choreId });
+        const nextBalances = await getBucketBalancesForHousehold(householdId);
         setChores((current) =>
           current.map((chore) => (chore.id === choreId ? approved : chore)),
         );
+        setBucketBalances(nextBalances);
       }}
       onCreateChore={() =>
         router.push({
