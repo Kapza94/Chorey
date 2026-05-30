@@ -8,6 +8,11 @@ import {
   listChoresForChild,
   submitChoreForChild,
 } from "@/features/chores/default-child-chore-actions";
+import {
+  listGivingOptionsForChild,
+  suggestGivingOptionForChild,
+} from "@/features/giving/default-giving-actions";
+import type { GivingOption } from "@/features/giving/giving-actions";
 import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
 
 const emptyBalances: BucketBalances = {
@@ -26,6 +31,7 @@ export default function ChildDashboardRoute() {
     ? params.childName[0]
     : params.childName;
   const [chores, setChores] = useState<ChildChore[]>([]);
+  const [givingOptions, setGivingOptions] = useState<GivingOption[]>([]);
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
   const [submittingChoreId, setSubmittingChoreId] = useState<string | null>(
@@ -42,10 +48,12 @@ export default function ChildDashboardRoute() {
     Promise.all([
       listChoresForChild(accessCode),
       getBucketBalancesForChild(accessCode),
-    ]).then(([nextChores, nextBalances]) => {
+      listGivingOptionsForChild(accessCode),
+    ]).then(([nextChores, nextBalances, nextGivingOptions]) => {
       if (mounted) {
         setChores(nextChores);
         setBucketBalances(nextBalances);
+        setGivingOptions(nextGivingOptions);
       }
     });
 
@@ -59,6 +67,7 @@ export default function ChildDashboardRoute() {
       bucketBalances={bucketBalances}
       childName={childName}
       chores={chores}
+      givingOptions={givingOptions}
       onBack={() => router.back()}
       onSubmitChore={async (choreId) => {
         if (!accessCode) {
@@ -75,6 +84,13 @@ export default function ChildDashboardRoute() {
         } finally {
           setSubmittingChoreId(null);
         }
+      }}
+      onSuggestGivingOption={async (name) => {
+        if (!accessCode) {
+          return;
+        }
+
+        await suggestGivingOptionForChild({ accessCode, name });
       }}
       submittingChoreId={submittingChoreId}
     />

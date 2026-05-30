@@ -7,6 +7,11 @@ import {
   approveChoreForHousehold,
   listChoresForHousehold,
 } from "@/features/chores/default-chore-actions";
+import {
+  approveGivingSuggestionForHousehold,
+  listGivingSuggestionsForHousehold,
+} from "@/features/giving/default-giving-actions";
+import type { GivingSuggestion } from "@/features/giving/giving-actions";
 import { getBucketBalancesForHousehold } from "@/features/ledger/default-ledger-actions";
 import { ParentDashboardScreen } from "@/features/parent-dashboard/parent-dashboard-screen";
 
@@ -64,6 +69,9 @@ export default function ParentDashboardRoute() {
   );
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
+  const [givingSuggestions, setGivingSuggestions] = useState<GivingSuggestion[]>(
+    [],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -76,10 +84,12 @@ export default function ParentDashboardRoute() {
       Promise.all([
         listChoresForHousehold(householdId),
         getBucketBalancesForHousehold(householdId),
-      ]).then(([nextChores, nextBalances]) => {
+        listGivingSuggestionsForHousehold(householdId),
+      ]).then(([nextChores, nextBalances, nextGivingSuggestions]) => {
         if (mounted) {
           setChores(nextChores);
           setBucketBalances(nextBalances);
+          setGivingSuggestions(nextGivingSuggestions);
         }
       });
 
@@ -95,6 +105,7 @@ export default function ParentDashboardRoute() {
       childAccessCode={childAccessCode}
       childName={childName}
       chores={chores}
+      givingSuggestions={givingSuggestions}
       onApproveChore={async (choreId) => {
         if (!householdId) {
           return;
@@ -106,6 +117,16 @@ export default function ParentDashboardRoute() {
           current.map((chore) => (chore.id === choreId ? approved : chore)),
         );
         setBucketBalances(nextBalances);
+      }}
+      onApproveGivingSuggestion={async (suggestionId) => {
+        if (!householdId) {
+          return;
+        }
+
+        await approveGivingSuggestionForHousehold({ householdId, suggestionId });
+        const nextGivingSuggestions =
+          await listGivingSuggestionsForHousehold(householdId);
+        setGivingSuggestions(nextGivingSuggestions);
       }}
       onCreateChore={() =>
         router.push({

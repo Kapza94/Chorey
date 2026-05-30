@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { CheckCircleIcon } from "@/components/status-icons";
 import { BucketBalances, formatReward } from "@/features/chores/money";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
+import type { GivingSuggestion } from "@/features/giving/giving-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
 
 type DashboardChore = {
@@ -17,7 +18,9 @@ type Props = {
   childAccessCode?: string;
   childName?: string;
   chores?: DashboardChore[];
+  givingSuggestions?: GivingSuggestion[];
   onApproveChore?: (choreId: string) => void;
+  onApproveGivingSuggestion?: (suggestionId: string) => void;
   onCreateChore?: () => void;
   onOpenChildAccess?: () => void;
 };
@@ -71,7 +74,9 @@ export function ParentDashboardScreen({
   childAccessCode,
   childName = "Your child",
   chores = [],
+  givingSuggestions = [],
   onApproveChore,
+  onApproveGivingSuggestion,
   onCreateChore,
   onOpenChildAccess,
 }: Props) {
@@ -264,6 +269,84 @@ export function ParentDashboardScreen({
           );
         })}
       </View>
+
+      {givingSuggestions.length > 0 ? (
+        <View style={{ gap: choreyTheme.spacing.md }}>
+          <Text
+            style={{
+              color: choreyTheme.colors.ink1,
+              fontSize: 18,
+              fontWeight: "900",
+            }}
+          >
+            Giving suggestions
+          </Text>
+
+          {givingSuggestions.map((suggestion) => (
+            <View
+              key={suggestion.id}
+              style={{
+                backgroundColor: choreyTheme.colors.givingSoft,
+                borderColor: choreyTheme.colors.giving,
+                borderRadius: choreyTheme.radii.lg,
+                borderWidth: 1,
+                gap: choreyTheme.spacing.md,
+                padding: choreyTheme.spacing.lg,
+                ...choreyTheme.shadows.card,
+              }}
+            >
+              <View style={{ gap: choreyTheme.spacing.xs }}>
+                <Text
+                  style={{
+                    color: choreyTheme.colors.ink1,
+                    fontSize: 19,
+                    fontWeight: "900",
+                  }}
+                >
+                  {suggestion.name}
+                </Text>
+                <Text
+                  style={{
+                    color: choreyTheme.colors.inkMuted,
+                    fontSize: 14,
+                    fontWeight: "800",
+                  }}
+                >
+                  Suggested by {suggestion.childName ?? childName}
+                </Text>
+              </View>
+              {suggestion.status === "pending" ? (
+                <Pressable
+                  accessibilityLabel={`Approve giving ${suggestion.name}`}
+                  accessibilityRole="button"
+                  onPress={() => onApproveGivingSuggestion?.(suggestion.id)}
+                  style={({ pressed }) => ({
+                    alignItems: "center",
+                    backgroundColor: pressed
+                      ? choreyTheme.colors.primaryPressed
+                      : choreyTheme.colors.primary,
+                    borderColor: choreyTheme.colors.primaryPressed,
+                    borderRadius: choreyTheme.radii.pill,
+                    borderWidth: 1,
+                    paddingVertical: 13,
+                    ...choreyTheme.shadows.button,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: choreyTheme.colors.cream1,
+                      fontSize: 15,
+                      fontWeight: "900",
+                    }}
+                  >
+                    Approve
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <View style={{ gap: choreyTheme.spacing.md }}>
         <Text
