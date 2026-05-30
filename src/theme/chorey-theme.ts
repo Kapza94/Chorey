@@ -1,0 +1,77 @@
+export const choreyTheme = {
+  colors: {
+    cream1: "#FBF7EF",
+    cream2: "#F6EFE3",
+    cream3: "#EFE2CF",
+    surface: "#FFF9F0",
+    surfaceWarm: "#FDF3E5",
+    ink1: "#2A2018",
+    ink2: "#514438",
+    inkMuted: "#7A6A5B",
+    borderSoft: "rgba(42, 32, 24, 0.08)",
+    borderMedium: "rgba(42, 32, 24, 0.14)",
+    primary: "#6F8B67",
+    primaryPressed: "#526D4E",
+    primarySoft: "#E3EEDC",
+    success: "#6F8B67",
+    danger: "#9F3A2F",
+    spend: "#F3B58E",
+    spendSoft: "#F8DFCC",
+    savings: "#C9B7E8",
+    savingsSoft: "#E8DFF7",
+    giving: "#A9CDB0",
+    givingSoft: "#DCEBDD",
+  },
+  radii: {
+    sm: 10,
+    md: 14,
+    lg: 22,
+    pill: 999,
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    xxl: 32,
+  },
+  shadows: {
+    card: {
+      shadowColor: "rgba(42, 32, 24, 0.18)",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 18,
+      elevation: 3,
+    },
+    button: {
+      shadowColor: "rgba(82, 109, 78, 0.34)",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.22,
+      shadowRadius: 14,
+      elevation: 3,
+    },
+  },
+  buckets: {
+    spend: {
+      label: "Spend",
+      percent: 40,
+      color: "#F3B58E",
+      softColor: "#F8DFCC",
+    },
+    savings: {
+      label: "Savings",
+      percent: 40,
+      color: "#C9B7E8",
+      softColor: "#E8DFF7",
+    },
+    giving: {
+      label: "Giving",
+      percent: 20,
+      color: "#A9CDB0",
+      softColor: "#DCEBDD",
+    },
+  },
+} as const;
+
+export type ChoreyBucket = keyof typeof choreyTheme.buckets;
