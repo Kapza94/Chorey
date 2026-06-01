@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { ParentSectionScreen } from "@/features/parent-navigation/parent-section-screen";
+import { ParentSettingsScreen } from "@/features/parent-settings/parent-settings-screen";
 
 export default function ParentSettingsRoute() {
   const router = useRouter();
@@ -10,11 +10,17 @@ export default function ParentSettingsRoute() {
     childProfileId?: string;
     householdId?: string;
   }>();
+  const childName = Array.isArray(params.childName)
+    ? params.childName[0]
+    : params.childName;
+  const householdId = Array.isArray(params.householdId)
+    ? params.householdId[0]
+    : params.householdId;
 
   return (
-    <ParentSectionScreen
-      currentTab="settings"
-      description="Household settings, plan details, and parent controls will live here."
+    <ParentSettingsScreen
+      childName={childName}
+      householdId={householdId}
       onOpenChildren={() =>
         router.push({ pathname: "/parent/children", params })
       }
@@ -24,7 +30,9 @@ export default function ParentSettingsRoute() {
       onOpenDashboard={() =>
         router.push({ pathname: "/parent/dashboard", params })
       }
-      title="Settings"
+      onOpenUpgrade={() =>
+        router.push({ pathname: "/parent/upgrade", params })
+      }
     />
   );
 }
