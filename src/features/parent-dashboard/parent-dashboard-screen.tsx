@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { CheckCircleIcon } from "@/components/status-icons";
 import { BucketBalances, formatReward } from "@/features/chores/money";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
+import { ParentTabBar } from "@/features/parent-navigation/parent-tab-bar";
 import { choreyTheme } from "@/theme/chorey-theme";
 
 type DashboardChore = {
@@ -20,7 +21,10 @@ type Props = {
   onAddChild?: () => void;
   onApproveChore?: (choreId: string) => void;
   onCreateChore?: () => void;
+  onOpenChildren?: () => void;
+  onOpenChores?: () => void;
   onOpenChildAccess?: () => void;
+  onOpenSettings?: () => void;
 };
 
 function getChoreState(status: ChoreStatus, childName: string) {
@@ -75,19 +79,23 @@ export function ParentDashboardScreen({
   onAddChild,
   onApproveChore,
   onCreateChore,
+  onOpenChildren,
+  onOpenChores,
   onOpenChildAccess,
+  onOpenSettings,
 }: Props) {
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{
-        padding: choreyTheme.spacing.xl,
-        paddingBottom: choreyTheme.spacing.xxl,
-        gap: choreyTheme.spacing.xl,
-      }}
-      style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}
-    >
-      <View style={{ gap: choreyTheme.spacing.sm }}>
+    <View style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
+          padding: choreyTheme.spacing.xl,
+          paddingBottom: choreyTheme.spacing.xxl,
+          gap: choreyTheme.spacing.xl,
+        }}
+        style={{ flex: 1 }}
+      >
+        <View style={{ gap: choreyTheme.spacing.sm }}>
         <Text
           selectable
           style={{
@@ -120,9 +128,9 @@ export function ParentDashboardScreen({
           Next you will create chores, approve completed work, and watch each
           reward split into the 40 / 40 / 20 buckets.
         </Text>
-      </View>
+        </View>
 
-      <Pressable
+        <Pressable
         accessibilityLabel="Create chore"
         accessibilityRole="button"
         onPress={onCreateChore}
@@ -147,9 +155,9 @@ export function ParentDashboardScreen({
         >
           Create chore
         </Text>
-      </Pressable>
+        </Pressable>
 
-      <Pressable
+        <Pressable
         accessibilityLabel="Add child"
         accessibilityRole="button"
         onPress={onAddChild}
@@ -173,10 +181,10 @@ export function ParentDashboardScreen({
         >
           Add child
         </Text>
-      </Pressable>
+        </Pressable>
 
-      {childAccessCode ? (
-        <View
+        {childAccessCode ? (
+          <View
           style={{
             backgroundColor: choreyTheme.colors.surfaceWarm,
             borderColor: choreyTheme.colors.borderMedium,
@@ -233,10 +241,10 @@ export function ParentDashboardScreen({
               Test child access
             </Text>
           </Pressable>
-        </View>
-      ) : null}
+          </View>
+        ) : null}
 
-      <View style={{ gap: choreyTheme.spacing.md }}>
+        <View style={{ gap: choreyTheme.spacing.md }}>
         {(["spend", "savings", "giving"] as const).map((bucket) => {
           const bucketTheme = choreyTheme.buckets[bucket];
           const balance =
@@ -291,9 +299,9 @@ export function ParentDashboardScreen({
             </View>
           );
         })}
-      </View>
+        </View>
 
-      <View style={{ gap: choreyTheme.spacing.md }}>
+        <View style={{ gap: choreyTheme.spacing.md }}>
         <Text
           style={{
             color: choreyTheme.colors.ink1,
@@ -466,7 +474,27 @@ export function ParentDashboardScreen({
             No chores yet.
           </Text>
         )}
+        </View>
+      </ScrollView>
+
+      <View
+        testID="parent-bottom-nav"
+        style={{
+          backgroundColor: choreyTheme.colors.cream1,
+          borderTopWidth: 0,
+          paddingBottom: choreyTheme.spacing.xl,
+          paddingHorizontal: choreyTheme.spacing.lg,
+          paddingTop: choreyTheme.spacing.sm,
+        }}
+      >
+        <ParentTabBar
+        currentTab="dashboard"
+        onOpenChildren={onOpenChildren}
+        onOpenChores={onOpenChores}
+        onOpenDashboard={() => undefined}
+        onOpenSettings={onOpenSettings}
+        />
       </View>
-    </ScrollView>
+    </View>
   );
 }

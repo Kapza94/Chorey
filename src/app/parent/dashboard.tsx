@@ -119,7 +119,25 @@ export default function ParentDashboardRoute() {
           params: { childAccessCode, childName, childProfileId, householdId },
         })
       }
+      onOpenChildren={() =>
+        router.push({
+          pathname: "/parent/children",
+          params: { childAccessCode, childName, childProfileId, householdId },
+        })
+      }
+      onOpenChores={() =>
+        router.push({
+          pathname: "/parent/chores",
+          params: { childAccessCode, childName, childProfileId, householdId },
+        })
+      }
       onOpenChildAccess={() => router.push("/child/access")}
+      onOpenSettings={() =>
+        router.push({
+          pathname: "/parent/settings",
+          params: { childAccessCode, childName, childProfileId, householdId },
+        })
+      }
     />
   );
 }

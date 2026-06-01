@@ -51,6 +51,34 @@ describe("ParentDashboardScreen", () => {
     expect(onAddChild).toHaveBeenCalledTimes(1);
   });
 
+  it("shows parent navigation", () => {
+    const onOpenChildren = jest.fn();
+    const onOpenChores = jest.fn();
+    const onOpenSettings = jest.fn();
+
+    render(
+      <ParentDashboardScreen
+        childName="Mina"
+        onOpenChildren={onOpenChildren}
+        onOpenChores={onOpenChores}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
+
+    expect(screen.getByLabelText("Dashboard tab, selected")).toBeOnTheScreen();
+    expect(screen.getByTestId("parent-bottom-nav")).toBeOnTheScreen();
+    expect(screen.getByTestId("parent-bottom-nav")).toHaveStyle({
+      borderTopWidth: 0,
+    });
+    fireEvent.press(screen.getByLabelText("Chores tab"));
+    fireEvent.press(screen.getByLabelText("Children tab"));
+    fireEvent.press(screen.getByLabelText("Settings tab"));
+
+    expect(onOpenChores).toHaveBeenCalledTimes(1);
+    expect(onOpenChildren).toHaveBeenCalledTimes(1);
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
   it("shows a newly created chore", () => {
     render(
       <ParentDashboardScreen
