@@ -8,7 +8,7 @@ We have a working Expo React Native app for Chorey with the first parent and chi
 
 The app is not just a mockup anymore. Parent auth UI, household setup, child creation, child access codes, manual chore creation, child chore submission, and parent approval are all wired through the current Supabase-backed flow.
 
-The next meaningful product step is Phase 3: make approved paid chores create the real virtual ledger events and update Spend, Savings, and Giving balances through the fixed 40 / 40 / 20 split.
+The next meaningful product step is to finish settlement history and polish the parent settlement review flow.
 
 ## Current Build State
 
@@ -29,6 +29,9 @@ Implemented and verified:
 - Child can mark an assigned chore done.
 - Parent dashboard refreshes household chores.
 - Parent can approve submitted chores.
+- Approved paid chores create ledger events and update Spend, Savings, and Giving balances.
+- Parent dashboard shows a settlement summary.
+- Parent can review settlement and mark all buckets settled with one action.
 - Whole-app visual pass using the current Chorey system:
   - warm cream surfaces
   - sage primary buttons
@@ -135,9 +138,7 @@ Suggested manual flow:
 These are expected, not regressions:
 
 - Google and Apple provider auth are UI-wired but still need real Supabase provider configuration.
-- Ledger events are not implemented yet.
-- Spend, Savings, and Giving balances still show placeholder `0.00`.
-- Approval does not yet create bucket balance changes.
+- Settlement history is not implemented yet.
 - Send-back flow is specified but not implemented.
 - Reward adjustment at approval is specified but not implemented.
 - Checklist items are specified but not implemented.
@@ -151,23 +152,20 @@ These are expected, not regressions:
 
 ## Best Next Step
 
-Start Phase 3 with TDD.
+Continue Phase 4 settlement with TDD.
 
 Recommended first task:
 
-1. Add tests for 40 / 40 / 20 split calculation.
-2. Implement deterministic cents splitting.
-3. Add ledger schema and database tests.
-4. Make parent approval create ledger events.
-5. Make child and parent bucket totals read from those events.
+1. Add tests for settled period history.
+2. Add a parent-facing history query.
+3. Add a simple settlement history view.
+4. Keep free-tier history limits for a later entitlement pass unless needed now.
 
 Concrete first red tests:
 
-- `$10.00` splits into `$4.00 Spend`, `$4.00 Savings`, `$2.00 Giving`.
-- Odd cents split deterministically without losing a cent.
-- Approved paid chore creates three ledger events.
-- Approved unpaid chore creates no money ledger event.
-- Child dashboard shows updated totals after approval.
+- Settled period appears in settlement history.
+- Active unsettled period stays separate from history.
+- History row shows period dates and total settled amount.
 
 ## Files To Read First Tomorrow
 

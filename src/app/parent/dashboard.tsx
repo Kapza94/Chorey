@@ -14,6 +14,8 @@ import {
 import type { GivingSuggestion } from "@/features/giving/giving-actions";
 import { getBucketBalancesForHousehold } from "@/features/ledger/default-ledger-actions";
 import { ParentDashboardScreen } from "@/features/parent-dashboard/parent-dashboard-screen";
+import { getActiveSettlementPeriod } from "@/features/settlement/default-settlement-actions";
+import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 
 const emptyBalances: BucketBalances = {
   givingCents: 0,
@@ -72,6 +74,8 @@ export default function ParentDashboardRoute() {
   const [givingSuggestions, setGivingSuggestions] = useState<GivingSuggestion[]>(
     [],
   );
+  const [settlementPeriod, setSettlementPeriod] =
+    useState<SettlementPeriod | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -85,13 +89,22 @@ export default function ParentDashboardRoute() {
         listChoresForHousehold(householdId),
         getBucketBalancesForHousehold(householdId),
         listGivingSuggestionsForHousehold(householdId),
-      ]).then(([nextChores, nextBalances, nextGivingSuggestions]) => {
-        if (mounted) {
-          setChores(nextChores);
-          setBucketBalances(nextBalances);
-          setGivingSuggestions(nextGivingSuggestions);
-        }
-      });
+        getActiveSettlementPeriod(householdId),
+      ]).then(
+        ([
+          nextChores,
+          nextBalances,
+          nextGivingSuggestions,
+          nextSettlementPeriod,
+        ]) => {
+          if (mounted) {
+            setChores(nextChores);
+            setBucketBalances(nextBalances);
+            setGivingSuggestions(nextGivingSuggestions);
+            setSettlementPeriod(nextSettlementPeriod);
+          }
+        },
+      );
 
       return () => {
         mounted = false;
@@ -159,6 +172,13 @@ export default function ParentDashboardRoute() {
           params: { childAccessCode, childName, childProfileId, householdId },
         })
       }
+      onReviewSettlement={() =>
+        router.push({
+          pathname: "/parent/settlement",
+          params: { childAccessCode, childName, childProfileId, householdId },
+        })
+      }
+      settlementPeriod={settlementPeriod ?? undefined}
     />
   );
 }

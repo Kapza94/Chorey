@@ -290,15 +290,17 @@ At the end of each settlement period:
 
 1. Chorey generates a settlement summary.
 2. Parent reviews the period.
-3. Parent manually confirms each bucket separately:
+3. Parent marks the period settled with one confirmation:
    - Spend paid to child
    - Savings set aside
    - Giving donated/given/reserved
-4. Once buckets are settled, the period becomes part of settlement history.
+4. Once confirmed, all buckets in the period are marked settled and the period becomes part of settlement history.
 
-### Bucket-by-Bucket Settlement
+### Settlement Confirmation
 
-Buckets settle independently. For example, a parent may mark Spend as paid while leaving Giving pending until the family chooses a destination.
+The parent-facing flow optimizes for fewer clicks. The dashboard shows a settlement summary and sends the parent to a focused review screen. The review screen shows Spend, Savings, Giving, and the total, then uses one **Mark all settled** action.
+
+Internally, Chorey still stores settlement status per bucket so future history, statements, and audit views can show what happened to Spend, Savings, and Giving.
 
 ### History
 
@@ -762,4 +764,3 @@ Potential post-MVP features:
 - Real financial account integrations
 - Multi-household support
 - More granular parent permissions
-

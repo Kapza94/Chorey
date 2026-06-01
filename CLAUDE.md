@@ -1,0 +1,113 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+```bash
+# Run the app
+npm start            # Expo dev server (scan QR for device/simulator)
+npm run ios          # iOS simulator
+npm run android      # Android emulator
+
+# Quality checks
+npm test             # Jest (jest-expo preset)
+npm run test:watch   # Jest in watch mode
+npm run typecheck    # tsc --noEmit
+npm run lint         # expo lint (ESLint)
+
+# Run a single test file
+npx jest src/__tests__/money.test.ts
+
+# Database (requires Supabase CLI + Docker)
+npm run db:reset     # Reset local DB and re-run all migrations
+npm run db:test      # Run SQL tests in supabase/tests/
+```
+
+## Git workflow
+
+- Base all feature work on `dev`.
+- Create a new feature branch from `dev` for every feature or fix before making changes.
+- Never commit directly to `dev`.
+- Never push directly to `dev`.
+- Before committing, confirm the current branch is a feature branch off `dev`.
+- Before pushing, confirm the target remote branch is the same feature branch.
+
+## Environment
+
+Requires a `.env.local` with:
+```
+EXPO_PUBLIC_SUPABASE_URL=...
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+```
+
+## Architecture
+
+### Product overview
+
+Chorey is a family chore and allowance app. Every approved paid chore reward is split **40% Spend / 40% Savings / 20% Giving** — this is fixed, non-configurable, and central to the brand. The app tracks a virtual ledger; no real money moves.
+
+Two user types:
+- **Parents** — sign in with Supabase Auth (Apple, Google, OTP/magic link). Manage the household, create chores, approve or send back completed work.
+- **Children** — access via a parent-generated **6-digit access code** (stored in `child_access_codes`). No email/password. Children never see billing.
+
+### Directory structure
+
+```
+src/
+  app/              # Expo Router file-based routes
+  features/         # Feature modules (see pattern below)
+  components/       # Shared UI primitives (brand-icons, status-icons, setup-screen-layout)
+  domain/           # Pure domain logic (household access)
+  lib/              # Supabase client, env config
+  theme/            # choreyTheme design tokens
+  __tests__/        # All Jest tests
+supabase/
+  migrations/       # Ordered SQL migrations (applied via db:reset)
+  tests/            # SQL/RLS integration tests
+```
+
+### Screen / Actions pattern
+
+Every feature screen is a **pure React component** — it receives all side-effectful behavior through typed `actions` or callback props. The `default-*-actions.ts` files wire those types to the real Supabase client and are imported by Expo Router route files.
+
+Example:
+- `parent-sign-in-screen.tsx` — pure UI, accepts `ParentSignInActions`
+- `parent-auth-actions.ts` — factory `createParentAuthActions(client, redirectUri)`
+- `default-parent-auth-actions.ts` — calls the factory with the real `supabase` client
+- `src/app/parent/sign-in.tsx` — Expo Router route, imports the default actions
+
+This keeps screens fully testable without mocking the Supabase client.
+
+### Money / ledger
+
+All monetary values are **integer cents** throughout. Never use floats for money.
+
+- `money.ts` — `parseRewardCents`, `formatReward`, `splitRewardCents` (the 40/40/20 split with remainder-largest-bucket distribution)
+- The split is also enforced **in the database** via a Postgres trigger (`create_ledger_events_when_chore_approved`) that fires when a `chore_instances` row transitions to `status = 'approved'`. Zero-reward chores create no ledger entries.
+- `ledger_events` has a `unique (chore_instance_id, bucket)` constraint — double-credit is impossible.
+
+### Database / RLS
+
+All tables have RLS enabled. Key tables:
+- `households`, `household_members` — parent membership
+- `child_profiles` — child records belonging to a household
+- `child_access_codes` — 6-digit codes linking children to devices
+- `chore_instances` — one row per assigned chore per child (`assigned → submitted → approved | sent_back`)
+- `ledger_events` — immutable credit events (spend/savings/giving) created by trigger
+
+Child-facing Supabase RPCs (`list_child_chores`, `submit_child_chore`, `resolve_child_access_code`, `get_child_bucket_balances`) use `security definer` and accept an access code string — children are not authenticated Supabase users.
+
+### Styling
+
+All styling uses `choreyTheme` from `src/theme/chorey-theme.ts` — colors, spacing, radii, shadows, and per-bucket tokens (`spend`, `savings`, `giving`). No external UI component library; all UI is built from React Native primitives styled inline with `choreyTheme` values.
+
+Bucket colors: Spend = `#F3B58E`, Savings = `#C9B7E8`, Giving = `#A9CDB0`.
+
+### Testing approach
+
+- **Unit tests** for pure logic (money calculations, action factories with stub clients).
+- **Component tests** with React Native Testing Library — screens are tested by rendering with mock props/actions.
+- **SQL tests** in `supabase/tests/` for RLS and trigger behavior.
+- TDD is the development method: red → green → refactor.
+- Import alias `@/` maps to `src/`.
