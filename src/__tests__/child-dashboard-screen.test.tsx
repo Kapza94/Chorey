@@ -64,6 +64,29 @@ describe("ChildDashboardScreen", () => {
     expect(screen.getByText("Waiting for parent")).toBeOnTheScreen();
   });
 
+  it("shows giving options and suggests a new option", () => {
+    const onSuggestGivingOption = jest.fn();
+
+    render(
+      <ChildDashboardScreen
+        childName="Mina"
+        givingOptions={[{ id: "option-1", name: "Animal shelter" }]}
+        onSuggestGivingOption={onSuggestGivingOption}
+      />,
+    );
+
+    expect(screen.getByText("Giving options")).toBeOnTheScreen();
+    expect(screen.getByText("Animal shelter")).toBeOnTheScreen();
+
+    fireEvent.changeText(
+      screen.getByLabelText("Giving suggestion name"),
+      "Food bank",
+    );
+    fireEvent.press(screen.getByLabelText("Suggest giving option"));
+
+    expect(onSuggestGivingOption).toHaveBeenCalledWith("Food bank");
+  });
+
   it("shows sending state while submitting", () => {
     render(
       <ChildDashboardScreen

@@ -144,6 +144,32 @@ describe("ParentDashboardScreen", () => {
     expect(screen.getByText("Settled into 40 / 40 / 20")).toBeOnTheScreen();
   });
 
+  it("shows and approves giving suggestions", () => {
+    const onApproveGivingSuggestion = jest.fn();
+
+    render(
+      <ParentDashboardScreen
+        childName="Mina"
+        givingSuggestions={[
+          {
+            childName: "Mina",
+            id: "suggestion-1",
+            name: "Animal shelter",
+            status: "pending",
+          },
+        ]}
+        onApproveGivingSuggestion={onApproveGivingSuggestion}
+      />,
+    );
+
+    expect(screen.getByText("Giving suggestions")).toBeOnTheScreen();
+    expect(screen.getByText("Animal shelter")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Approve giving Animal shelter"));
+
+    expect(onApproveGivingSuggestion).toHaveBeenCalledWith("suggestion-1");
+  });
+
   it("shows the child access code when present", () => {
     render(<ParentDashboardScreen childAccessCode="123456" childName="Mina" />);
 

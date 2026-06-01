@@ -19,6 +19,7 @@ Reference documents:
 - Phase 2 child chore list and submit flow is implemented: child dashboard loads assigned chores by access code, child can mark a chore done, and status changes to submitted.
 - Phase 2 parent approval is implemented: parent dashboard loads household chores, refreshes on focus, and parent admins can approve submitted chores.
 - Phase 3 ledger foundation is implemented: approved paid chores create 40 / 40 / 20 ledger events, zero-reward chores create no ledger entries, and parent/child dashboards load bucket totals from the ledger.
+- Phase 6 Giving first slice is implemented: children can suggest Giving options, parents can approve suggestions, and approved options become visible to the child.
 - Phase 7 entitlement foundation is implemented: household entitlement state exists, free/trialing/paid/lapsed access resolves centrally, and free households are limited to one child.
 
 ## Build Principles

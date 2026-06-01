@@ -1,17 +1,21 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { CheckCircleIcon } from "@/components/status-icons";
 import type { ChildChore } from "@/features/chores/child-chore-actions";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
 import { BucketBalances, formatReward } from "@/features/chores/money";
+import type { GivingOption } from "@/features/giving/giving-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
 
 type Props = {
   bucketBalances?: BucketBalances;
   childName?: string;
   chores?: ChildChore[];
+  givingOptions?: GivingOption[];
   onBack?: () => void;
   onSubmitChore?: (choreId: string) => void;
+  onSuggestGivingOption?: (name: string) => void;
   submittingChoreId?: string | null;
 };
 
@@ -51,10 +55,19 @@ export function ChildDashboardScreen({
   },
   childName = "there",
   chores = [],
+  givingOptions = [],
   onBack,
   onSubmitChore,
+  onSuggestGivingOption,
   submittingChoreId,
 }: Props) {
+  const [givingSuggestionName, setGivingSuggestionName] = useState("");
+
+  function handleSuggestGivingOption() {
+    onSuggestGivingOption?.(givingSuggestionName);
+    setGivingSuggestionName("");
+  }
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -125,6 +138,97 @@ export function ChildDashboardScreen({
           Your chores will appear here. Every approved reward follows the 40 /
           40 / 20 split.
         </Text>
+      </View>
+
+      <View style={{ gap: choreyTheme.spacing.md }}>
+        <Text
+          style={{
+            color: choreyTheme.colors.ink1,
+            fontSize: 18,
+            fontWeight: "900",
+          }}
+        >
+          Giving options
+        </Text>
+
+        {givingOptions.map((option) => (
+          <View
+            key={option.id}
+            style={{
+              backgroundColor: choreyTheme.colors.givingSoft,
+              borderColor: choreyTheme.colors.giving,
+              borderRadius: choreyTheme.radii.md,
+              borderWidth: 1,
+              padding: choreyTheme.spacing.lg,
+            }}
+          >
+            <Text
+              style={{
+                color: choreyTheme.colors.ink1,
+                fontSize: 17,
+                fontWeight: "900",
+              }}
+            >
+              {option.name}
+            </Text>
+          </View>
+        ))}
+
+        <View
+          style={{
+            backgroundColor: choreyTheme.colors.surface,
+            borderColor: choreyTheme.colors.borderSoft,
+            borderRadius: choreyTheme.radii.lg,
+            borderWidth: 1,
+            gap: choreyTheme.spacing.md,
+            padding: choreyTheme.spacing.lg,
+            ...choreyTheme.shadows.card,
+          }}
+        >
+          <TextInput
+            accessibilityLabel="Giving suggestion name"
+            onChangeText={setGivingSuggestionName}
+            placeholder="Suggest a place to give"
+            placeholderTextColor={choreyTheme.colors.inkMuted}
+            style={{
+              backgroundColor: choreyTheme.colors.surface,
+              borderColor: choreyTheme.colors.borderSoft,
+              borderRadius: choreyTheme.radii.md,
+              borderWidth: 1,
+              color: choreyTheme.colors.ink1,
+              fontSize: 16,
+              paddingHorizontal: choreyTheme.spacing.lg,
+              paddingVertical: 14,
+            }}
+            value={givingSuggestionName}
+          />
+          <Pressable
+            accessibilityLabel="Suggest giving option"
+            accessibilityRole="button"
+            onPress={handleSuggestGivingOption}
+            style={({ pressed }) => ({
+              alignItems: "center",
+              backgroundColor: pressed
+                ? choreyTheme.colors.primaryPressed
+                : choreyTheme.colors.primary,
+              borderColor: choreyTheme.colors.primaryPressed,
+              borderRadius: choreyTheme.radii.pill,
+              borderWidth: 1,
+              paddingVertical: 14,
+              ...choreyTheme.shadows.button,
+            })}
+          >
+            <Text
+              style={{
+                color: choreyTheme.colors.cream1,
+                fontSize: 15,
+                fontWeight: "900",
+              }}
+            >
+              Suggest giving option
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={{ gap: choreyTheme.spacing.md }}>
