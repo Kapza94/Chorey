@@ -21,6 +21,7 @@ Reference documents:
 - Phase 3 ledger foundation is implemented: approved paid chores create 40 / 40 / 20 ledger events, zero-reward chores create no ledger entries, and parent/child dashboards load bucket totals from the ledger.
 - Phase 6 Giving first slice is implemented: children can suggest Giving options, parents can approve suggestions, and approved options become visible to the child.
 - Phase 7 entitlement foundation is implemented: household entitlement state exists, free/trialing/paid/lapsed access resolves centrally, and free households are limited to one child.
+- Phase 5 Spend wishlist first slice is implemented: children can create wishlist items, request purchases when Spend balance is sufficient, and parents can approve requests with Spend ledger deduction.
 
 ## Build Principles
 

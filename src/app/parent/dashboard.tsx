@@ -16,6 +16,11 @@ import { getBucketBalancesForHousehold } from "@/features/ledger/default-ledger-
 import { ParentDashboardScreen } from "@/features/parent-dashboard/parent-dashboard-screen";
 import { getActiveSettlementPeriod } from "@/features/settlement/default-settlement-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
+import {
+  approvePurchaseRequestForHousehold,
+  listPurchaseRequestsForHousehold,
+} from "@/features/spend-wishlist/default-spend-wishlist-actions";
+import type { HouseholdPurchaseRequest } from "@/features/spend-wishlist/spend-wishlist-actions";
 
 const emptyBalances: BucketBalances = {
   givingCents: 0,
@@ -69,6 +74,9 @@ export default function ParentDashboardRoute() {
         ]
       : [],
   );
+  const [purchaseRequests, setPurchaseRequests] = useState<
+    HouseholdPurchaseRequest[]
+  >([]);
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
   const [givingSuggestions, setGivingSuggestions] = useState<GivingSuggestion[]>(
@@ -90,18 +98,21 @@ export default function ParentDashboardRoute() {
         getBucketBalancesForHousehold(householdId),
         listGivingSuggestionsForHousehold(householdId),
         getActiveSettlementPeriod(householdId),
+        listPurchaseRequestsForHousehold(householdId),
       ]).then(
         ([
           nextChores,
           nextBalances,
           nextGivingSuggestions,
           nextSettlementPeriod,
+          nextPurchaseRequests,
         ]) => {
           if (mounted) {
             setChores(nextChores);
             setBucketBalances(nextBalances);
             setGivingSuggestions(nextGivingSuggestions);
             setSettlementPeriod(nextSettlementPeriod);
+            setPurchaseRequests(nextPurchaseRequests);
           }
         },
       );
@@ -147,6 +158,19 @@ export default function ParentDashboardRoute() {
           await listGivingSuggestionsForHousehold(householdId);
         setGivingSuggestions(nextGivingSuggestions);
       }}
+      onApprovePurchaseRequest={async (requestId) => {
+        if (!householdId) {
+          return;
+        }
+
+        await approvePurchaseRequestForHousehold({ householdId, requestId });
+        const [nextRequests, nextBalances] = await Promise.all([
+          listPurchaseRequestsForHousehold(householdId),
+          getBucketBalancesForHousehold(householdId),
+        ]);
+        setPurchaseRequests(nextRequests);
+        setBucketBalances(nextBalances);
+      }}
       onCreateChore={() =>
         router.push({
           pathname: "/parent/chores/new",
@@ -179,6 +203,7 @@ export default function ParentDashboardRoute() {
         })
       }
       settlementPeriod={settlementPeriod ?? undefined}
+      purchaseRequests={purchaseRequests}
     />
   );
 }

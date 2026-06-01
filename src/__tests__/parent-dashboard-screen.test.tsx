@@ -125,6 +125,35 @@ describe("ParentDashboardScreen", () => {
     expect(onApproveChore).toHaveBeenCalledWith("chore-1");
   });
 
+  it("shows and approves purchase requests", () => {
+    const onApprovePurchaseRequest = jest.fn();
+
+    render(
+      <ParentDashboardScreen
+        childName="Mina"
+        onApprovePurchaseRequest={onApprovePurchaseRequest}
+        purchaseRequests={[
+          {
+            childName: "Mina",
+            id: "request-1",
+            itemName: "Football",
+            status: "pending",
+            targetCents: 2500,
+            wishlistItemId: "wish-1",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Purchase requests")).toBeOnTheScreen();
+    expect(screen.getByText("Football")).toBeOnTheScreen();
+    expect(screen.getByText("25.00")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Approve purchase Football"));
+
+    expect(onApprovePurchaseRequest).toHaveBeenCalledWith("request-1");
+  });
+
   it("shows approved chores as settled into the split", () => {
     render(
       <ParentDashboardScreen
