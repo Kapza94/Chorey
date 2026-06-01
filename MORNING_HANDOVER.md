@@ -1,203 +1,126 @@
 # Chorey Morning Handover
 
-Last updated: Friday, May 29, 2026, Europe/Belgrade.
+Last updated: Monday, June 1, 2026 (late night), Europe/Belgrade.
+Session focus: **adopting the finished Chorey design** from `design_handoff_chorey/` (carbon-copy re-skin + the product logic behind it).
 
-## Read This First
+## Read This First (TL;DR)
 
-We have a working Expo React Native app for Chorey with the first parent and child vertical slice in place.
+We started the design adoption. Tonight we (1) consolidated all pre-design feature
+work into `dev`, (2) branched a clean redesign branch off it, and (3) built the
+**foundation**: the full design-token system, theme + font hooks, and the core
+money logic (currency formatting + configurable 40/40/20 split).
 
-The app is not just a mockup anymore. Parent auth UI, household setup, child creation, child access codes, manual chore creation, child chore submission, and parent approval are all wired through the current Supabase-backed flow.
+Everything is committed. Working tree is clean. **Nothing is pushed to `origin` yet.**
 
-The next meaningful product step is to finish settlement history and polish the parent settlement review flow.
+We stopped at a decision point: **what to build next** (see "Resume Here").
 
-## Current Build State
+## Git State
 
-Implemented and verified:
+- **Current branch:** `feature/design-system-redesign` (branched off `dev`). No upstream set — not pushed.
+- **`dev` now contains all pre-design work.** Tonight we merged three previously-unmerged feature branches into `dev`, resolving real conflicts in the parent/child dashboard files by **keeping both features** (giving + settlement + spend-wishlist all coexist):
+  - `feature/giving-options`
+  - `feature/settlement-foundation`
+  - `feature/spend-wishlist`
+  - (`feature/entitlements` and the parent-tab/navigation branches were already in `dev`.)
+- Recent commits on `feature/design-system-redesign`:
+  - `92fb6e1 feat: add locale currency formatter and configurable 40/40/20 split`
+  - `1c150ae feat: port Chorey design tokens, theme hook, and font loading`
+  - `94a0b43 Merge feature/spend-wishlist into dev`
+  - `d675df4 Merge feature/settlement-foundation into dev`
+  - `094f24a Merge feature/giving-options into dev`
 
-- Expo Router app shell for iOS and Android.
-- Chorey design context and product context files.
-- Parent sign-in screen with Apple, Google, and OTP/magic link UI.
-- Supabase parent auth action layer for local OTP flow.
-- Household creation with weekly/monthly settlement rhythm.
-- First child profile creation.
-- Parent-generated child access code flow.
-- Child access screen using that code.
-- Parent dashboard.
-- Child dashboard.
-- Manual one-off chore creation.
-- Child chore list loading by access code.
-- Child can mark an assigned chore done.
-- Parent dashboard refreshes household chores.
-- Parent can approve submitted chores.
-- Approved paid chores create ledger events and update Spend, Savings, and Giving balances.
-- Parent dashboard shows a settlement summary.
-- Parent can review settlement and mark all buckets settled with one action.
-- Whole-app visual pass using the current Chorey system:
-  - warm cream surfaces
-  - sage primary buttons
-  - tactile cards
-  - bucket colors for Spend, Savings, Giving
-  - clearer chore state chips
-  - buttons kept visible above the fold where practical
+> If we want the merged `dev` and the redesign branch on the remote, push both
+> (not done yet, intentionally): `git push -u origin dev` and
+> `git push -u origin feature/design-system-redesign`.
 
-## Current Verification
+## What's Done This Session
 
-Fresh checks after the whole-app redesign:
+### Step 1 — Read the handoff ✅
+Read `design_handoff_chorey/README.md`, `colors_and_type.css`, and `CLAUDE_CODE_PROMPT.md`.
+Design is authoritative; we replace existing logic where it differs.
 
-```bash
-npm run typecheck
-npm run lint
-npm test -- --runInBand
-```
+### Step 2 — Token system + hooks + fonts ✅ (committed `1c150ae`)
+- **`src/theme/chorey-theme.ts`** — single source of truth. Full design tokens:
+  cream 0–4 + ink 0–4 ramps, fg/fgDark text ramps, the **40/40/20 trio**
+  (allowance/savings/giving, each `100/200/400/600/800` + `tintDark`), accent,
+  semantic, borders, radii, 4-pt spacing, type presets (`typography.text.*`),
+  warm RN shadows (light/dark), motion (bezier easings + 140/220/360 durations),
+  and light/dark `schemes`.
+  - **Legacy keys preserved** (`colors`, `radii`, `spacing`, `shadows`, `buckets`)
+    but remapped to design-authoritative values so the ~15 existing screens keep
+    compiling untouched. Notably **`colors.primary` is now peach `#C58A72`** (was
+    the old green) and surfaces use the exact cream ramp.
+- **`src/theme/use-chorey-theme.ts`** — `useChoreyTheme(override?)`: returns all
+  static tokens + the `scheme` resolved for the device light/dark mode
+  (`scheme`, `mode`, `isDark`). Pull surfaces/text/borders from `scheme`; pull
+  the brand trio + type presets from the static tokens.
+- **`src/theme/use-chorey-fonts.ts`** — loads Bricolage Grotesque, Plus Jakarta
+  Sans, JetBrains Mono and registers them under the short family names the theme
+  uses (e.g. `Bricolage_700Bold`, `Jakarta_400Regular`). Never blocks on font error.
+- **`src/app/_layout.tsx`** — gates the splash screen until fonts load (no font swap).
+- Deps added: `@expo-google-fonts/{bricolage-grotesque,plus-jakarta-sans,jetbrains-mono}`.
+  `lucide-react-native` already present; verified all 13 design-referenced icons export.
 
-Result:
+### Step 3 (logic half) — Money model ✅ (committed `92fb6e1`)
+- **`src/features/money/currency.ts`** — replaces the hard-coded `$`.
+  `currencyForCountry(countryCode)` + `formatMoney(cents, currency)` +
+  `formatMoneyDelta`. Verified: USD `$25.00`, EUR `€25,00`, RSD `1.500 дин`
+  (0 decimals, symbol after). Amounts stay stored as integer **cents**.
+- **`src/features/money/split.ts`** — configurable 40/40/20. `DEFAULT_SPLIT`,
+  `balanceSplit(spend, give)` (**Save auto-balances**, never negative, step 5),
+  `isValidSplit`, `splitCents(cents, split)` (remainder-safe, generalizes the old
+  fixed `splitRewardCents`). Savings is conceptually **locked** (no spend path).
+- Tests: `src/__tests__/currency.test.ts`, `src/__tests__/split.test.ts`.
 
-- TypeScript passed.
-- Expo lint passed.
-- Jest passed: 19 suites, 67 tests.
+## Verification
 
-Database tests were not rerun after the final UI-only pass. There were no Supabase schema changes in that pass.
+- `npx tsc --noEmit` → clean.
+- `npx jest` → **all green** (34 suites / 129 tests as of the last run; re-run to confirm).
+- Has NOT been launched in a simulator this session — only typecheck + tests.
+  Worth a `expo start` smoke test in the morning to see the peach CTA / fonts live.
 
-## Current Routes And What They Do
+## Resume Here (the open decision)
 
-- `/` shows the Chorey welcome screen with Parent and Child entry points.
-- `/parent/sign-in` shows parent auth.
-- `/parent/household/new` creates a household.
-- `/parent/children/new` creates the first child profile.
-- `/parent/dashboard` shows household summary, child access code, bucket split, chores, and approval actions.
-- `/parent/chores/new` creates a manual chore.
-- `/child/access` accepts a child access code.
-- `/child/dashboard` shows the child bucket area and assigned/submitted chores.
-- `/auth/callback` handles parent auth callback status.
+Step 3 still needs **Supabase persistence**, and Step 4 (screen rebuilds) hasn't
+started. We paused to choose the next chunk. Options on the table:
 
-## Important Product Decisions Already Made
+1. **Kid Home screen (Step 4 — "the heart").** Highest visible value. Rebuild
+   pixel-faithful: header + streak chip, hero balance card, 3 bucket cards
+   (Save shows a lock), Today chore list with the **220ms spring** check-off that
+   live-recomputes the hero balance + buckets. Use the new theme + `splitCents` +
+   `formatMoney`. Note: design splits the Kid app into 3 tabs (Home/Wishlist/You),
+   so this also implies starting the Kid tab nav.
+2. **Supabase data model (finish Step 3).** One migration adding: `households`
+   → `country`, `currency`, `split_spend/save/give`; `child_profiles` → `age`,
+   `tone`, `budget_cents`, `cadence` (reuse `settlement_frequency` enum =
+   weekly|monthly); new **`payouts`** table (`household_id`, `child_profile_id`,
+   `amount_cents`, `method` cash|bank_transfer|other, `paid_at`). Plus actions +
+   SQL tests. Less visible but unblocks Parent Payments/Settings.
+3. **Country/currency context.** Smaller slice: a `CurrencyProvider` + `useCurrency()`
+   so every screen formats in the family currency; sets up the registration country step.
 
-- Product name is Chorey, not Sprout.
-- Chorey is a virtual family ledger, not real money movement.
-- Parents settle outside the app, weekly or monthly.
-- Settlement rhythm is chosen once for the household, with changes affecting future periods only.
-- The 40 / 40 / 20 split is fixed and is the heart of the product.
-- Children never see billing, subscriptions, or upgrade prompts.
-- Giving should stay human and not be meaningfully paywalled.
-- Recurring chores are paid-only.
-- Photo proof is paid-only, opt-in per chore, temporary, and deleted after approval or send-back.
-- We are using React Native, Expo, Expo Router, TypeScript, Supabase, Supabase Auth, Supabase Edge Functions later, Postgres RLS, AWS S3 later for proof photos, Expo Notifications, PostHog, Sentry if free, RevenueCat, and EAS.
+**Recommendation:** do #2 (data model) briefly to unblock real data, then #1
+(Kid Home) — OR just do #1 against client-computed/mock data if we want a visual
+win first. Your call in the morning.
 
-## Current Visual Direction
+## Build-Order Checklist (from the handoff prompt)
 
-Chorey should feel clean, warm, trustworthy, family-friendly, and useful. It should not feel like a banking app, a leaderboard game, or a noisy child app.
+- [x] Theme/tokens ported + fonts + Lucide wired
+- [~] 40/40/20 derive logic + locked savings (logic done; locked-savings UI pending)
+- [x] Currency locale formatter (replaces `$`)
+- [ ] Supabase schema: kids(budget, cadence), split, country/currency, payouts(amount, method, date)
+- [ ] Kid: Home → Wishlist → You
+- [ ] Parent: Kids → Payments → Chores → Settings
+- [ ] Onboarding 12 screens (incl. country step)
+- [ ] Dark mode pass
 
-Current UI vocabulary:
+## Gotchas / Notes
 
-- Parent surfaces are calm and task-focused.
-- Child surfaces are warmer and a little larger.
-- Primary actions use sage.
-- Secondary actions use cream surfaces with warm borders.
-- Spend is peach.
-- Savings is soft lilac.
-- Giving is sage green.
-- Chore states use visible chips and clear text.
-
-Known design note:
-
-- There is now repeated inline styling across screens. This was intentional for speed during the visual pass. Once the core flows settle, it is worth extracting small primitives like `PrimaryButton`, `SecondaryButton`, `Panel`, `StateChip`, and `BucketCard`.
-
-## Manual Test Script For The Morning
-
-Start or reopen the app:
-
-```bash
-npm run ios
-```
-
-If Expo says the port is already running, use the existing Simulator app or open:
-
-```bash
-xcrun simctl openurl booted exp://127.0.0.1:8081/--/
-```
-
-Suggested manual flow:
-
-1. Open the welcome screen.
-2. Tap Parent.
-3. Use OTP/magic link local flow.
-4. Create a household.
-5. Add a child.
-6. Note the child access code on the parent dashboard.
-7. Create a manual chore.
-8. Open child access and enter the code.
-9. Confirm the chore appears for the child.
-10. Tap Mark done.
-11. Return to parent dashboard.
-12. Confirm the chore shows Needs approval.
-13. Approve it.
-14. Confirm it shows Approved.
-
-## Known Gaps
-
-These are expected, not regressions:
-
-- Google and Apple provider auth are UI-wired but still need real Supabase provider configuration.
-- Settlement history is not implemented yet.
-- Send-back flow is specified but not implemented.
-- Reward adjustment at approval is specified but not implemented.
-- Checklist items are specified but not implemented.
-- Recurring chores are paid-only and not implemented.
-- Photo proof is specified but not implemented.
-- RevenueCat entitlements are not implemented.
-- Push notifications are not implemented.
-- PostHog and Sentry are not integrated yet.
-- E2E testing is not set up yet.
-- Git currently shows the project files as untracked, so there is no clean baseline commit yet.
-
-## Best Next Step
-
-Continue Phase 4 settlement with TDD.
-
-Recommended first task:
-
-1. Add tests for settled period history.
-2. Add a parent-facing history query.
-3. Add a simple settlement history view.
-4. Keep free-tier history limits for a later entitlement pass unless needed now.
-
-Concrete first red tests:
-
-- Settled period appears in settlement history.
-- Active unsettled period stays separate from history.
-- History row shows period dates and total settled amount.
-
-## Files To Read First Tomorrow
-
-- `BUILD_PLAN.md`
-- `PRODUCT_SPEC.md`
-- `DESIGN.md`
-- `src/features/chores/chore-actions.ts`
-- `src/features/chores/child-chore-actions.ts`
-- `src/features/parent-dashboard/parent-dashboard-screen.tsx`
-- `src/features/child-dashboard/child-dashboard-screen.tsx`
-- `supabase/migrations/20260529152107_chore_instances.sql`
-- `supabase/migrations/20260529192159_child_chore_flow.sql`
-
-## Commands Worth Keeping Handy
-
-```bash
-npm run ios
-npm run typecheck
-npm run lint
-npm test -- --runInBand
-npm run db:test
-npm run db:reset
-```
-
-## Collaboration Note
-
-We should keep using the project principles:
-
-- Think before coding.
-- Simplicity first.
-- Surgical changes.
-- Goal-driven execution.
-- Red first, green second, refactor third.
-
-For tomorrow: do not jump straight into broad UI polish again. The UI now has enough life. The product needs the ledger heart next.
+- **The project directory name has a trailing space**: `/Users/kapza/Documents/Projects/Chorey ` (note the space). Plain `cd .../Chorey` fails — quote the path with the trailing space.
+- The HTML/JSX in `design_handoff_chorey/` is **design reference only** — match
+  visuals/copy/spacing/motion; do NOT paste the Babel/`window` scaffolding or iOS frame. Rebuild natively.
+- Keep the existing Supabase auth/data layer; swap presentation + the logic noted above.
+- Theme font-family strings in `chorey-theme.ts` MUST stay in sync with the keys
+  registered in `use-chorey-fonts.ts`.
+- Use cream surfaces (never pure white), warm-dark (never blue-black), tabular
+  figures for money, Lucide icons (no emoji).
