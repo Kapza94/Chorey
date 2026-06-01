@@ -6,7 +6,8 @@ describe("ChildSetupScreen", () => {
   it("collects a child name", () => {
     render(<ChildSetupScreen householdId="household-1" />);
 
-    expect(screen.getByText("Add your first child")).toBeOnTheScreen();
+    expect(screen.getAllByText("Add child")).toHaveLength(2);
+    expect(screen.queryByText("Add your first child")).toBeNull();
     expect(screen.getByLabelText("Child name")).toBeOnTheScreen();
   });
 
@@ -50,5 +51,28 @@ describe("ChildSetupScreen", () => {
       displayName: "Mina",
       householdId: "household-1",
     });
+  });
+
+  it("shows an upgrade prompt when the free child limit is reached", async () => {
+    const onCreateChild = jest
+      .fn()
+      .mockRejectedValue(new Error("Upgrade required to add another child."));
+    const onUpgrade = jest.fn();
+
+    render(
+      <ChildSetupScreen
+        householdId="household-1"
+        onCreateChild={onCreateChild}
+        onUpgrade={onUpgrade}
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText("Child name"), "Leo");
+    fireEvent.press(screen.getByLabelText("Submit child setup"));
+
+    expect(await screen.findByText("Add more children with Chorey Plus")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("View upgrade options"));
+
+    expect(onUpgrade).toHaveBeenCalledTimes(1);
   });
 });

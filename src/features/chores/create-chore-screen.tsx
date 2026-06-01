@@ -3,7 +3,11 @@ import { Pressable, Text, TextInput, View } from "react-native";
 
 import { SetupScreenLayout } from "@/components/setup-screen-layout";
 import type { CreatedChore } from "@/features/chores/chore-actions";
-import { parseRewardCents } from "@/features/chores/money";
+import {
+  formatReward,
+  parseRewardCents,
+  splitRewardCents,
+} from "@/features/chores/money";
 import { choreyTheme } from "@/theme/chorey-theme";
 
 type CreateChorePayload = {
@@ -48,6 +52,14 @@ function getErrorMessage(error: unknown) {
   return "Chore could not be created.";
 }
 
+function getPreviewSplit(rewardAmount: string) {
+  try {
+    return splitRewardCents(parseRewardCents(rewardAmount));
+  } catch {
+    return splitRewardCents(0);
+  }
+}
+
 export function CreateChoreScreen({
   householdId,
   childProfileId,
@@ -60,6 +72,8 @@ export function CreateChoreScreen({
   const [rewardAmount, setRewardAmount] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasRewardAmount = rewardAmount.trim().length > 0;
+  const previewSplit = getPreviewSplit(rewardAmount);
 
   async function handleCreateChore() {
     setErrorMessage(null);
@@ -237,6 +251,12 @@ export function CreateChoreScreen({
         <View style={{ gap: choreyTheme.spacing.sm }}>
           {(["spend", "savings", "giving"] as const).map((bucket) => {
             const bucketTheme = choreyTheme.buckets[bucket];
+            const previewCents =
+              bucket === "spend"
+                ? previewSplit.spendCents
+                : bucket === "savings"
+                  ? previewSplit.savingsCents
+                  : previewSplit.givingCents;
 
             return (
               <View
@@ -263,6 +283,7 @@ export function CreateChoreScreen({
                   }}
                 >
                   {bucketTheme.label} {bucketTheme.percent}%
+                  {hasRewardAmount ? `: ${formatReward(previewCents)}` : ""}
                 </Text>
               </View>
             );

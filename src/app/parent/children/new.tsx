@@ -6,7 +6,21 @@ import { ChildSetupScreen } from "@/features/children/child-setup-screen";
 
 export default function NewChildRoute() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ householdId?: string }>();
+  const params = useLocalSearchParams<{
+    childAccessCode?: string;
+    childName?: string;
+    childProfileId?: string;
+    householdId?: string;
+  }>();
+  const childName = Array.isArray(params.childName)
+    ? params.childName[0]
+    : params.childName;
+  const childAccessCode = Array.isArray(params.childAccessCode)
+    ? params.childAccessCode[0]
+    : params.childAccessCode;
+  const childProfileId = Array.isArray(params.childProfileId)
+    ? params.childProfileId[0]
+    : params.childProfileId;
   const householdId = Array.isArray(params.householdId)
     ? params.householdId[0]
     : params.householdId;
@@ -32,6 +46,12 @@ export default function NewChildRoute() {
         });
       }}
       onCreateChild={createChildForHousehold}
+      onUpgrade={() =>
+        router.push({
+          pathname: "/parent/upgrade",
+          params: { childAccessCode, childName, childProfileId, householdId },
+        })
+      }
     />
   );
 }

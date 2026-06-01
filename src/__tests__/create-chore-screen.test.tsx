@@ -26,6 +26,23 @@ describe("CreateChoreScreen", () => {
     expect(screen.getByText("Spend 40%")).toBeOnTheScreen();
     expect(screen.getByText("Savings 40%")).toBeOnTheScreen();
     expect(screen.getByText("Giving 20%")).toBeOnTheScreen();
+    expect(screen.queryByText("Spend 40%: 0.00")).toBeNull();
+  });
+
+  it("updates the 40 / 40 / 20 preview when reward changes", () => {
+    render(
+      <CreateChoreScreen
+        childName="Mina"
+        childProfileId="child-1"
+        householdId="household-1"
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText("Reward amount"), "10.00");
+
+    expect(screen.getByText("Spend 40%: 4.00")).toBeOnTheScreen();
+    expect(screen.getByText("Savings 40%: 4.00")).toBeOnTheScreen();
+    expect(screen.getByText("Giving 20%: 2.00")).toBeOnTheScreen();
   });
 
   it("creates a chore and reports completion", async () => {

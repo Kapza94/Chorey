@@ -14,6 +14,7 @@ type Props = {
   householdId: string;
   onChildCreated?: (child: CreatedChild) => Promise<void> | void;
   onCreateChild?: (input: CreateChildPayload) => Promise<CreatedChild>;
+  onUpgrade?: () => void;
   onBack?: () => void;
 };
 
@@ -27,23 +28,31 @@ export function ChildSetupScreen({
   householdId,
   onChildCreated,
   onCreateChild = noopCreateChild,
+  onUpgrade,
   onBack,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleCreateChild() {
     setErrorMessage(null);
+    setShowUpgradePrompt(false);
     setIsSubmitting(true);
 
     try {
       const child = await onCreateChild({ householdId, displayName });
       await onChildCreated?.(child);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Child profile could not be created.",
-      );
+      const message =
+        error instanceof Error ? error.message : "Child profile could not be created.";
+
+      if (message === "Upgrade required to add another child.") {
+        setShowUpgradePrompt(true);
+      } else {
+        setErrorMessage(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -84,7 +93,7 @@ export function ChildSetupScreen({
         </Pressable>
       }
       onBack={onBack}
-      title="Add your first child"
+      title="Add child"
     >
       <View
         style={{
@@ -136,6 +145,65 @@ export function ChildSetupScreen({
         >
           {errorMessage}
         </Text>
+      ) : null}
+
+      {showUpgradePrompt ? (
+        <View
+          accessibilityRole="alert"
+          style={{
+            backgroundColor: choreyTheme.colors.primarySoft,
+            borderColor: choreyTheme.colors.borderMedium,
+            borderRadius: choreyTheme.radii.lg,
+            borderWidth: 1,
+            gap: choreyTheme.spacing.md,
+            padding: choreyTheme.spacing.lg,
+          }}
+        >
+          <Text
+            style={{
+              color: choreyTheme.colors.ink1,
+              fontSize: 18,
+              fontWeight: "800",
+            }}
+          >
+            Add more children with Chorey Plus
+          </Text>
+          <Text
+            style={{
+              color: choreyTheme.colors.ink2,
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Free households include one child. Plus unlocks multiple children
+            for the whole household.
+          </Text>
+          <Pressable
+            accessibilityLabel="View upgrade options"
+            accessibilityRole="button"
+            onPress={onUpgrade}
+            style={({ pressed }) => ({
+              alignItems: "center",
+              alignSelf: "flex-start",
+              backgroundColor: pressed
+                ? choreyTheme.colors.primaryPressed
+                : choreyTheme.colors.primary,
+              borderRadius: choreyTheme.radii.pill,
+              paddingHorizontal: choreyTheme.spacing.lg,
+              paddingVertical: choreyTheme.spacing.md,
+            })}
+          >
+            <Text
+              style={{
+                color: choreyTheme.colors.cream1,
+                fontSize: 14,
+                fontWeight: "800",
+              }}
+            >
+              View upgrade options
+            </Text>
+          </Pressable>
+        </View>
       ) : null}
     </SetupScreenLayout>
   );

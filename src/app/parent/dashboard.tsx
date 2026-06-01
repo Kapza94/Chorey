@@ -107,6 +107,12 @@ export default function ParentDashboardRoute() {
         );
         setBucketBalances(nextBalances);
       }}
+      onAddChild={() =>
+        router.push({
+          pathname: "/parent/children/new",
+          params: { childAccessCode, childName, childProfileId, householdId },
+        })
+      }
       onCreateChore={() =>
         router.push({
           pathname: "/parent/chores/new",

@@ -17,6 +17,7 @@ type Props = {
   childAccessCode?: string;
   childName?: string;
   chores?: DashboardChore[];
+  onAddChild?: () => void;
   onApproveChore?: (choreId: string) => void;
   onCreateChore?: () => void;
   onOpenChildAccess?: () => void;
@@ -71,6 +72,7 @@ export function ParentDashboardScreen({
   childAccessCode,
   childName = "Your child",
   chores = [],
+  onAddChild,
   onApproveChore,
   onCreateChore,
   onOpenChildAccess,
@@ -144,6 +146,32 @@ export function ParentDashboardScreen({
           }}
         >
           Create chore
+        </Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityLabel="Add child"
+        accessibilityRole="button"
+        onPress={onAddChild}
+        style={({ pressed }) => ({
+          alignItems: "center",
+          backgroundColor: pressed
+            ? choreyTheme.colors.primarySoft
+            : choreyTheme.colors.surface,
+          borderColor: choreyTheme.colors.borderMedium,
+          borderRadius: choreyTheme.radii.pill,
+          borderWidth: 1,
+          paddingVertical: 14,
+        })}
+      >
+        <Text
+          style={{
+            color: choreyTheme.colors.ink1,
+            fontSize: 15,
+            fontWeight: "800",
+          }}
+        >
+          Add child
         </Text>
       </Pressable>
 

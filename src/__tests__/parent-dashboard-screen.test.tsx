@@ -41,6 +41,16 @@ describe("ParentDashboardScreen", () => {
     expect(onCreateChore).toHaveBeenCalledTimes(1);
   });
 
+  it("starts child creation from the dashboard", () => {
+    const onAddChild = jest.fn();
+
+    render(<ParentDashboardScreen childName="Mina" onAddChild={onAddChild} />);
+
+    fireEvent.press(screen.getByLabelText("Add child"));
+
+    expect(onAddChild).toHaveBeenCalledTimes(1);
+  });
+
   it("shows a newly created chore", () => {
     render(
       <ParentDashboardScreen
