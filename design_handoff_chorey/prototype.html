@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chorey — Interactive prototype</title>
+  <link rel="stylesheet" href="colors_and_type.css">
+  <style>
+    html, body { margin: 0; padding: 0; min-height: 100vh; }
+    body {
+      font-family: var(--font-body);
+      color: var(--fg-1);
+      background: radial-gradient(ellipse at 30% 0%, var(--cream-3), var(--cream-1) 70%);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Index sidebar ── */
+    .sidebar {
+      width: 264px;
+      flex-shrink: 0;
+      box-sizing: border-box;
+      padding: 24px 18px 40px;
+      border-right: 1px solid var(--border);
+      background: var(--cream-3);
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+    }
+    .sb-brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 8px 4px;
+    }
+    .sb-brand img { width: 34px; height: 34px; }
+    .sb-brand .nm {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: 24px; letter-spacing: -0.04em; color: var(--fg-1);
+    }
+    .sb-sub {
+      font-size: 11px; color: var(--fg-3); padding: 0 8px 18px;
+      letter-spacing: 0.02em;
+    }
+    .sb-group {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--fg-3);
+      padding: 16px 10px 6px;
+    }
+    .sb-item {
+      display: flex; align-items: center; gap: 9px;
+      width: 100%; box-sizing: border-box;
+      padding: 9px 10px; border: 0; border-radius: 10px;
+      background: transparent; cursor: pointer;
+      font-family: inherit; font-size: 13.5px; font-weight: 600;
+      color: var(--fg-2); text-align: left;
+      transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
+    }
+    .sb-item:hover { background: var(--cream-1); color: var(--fg-1); }
+    .sb-item.active { background: var(--accent-600); color: var(--cream-4); }
+    .sb-item .n {
+      width: 18px; height: 18px; border-radius: 999px; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700;
+      background: var(--cream-1); color: var(--fg-3);
+    }
+    .sb-item.active .n { background: rgba(255,255,255,0.25); color: var(--cream-4); }
+    .sb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Stage ── */
+    .stage {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: 40px 24px 60px;
+      gap: 18px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .stage-head {
+      text-align: center; max-width: 460px;
+    }
+    .stage-head .title {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 24px; letter-spacing: -0.02em; color: var(--fg-1);
+    }
+    .stage-head .desc {
+      font-size: 13px; color: var(--fg-2); margin-top: 4px; line-height: 1.45;
+    }
+    .phone-wrap { margin-top: 4px; }
+
+    /* ── Mode switcher (the big, obvious nav) ── */
+    #mode-switch {
+      display: inline-flex;
+      gap: 4px;
+      padding: 5px;
+      border-radius: 999px;
+      background: var(--cream-3);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-xs);
+    }
+    .mode-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 999px; border: 0;
+      background: transparent; cursor: pointer;
+      font-family: inherit; font-size: 13.5px; font-weight: 700;
+      color: var(--fg-2); white-space: nowrap;
+      transition: background 140ms var(--ease-out), color 140ms var(--ease-out);
+    }
+    .mode-btn:hover { color: var(--fg-1); }
+    .mode-btn.active { background: var(--accent-600); color: var(--cream-4); }
+    .mode-btn .md { width: 9px; height: 9px; border-radius: 50%; }
+    .stage-foot {
+      font-size: 12px; color: var(--fg-3); max-width: 360px;
+      text-align: center; line-height: 1.45;
+      display: flex; align-items: center; gap: 8px; justify-content: center;
+    }
+    .pill-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border-mid);
+      background: var(--cream-3); color: var(--fg-1);
+      font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+      white-space: nowrap;
+    }
+    .pill-btn:hover { background: var(--cream-1); }
+
+    @media (max-width: 820px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; border-right: 0; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="stage">
+    <div class="stage-head">
+      <div class="title" id="screen-title">Welcome</div>
+      <div class="desc" id="screen-desc">Tap through the flow, or jump to any screen from the list.</div>
+    </div>
+    <div id="mode-switch"></div>
+    <div class="phone-wrap" id="phone"></div>
+    <div class="stage-foot" id="stage-foot"></div>
+  </main>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="ui_kits/_shared/ios-frame.jsx"></script>
+
+  <!-- kid app + shared Icon -->
+  <script type="text/babel" src="ui_kits/kid/components/KidComponents.jsx"></script>
+  <script type="text/babel" src="ui_kits/kid/components/KidHome.jsx"></script>
+  <script type="text/babel" src="ui_kits/kid/components/KidWishlist.jsx"></script>
+  <script type="text/babel" src="ui_kits/kid/components/KidYou.jsx"></script>
+  <script type="text/babel" src="ui_kits/kid/components/KidApp.jsx"></script>
+
+  <!-- parent app -->
+  <script type="text/babel" src="ui_kits/parent/components/ParentComponents.jsx"></script>
+  <script type="text/babel" src="ui_kits/parent/components/ParentKids.jsx"></script>
+  <script type="text/babel" src="ui_kits/parent/components/ParentChores.jsx"></script>
+  <script type="text/babel" src="ui_kits/parent/components/ParentPayments.jsx"></script>
+  <script type="text/babel" src="ui_kits/parent/components/ParentSettings.jsx"></script>
+  <script type="text/babel" src="ui_kits/parent/components/ParentApp.jsx"></script>
+
+  <!-- onboarding -->
+  <script type="text/babel" src="ui_kits/onboarding/OnboardingShared.jsx"></script>
+  <script type="text/babel" src="ui_kits/onboarding/OnboardingWelcome.jsx"></script>
+  <script type="text/babel" src="ui_kits/onboarding/OnboardingParent.jsx"></script>
+  <script type="text/babel" src="ui_kits/onboarding/OnboardingParent2.jsx"></script>
+  <script type="text/babel" src="ui_kits/onboarding/OnboardingKid.jsx"></script>
+
+  <script type="text/babel">
+    const LOGO = 'assets/logo-mark.svg';
+
+    // Screen registry — drives both the sidebar and the stage header.
+    const OB_STEPS = {
+      welcome:   { title: 'Welcome',          desc: 'First launch. Brand, promise, get started.' },
+      idea:      { title: 'The big idea',     desc: 'The 40/40/20 split, explained in one screen.' },
+      role:      { title: 'Choose role',      desc: 'Parent sets up; kid joins with a code.' },
+      p_family:  { title: 'Family setup',     desc: 'Parent name, family name, and country (sets the local currency).' },
+      p_addkid:  { title: 'Add kids',         desc: 'Add one or more kids with a name, age, color.' },
+      p_split:   { title: 'Budget & split',  desc: 'Set the budget cap + cadence, then the 40/40/20 split.' },
+      p_chores:  { title: 'First chores',     desc: 'Quick-pick common chores and rewards.' },
+      p_charity: { title: 'Charities',        desc: 'Choose the causes kids can give to.' },
+      p_done:    { title: 'All set (parent)', desc: 'Summary + the kid join code.' },
+      k_code:    { title: 'Enter code',       desc: 'Kid enters the 6-character join code.' },
+      k_avatar:  { title: 'Pick avatar',      desc: 'Kid picks a color and name.' },
+      k_how:     { title: 'How it works',     desc: 'A friendly recap of spend / save / give.' },
+    };
+
+    function Root() {
+      const [mode, setMode] = React.useState('onboarding'); // onboarding | kid | parent
+      const [step, setStep] = React.useState('welcome');
+      const [kidTab, setKidTab] = React.useState('home');
+      const [parentTab, setParentTab] = React.useState('kids');
+      const [remount, setRemount] = React.useState(0);
+
+      // current registry entry for header
+      let title = '', desc = '';
+      if (mode === 'onboarding') { title = OB_STEPS[step].title; desc = OB_STEPS[step].desc; }
+      if (mode === 'kid') {
+        const m = { home: ['Kid · Home', 'Daily chores + the running 40/40/20 balance. Tap a chore to check it off.'],
+                    wish: ['Kid · Wishlist', 'Goals funded by the Spend bucket, with progress.'],
+                    you:  ['Kid · Profile', 'Locked savings + the chosen charity.'] }[kidTab];
+        title = m[0]; desc = m[1];
+      }
+      if (mode === 'parent') {
+        const m = { kids:     ['Parent · Kids', 'Overview of each kid, approvals, budget & weekly totals.'],
+                    chores:   ['Parent · Chores', 'The chore library + budget-vs-cap. Tap “New” for the add-chore sheet.'],
+                    pay:      ['Parent · Payments', 'Off-app payout tracking. Mark payments as paid; see history.'],
+                    settings: ['Parent · Settings', 'Per-kid budget & cadence, the 40/40/20 split, account.'] }[parentTab];
+        title = m[0]; desc = m[1];
+      }
+
+      // sidebar rendering
+      const goOB = (s) => { setMode('onboarding'); setStep(s); };
+      const goKid = (t) => { setMode('kid'); setKidTab(t); setRemount(r => r + 1); };
+      const goParent = (t) => { setMode('parent'); setParentTab(t); setRemount(r => r + 1); };
+
+      const SbItem = ({ active, n, dot, label, onClick }) => (
+        <button className={'sb-item' + (active ? ' active' : '')} onClick={onClick}>
+          {n != null && <span className="n">{n}</span>}
+          {dot && <span className="sb-dot" style={{ background: dot }} />}
+          <span>{label}</span>
+        </button>
+      );
+
+      React.useEffect(() => {
+        const sb = document.getElementById('sidebar');
+        // header
+        document.getElementById('screen-title').textContent = title;
+        document.getElementById('screen-desc').textContent = desc;
+      }, [title, desc]);
+
+      // app content
+      let phone;
+      if (mode === 'onboarding') {
+        phone = <Onboarding step={step} setStep={setStep} logoSrc={LOGO}
+                  onComplete={(role) => { if (role === 'parent') goParent('kids'); else goKid('home'); }} />;
+      } else if (mode === 'kid') {
+        phone = <KidApp key={'k' + remount + kidTab} initialTab={kidTab} />;
+      } else {
+        phone = <ParentApp key={'p' + remount + parentTab} initialTab={parentTab} />;
+      }
+
+      // foot hint
+      let foot = null;
+      if (mode === 'onboarding' && step === 'welcome') {
+        foot = <span>This is the real flow — every button works. Use the list on the left to jump around.</span>;
+      } else if (mode === 'onboarding') {
+        foot = <><span>Onboarding</span>
+          <button className="pill-btn" onClick={() => goOB('welcome')}>Restart flow</button></>;
+      } else if (mode === 'kid') {
+        foot = <><span>Live kid app</span>
+          <button className="pill-btn" onClick={() => goOB('welcome')}>Back to onboarding</button></>;
+      } else {
+        foot = <><span>Live parent app</span>
+          <button className="pill-btn" onClick={() => goOB('welcome')}>Back to onboarding</button></>;
+      }
+
+      return (
+        <>
+          {/* Sidebar via portal-ish: render into #sidebar */}
+          {ReactDOM.createPortal(
+            <>
+              <div className="sb-brand">
+                <img src={LOGO} alt="" />
+                <span className="nm">chorey</span>
+              </div>
+              <div className="sb-sub">Interactive prototype</div>
+
+              <div className="sb-group">Onboarding</div>
+              {Object.keys(OB_STEPS).map((s, i) => (
+                <SbItem key={s} active={mode === 'onboarding' && step === s}
+                        n={i + 1} label={OB_STEPS[s].title} onClick={() => goOB(s)} />
+              ))}
+
+              <div className="sb-group">Kid app</div>
+              <SbItem active={mode === 'kid' && kidTab === 'home'} dot="var(--allowance-400)" label="Home / earnings" onClick={() => goKid('home')} />
+              <SbItem active={mode === 'kid' && kidTab === 'wish'} dot="var(--allowance-400)" label="Wishlist" onClick={() => goKid('wish')} />
+              <SbItem active={mode === 'kid' && kidTab === 'you'}  dot="var(--allowance-400)" label="Profile / giving" onClick={() => goKid('you')} />
+
+              <div className="sb-group">Parent app</div>
+              <SbItem active={mode === 'parent' && parentTab === 'kids'}     dot="var(--savings-400)" label="Kids overview" onClick={() => goParent('kids')} />
+              <SbItem active={mode === 'parent' && parentTab === 'chores'}   dot="var(--savings-400)" label="Chore library" onClick={() => goParent('chores')} />
+              <SbItem active={mode === 'parent' && parentTab === 'pay'}      dot="var(--savings-400)" label="Payments dashboard" onClick={() => goParent('pay')} />
+              <SbItem active={mode === 'parent' && parentTab === 'settings'} dot="var(--savings-400)" label="Settings / budget / split" onClick={() => goParent('settings')} />
+            </>,
+            document.getElementById('sidebar')
+          )}
+
+          {/* Mode switcher via portal — the obvious top-level nav */}
+          {ReactDOM.createPortal(
+            <>
+              <button className={'mode-btn' + (mode === 'onboarding' ? ' active' : '')}
+                      onClick={() => goOB('welcome')}>Onboarding</button>
+              <button className={'mode-btn' + (mode === 'kid' ? ' active' : '')}
+                      onClick={() => goKid('home')}>
+                <span className="md" style={{ background: mode === 'kid' ? 'var(--cream-4)' : 'var(--allowance-400)' }}/>
+                Kid app
+              </button>
+              <button className={'mode-btn' + (mode === 'parent' ? ' active' : '')}
+                      onClick={() => goParent('kids')}>
+                <span className="md" style={{ background: mode === 'parent' ? 'var(--cream-4)' : 'var(--savings-400)' }}/>
+                Parent app
+              </button>
+            </>,
+            document.getElementById('mode-switch')
+          )}
+
+          {/* Foot via portal */}
+          {ReactDOM.createPortal(foot, document.getElementById('stage-foot'))}
+
+          <IOSDevice width={390} height={840}>
+            {phone}
+          </IOSDevice>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('phone')).render(<Root />);
+  </script>
+</body>
+</html>

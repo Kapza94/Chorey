@@ -1,0 +1,347 @@
+/* ============================================================
+   SPROUT — Core design tokens
+   Creamy off-white light mode + warm-dark dark mode,
+   dusty pastel accents tied to the 40/40/20 buckets.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  /* ----- Brand neutrals (cream family) -----
+     Backgrounds are warm off-whites, never pure #FFF.
+     Numbered low→high elevation: bg-0 deepest tint, bg-3 lightest. */
+  --cream-0:  #ECE3D1;   /* deepest cream — section divider / sunken surface */
+  --cream-1:  #F1E9D9;   /* sunken */
+  --cream-2:  #F6EFE3;   /* canvas — the page background */
+  --cream-3:  #FBF7EE;   /* raised — cards, sheets */
+  --cream-4:  #FFFCF5;   /* highest — modals, tooltips */
+
+  /* Warm dark-mode neutrals — coffee-bean browns, never blue-black */
+  --ink-0:    #14110D;   /* deepest */
+  --ink-1:    #1C1814;   /* canvas (dark mode page) */
+  --ink-2:    #25201A;   /* raised */
+  --ink-3:    #2F2922;   /* highest */
+  --ink-4:    #3B342B;   /* hairline / border on dark */
+
+  /* ----- Foreground (text) — warm near-blacks, never #000 ----- */
+  --fg-1:     #2A2018;   /* primary text */
+  --fg-2:     #5C4E3F;   /* secondary text */
+  --fg-3:     #8A7B6A;   /* tertiary / meta */
+  --fg-4:     #B5A693;   /* disabled / placeholder */
+
+  /* On-dark foreground */
+  --fg-1-dark: #F4ECDC;
+  --fg-2-dark: #C8B9A2;
+  --fg-3-dark: #97876F;
+  --fg-4-dark: #5F5446;
+
+  /* ----- The 40/40/20 trio — load-bearing pastels -----
+     Allowance (spend) = warm peach.
+     Savings (locked)  = cool lilac.
+     Giving (charity)  = sage green.
+     Each comes in 4 ramps so we can build solids, soft tints, and borders. */
+
+  /* Allowance / peach — 40% */
+  --allowance-100: #FBEAE0;
+  --allowance-200: #F4CDB9;
+  --allowance-400: #E8B4A0;    /* primary swatch */
+  --allowance-600: #C58A72;    /* text-on-cream readable */
+  --allowance-800: #7E4F3A;    /* deep, for type or borders */
+
+  /* Savings / lilac — 40% */
+  --savings-100:   #ECE5F5;
+  --savings-200:   #D9CDEC;
+  --savings-400:   #C8B8E0;    /* primary swatch */
+  --savings-600:   #8E7AB5;
+  --savings-800:   #4F4078;
+
+  /* Giving / sage — 20% */
+  --giving-100:    #E4EEE5;
+  --giving-200:    #C9DDCD;
+  --giving-400:    #A8C9B5;    /* primary swatch */
+  --giving-600:    #6F9881;
+  --giving-800:    #3F5E4C;
+
+  /* ----- Functional accent — used sparingly for primary CTA ----- */
+  --accent-100:    #FBEAE0;
+  --accent-400:    #E8B4A0;
+  --accent-600:    #C58A72;    /* primary button bg (same family as allowance) */
+  --accent-800:    #7E4F3A;
+
+  /* ----- Semantic ----- */
+  --success-100:   #E4EEE5;
+  --success-600:   #6F9881;
+  --warning-100:   #FAEEDC;
+  --warning-600:   #C28F3F;
+  --danger-100:    #F5DDDC;
+  --danger-600:    #B26B65;
+  --info-100:      #DEE9EE;
+  --info-600:      #6E8E9D;
+
+  /* ----- Borders & hairlines ----- */
+  --border-soft:   rgba(42, 32, 24, 0.06);
+  --border-mid:    rgba(42, 32, 24, 0.12);
+  --border-strong: rgba(42, 32, 24, 0.20);
+
+  /* ----- Shadows — warm, low, never blue-tinted -----
+     Use sparingly. Most surfaces sit on a single hairline only. */
+  --shadow-xs: 0 1px 0 rgba(42, 32, 24, 0.04);
+  --shadow-sm: 0 1px 2px rgba(42, 32, 24, 0.05), 0 1px 1px rgba(42, 32, 24, 0.04);
+  --shadow-md: 0 4px 12px rgba(42, 32, 24, 0.06), 0 1px 2px rgba(42, 32, 24, 0.04);
+  --shadow-lg: 0 12px 32px rgba(42, 32, 24, 0.10), 0 2px 6px rgba(42, 32, 24, 0.05);
+  --shadow-inset: inset 0 1px 0 rgba(255, 252, 245, 0.6);
+
+  /* ----- Radii — soft but never candy-pill on cards ----- */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;    /* default card / input */
+  --radius-lg: 20px;    /* sheets, big buckets */
+  --radius-xl: 28px;    /* hero cards */
+  --radius-pill: 999px; /* buttons only */
+
+  /* ----- Spacing — 4pt grid ----- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ----- Typography families -----
+     Display: Bricolage Grotesque — rounded geometric sans with a touch of
+              warmth and quirk. Variable opsz so it scales beautifully from
+              headlines (~20px) up to giant hero balances (~88px).
+     Body:    Plus Jakarta Sans — friendly humanist sans for UI, paragraphs, labels.
+     Mono:    JetBrains Mono — receipts, transaction IDs, debug.
+     Numeric is the body sans with tabular-nums for money. */
+  --font-display: "Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body:    "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ----- Type scale — fluid-ish but explicit ----- */
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;
+  --text-md:   18px;
+  --text-lg:   22px;
+  --text-xl:   28px;
+  --text-2xl:  36px;
+  --text-3xl:  48px;
+  --text-4xl:  64px;
+  --text-5xl:  88px;
+
+  /* ----- Line height ----- */
+  --lh-tight:  1.05;
+  --lh-snug:   1.20;
+  --lh-normal: 1.45;
+  --lh-loose:  1.65;
+
+  /* ----- Letter spacing ----- */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:  0.04em;
+  --tracking-caps:  0.10em;
+
+  /* ----- Motion ----- */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* small bounce — chore-check */
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 360ms;
+
+  /* ----- Page semantics (light mode, default) ----- */
+  --bg-page:    var(--cream-2);
+  --bg-raised:  var(--cream-3);
+  --bg-sunken:  var(--cream-1);
+  --bg-modal:   var(--cream-4);
+  --fg:         var(--fg-1);
+  --fg-muted:   var(--fg-2);
+  --fg-faint:   var(--fg-3);
+  --border:     var(--border-soft);
+  --border-hover: var(--border-mid);
+}
+
+/* ============================================================
+   DARK MODE — warm-dark, not blue. Pastels stay pastel.
+   ============================================================ */
+:root[data-theme="dark"],
+.dark {
+  --bg-page:    var(--ink-1);
+  --bg-raised:  var(--ink-2);
+  --bg-sunken:  var(--ink-0);
+  --bg-modal:   var(--ink-3);
+  --fg:         var(--fg-1-dark);
+  --fg-muted:   var(--fg-2-dark);
+  --fg-faint:   var(--fg-3-dark);
+  --border:     rgba(244, 236, 220, 0.08);
+  --border-hover: rgba(244, 236, 220, 0.16);
+
+  /* Shadows fade out almost entirely on dark; rely on color contrast */
+  --shadow-xs: 0 1px 0 rgba(0,0,0,0.20);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.32);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.40);
+
+  /* The 40/40/20 swatches stay constant — they are brand colors,
+     not theme colors. We only shift their 100 tints to dark variants
+     for soft-tint backgrounds. */
+  --allowance-100: #3A2A22;
+  --savings-100:   #2A2536;
+  --giving-100:    #243029;
+  --success-100:   #243029;
+  --warning-100:   #3A2E1E;
+  --danger-100:    #3A2424;
+  --info-100:      #1F2A30;
+}
+
+/* ============================================================
+   BASE — applied at the root of any HTML using this system.
+   ============================================================ */
+html, body {
+  background: var(--bg-page);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================================
+   SEMANTIC TYPE TOKENS
+   Use these classes (or copy the styles) rather than re-rolling.
+   ============================================================ */
+
+.t-display {                       /* huge balances, splash numbers */
+  font-family: var(--font-display);
+  font-size: var(--text-5xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  font-weight: 600;
+}
+.t-h1 {                            /* page titles */
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  font-weight: 600;
+}
+.t-h2 {                            /* section titles */
+  font-family: var(--font-body);
+  font-size: var(--text-xl);
+  line-height: var(--lh-snug);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+.t-h3 {                            /* card titles */
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: var(--lh-snug);
+  font-weight: 700;
+}
+.t-body {                          /* paragraph */
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  font-weight: 400;
+}
+.t-body-sm {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  font-weight: 400;
+}
+.t-label {                         /* form labels, list meta */
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+}
+.t-caption {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: var(--lh-snug);
+  color: var(--fg-muted);
+}
+.t-overline {                      /* tiny caps labels */
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--fg-faint);
+}
+.t-money {                         /* dollar amounts in lists */
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+.t-money-hero {                    /* the big balance number */
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4xl);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  font-weight: 700;
+}
+.t-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.t-serif-italic {                  /* accent in headlines: "great" job */
+  font-family: var(--font-display);
+  font-weight: 500;
+  color: var(--accent-600);
+}
+
+/* ============================================================
+   SHARED PRIMITIVES — reusable across the system.
+   ============================================================ */
+
+.s-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+.s-card-hero {
+  background: var(--bg-raised);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+.s-divider {
+  height: 1px;
+  background: var(--border);
+  border: 0;
+}
+.s-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.s-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Subtle motion utilities */
+.s-press {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.s-press:active {
+  transform: scale(0.97);
+}

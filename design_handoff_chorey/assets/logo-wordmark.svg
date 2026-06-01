@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80" width="300" height="80" fill="none">
+  
+  <g transform="translate(8,8)" stroke-width="10" stroke-linecap="round" fill="none">
+    <circle cx="32" cy="32" r="20" pathLength="360" stroke="#E8B4A0" stroke-dasharray="100 260" transform="rotate(38 32 32)"></circle>
+    <circle cx="32" cy="32" r="20" pathLength="360" stroke="#C8B8E0" stroke-dasharray="100 260" transform="rotate(156 32 32)"></circle>
+    <circle cx="32" cy="32" r="20" pathLength="360" stroke="#A8C9B5" stroke-dasharray="48 312" transform="rotate(274 32 32)"></circle>
+  </g>
+  
+  <text x="84" y="54" font-family="Bricolage Grotesque, Plus Jakarta Sans, sans-serif" font-weight="800" font-size="46" fill="#2A2018" letter-spacing="-2">chorey</text>
+</svg>

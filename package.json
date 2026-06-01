@@ -16,6 +16,9 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
+    "@expo-google-fonts/jetbrains-mono": "^0.4.1",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/ui": "~56.0.14",
     "@supabase/supabase-js": "^2.106.2",
     "expo": "~56.0.6",
