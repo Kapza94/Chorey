@@ -1,6 +1,9 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
-import { ParentSectionScreen } from "@/features/parent-navigation/parent-section-screen";
+import type { CreatedChore } from "@/features/chores/chore-actions";
+import { listChoresForHousehold } from "@/features/chores/default-chore-actions";
+import { ParentChoresScreen } from "@/features/parent-chores/parent-chores-screen";
 
 export default function ParentChoresRoute() {
   const router = useRouter();
@@ -10,11 +13,41 @@ export default function ParentChoresRoute() {
     childProfileId?: string;
     householdId?: string;
   }>();
+  const childName = Array.isArray(params.childName)
+    ? params.childName[0]
+    : params.childName;
+  const householdId = Array.isArray(params.householdId)
+    ? params.householdId[0]
+    : params.householdId;
+  const [chores, setChores] = useState<CreatedChore[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+
+      if (!householdId) {
+        return;
+      }
+
+      listChoresForHousehold(householdId).then((nextChores) => {
+        if (mounted) {
+          setChores(nextChores);
+        }
+      });
+
+      return () => {
+        mounted = false;
+      };
+    }, [householdId]),
+  );
 
   return (
-    <ParentSectionScreen
-      currentTab="chores"
-      description="Review chore work, add new chores, and keep the household routine moving."
+    <ParentChoresScreen
+      childName={childName}
+      chores={chores}
+      onCreateChore={() =>
+        router.push({ pathname: "/parent/chores/new", params })
+      }
       onOpenChildren={() =>
         router.push({ pathname: "/parent/children", params })
       }
@@ -24,7 +57,6 @@ export default function ParentChoresRoute() {
       onOpenSettings={() =>
         router.push({ pathname: "/parent/settings", params })
       }
-      title="Chores"
     />
   );
 }
