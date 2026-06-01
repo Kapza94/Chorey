@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { ParentSectionScreen } from "@/features/parent-navigation/parent-section-screen";
+import { ParentChildrenScreen } from "@/features/parent-children/parent-children-screen";
 
 export default function ParentChildrenRoute() {
   const router = useRouter();
@@ -10,21 +10,30 @@ export default function ParentChildrenRoute() {
     childProfileId?: string;
     householdId?: string;
   }>();
+  const childAccessCode = Array.isArray(params.childAccessCode)
+    ? params.childAccessCode[0]
+    : params.childAccessCode;
+  const childName = Array.isArray(params.childName)
+    ? params.childName[0]
+    : params.childName;
 
   return (
-    <ParentSectionScreen
-      currentTab="children"
-      description="Manage child profiles and access codes from one place."
+    <ParentChildrenScreen
+      childAccessCode={childAccessCode}
+      childName={childName}
+      onAddChild={() =>
+        router.push({ pathname: "/parent/children/new", params })
+      }
       onOpenChores={() =>
         router.push({ pathname: "/parent/chores", params })
       }
+      onOpenChildAccess={() => router.push("/child/access")}
       onOpenDashboard={() =>
         router.push({ pathname: "/parent/dashboard", params })
       }
       onOpenSettings={() =>
         router.push({ pathname: "/parent/settings", params })
       }
-      title="Children"
     />
   );
 }
