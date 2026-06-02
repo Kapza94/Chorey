@@ -1,3 +1,5 @@
+import { currencyForCountry, type CurrencyCode } from "@/features/money/currency";
+
 export type SettlementFrequency = "weekly" | "monthly";
 
 type HouseholdClient = {
@@ -7,6 +9,10 @@ type HouseholdClient = {
 export type CreateHouseholdInput = {
   name: string;
   settlementFrequency?: SettlementFrequency;
+  /** ISO country code captured at registration; sets the family currency. */
+  country?: string;
+  /** explicit override; defaults to the currency for `country`. */
+  currency?: CurrencyCode;
 };
 
 export type CreatedHousehold = {
@@ -26,12 +32,21 @@ export function createHouseholdActions(
         throw new Error("Household name is required.");
       }
 
+      const payload: Record<string, unknown> = {
+        name,
+        settlement_frequency: input.settlementFrequency ?? "weekly",
+      };
+
+      // Only set locale columns when a country is supplied, so callers that
+      // create a household without onboarding locale keep the table defaults.
+      if (input.country) {
+        payload.country = input.country;
+        payload.currency = input.currency ?? currencyForCountry(input.country);
+      }
+
       const result = await client
         .from("households")
-        .insert({
-          name,
-          settlement_frequency: input.settlementFrequency ?? "weekly",
-        })
+        .insert(payload)
         .select("id, name")
         .single();
 

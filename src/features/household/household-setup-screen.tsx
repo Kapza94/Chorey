@@ -11,13 +11,13 @@ import { choreyTheme } from "@/theme/chorey-theme";
 
 type Props = {
   onCreateHousehold?: (
-    input: Required<CreateHouseholdInput>,
+    input: CreateHouseholdInput,
   ) => Promise<CreatedHousehold> | CreatedHousehold;
   onHouseholdCreated?: (household: CreatedHousehold) => void;
   onBack?: () => void;
 };
 
-const noopCreate = (input: Required<CreateHouseholdInput>) => ({
+const noopCreate = (input: CreateHouseholdInput) => ({
   id: "preview-household",
   name: input.name,
 });

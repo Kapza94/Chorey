@@ -51,6 +51,21 @@ describe("household creation actions", () => {
     });
   });
 
+  it("captures country and derives the family currency", async () => {
+    const client = createClient();
+    const actions = createHouseholdActions(client, "parent-1");
+
+    await actions.createHousehold({ name: "Kapza home", country: "RS" });
+
+    const householdsTable = client.from.mock.results[0]?.value;
+    expect(householdsTable.insert).toHaveBeenCalledWith({
+      name: "Kapza home",
+      settlement_frequency: "weekly",
+      country: "RS",
+      currency: "RSD",
+    });
+  });
+
   it("rejects an empty household name before writing", async () => {
     const client = createClient();
     const actions = createHouseholdActions(client, "parent-1");
