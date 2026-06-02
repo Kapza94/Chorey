@@ -625,18 +625,32 @@ function OBAddKid({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography } = useChoreyTheme();
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [tone, setTone] = useState<KidTone>("allowance");
 
-  const addKid = () => {
-    if (!name.trim()) return;
+  const hasDraft = !!name.trim();
+  const canContinue = hasDraft || data.kids.length > 0;
+
+  // Commit the in-progress kid into the list. Returns the updated count.
+  const commitDraft = (): boolean => {
+    if (!name.trim()) return false;
     patch({ kids: [...data.kids, { name: name.trim(), age, tone }] });
+    return true;
+  };
+
+  const handleAddAnother = () => {
+    if (!commitDraft()) return;
     setName("");
     setAge("");
     const idx = KID_TONES.findIndex((t) => t.tone === tone);
     setTone(KID_TONES[(idx + 1) % KID_TONES.length].tone);
+  };
+
+  const handleContinue = () => {
+    commitDraft(); // keep the filled-in kid; no-op if the form is empty
+    onNext();
   };
 
   return (
@@ -644,12 +658,24 @@ function OBAddKid({
       onBack={onBack}
       progress={{ index: 3, total: 4 }}
       footer={
-        <OBPrimary onPress={onNext} disabled={data.kids.length === 0}>
-          {data.kids.length ? "Continue" : "Add a kid to continue"}
-        </OBPrimary>
+        <>
+          <OBPrimary onPress={handleContinue} disabled={!canContinue}>
+            Continue
+          </OBPrimary>
+          {hasDraft ? (
+            <OBSecondary onPress={handleAddAnother}>+ Add another kid</OBSecondary>
+          ) : null}
+        </>
       }
     >
-      <OBTitle title="Add your kids." subtitle="Add one or more. They'll each get a join code." />
+      <OBTitle
+        title={data.kids.length ? "Add another kid." : "Add your kid."}
+        subtitle={
+          data.kids.length
+            ? "Fill in their details, then Continue — or add one more."
+            : "Fill in their details, then Continue. You can add another after."
+        }
+      />
 
       {data.kids.length > 0 ? (
         <View style={{ gap: 8, marginBottom: 16 }}>
@@ -670,14 +696,7 @@ function OBAddKid({
       >
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
           <View style={{ flex: 2 }}>
-            <OBField
-              label="Name"
-              value={name}
-              onChange={setName}
-              placeholder="Kid's name"
-              returnKeyType="done"
-              onSubmitEditing={addKid}
-            />
+            <OBField label="Name" value={name} onChange={setName} placeholder="Kid's name" />
           </View>
           <View style={{ flex: 1 }}>
             <OBField
@@ -690,37 +709,17 @@ function OBAddKid({
           </View>
         </View>
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>Color</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", gap: 10 }}>
           {KID_TONES.map((t) => (
-            <ColorSwatch key={t.tone} tone={t.tone} label={t.label} selected={tone === t.tone} onPress={() => setTone(t.tone)} />
+            <ColorSwatch
+              key={t.tone}
+              tone={t.tone}
+              label={t.label}
+              selected={tone === t.tone}
+              onPress={() => setTone(t.tone)}
+            />
           ))}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={data.kids.length ? "Add another" : "Add kid"}
-          onPress={addKid}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            paddingVertical: 12,
-            borderRadius: 999,
-            borderWidth: 1.5,
-            borderStyle: "dashed",
-            borderColor: palette.border.mid,
-          }}
-        >
-          <Plus size={16} color={name.trim() ? scheme.fg : scheme.fgDisabled} strokeWidth={2} />
-          <Text
-            style={[
-              typography.text.label,
-              { color: name.trim() ? scheme.fg : scheme.fgDisabled },
-            ]}
-          >
-            Add {data.kids.length ? "another" : "kid"}
-          </Text>
-        </Pressable>
       </View>
     </OBShell>
   );

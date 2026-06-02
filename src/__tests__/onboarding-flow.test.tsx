@@ -28,9 +28,8 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText(/RSD \(дин\)/)).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue"));
 
-    // Add a kid
+    // Add a kid — the bottom Continue commits the filled-in kid and proceeds
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
-    fireEvent.press(screen.getByLabelText("Add kid"));
     fireEvent.press(screen.getByText("Continue"));
 
     // Budget & split — default 40/40/20
@@ -66,6 +65,21 @@ describe("OnboardingFlow", () => {
     expect(result.chores).toHaveLength(1);
     expect(result.charities).toEqual(["City Food Bank"]);
     expect(result.joinCode).toBe("CHRIVE");
+  });
+
+  it("commits a kid and offers adding another (no add-kid button)", () => {
+    render(<OnboardingFlow initialStep="p_addkid" />);
+
+    // No standalone "Add kid" affordance; the bottom button is just Continue.
+    expect(screen.queryByLabelText("Add kid")).toBeNull();
+
+    fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
+    // "Add another kid" appears once a name is entered
+    fireEvent.press(screen.getByText("+ Add another kid"));
+
+    // Mia is committed (shows in the list) and the form resets for the next kid
+    expect(screen.getByText("Add another kid.")).toBeOnTheScreen();
+    expect(screen.getByText("Mia")).toBeOnTheScreen();
   });
 
   it("auto-balances Save when Spend changes in the split editor", () => {
