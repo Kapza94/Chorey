@@ -1,126 +1,62 @@
 # Chorey Morning Handover
 
-Last updated: Monday, June 1, 2026 (late night), Europe/Belgrade.
-Session focus: **adopting the finished Chorey design** from `design_handoff_chorey/` (carbon-copy re-skin + the product logic behind it).
+Last updated: Tuesday, June 2, 2026 (late night), Europe/Belgrade.
+Session focus: built the **entire Chorey visual redesign** from `design_handoff_chorey/` — onboarding, kid app, parent app, light + dark mode.
 
-## Read This First (TL;DR)
+## ⏰ FIRST THING TOMORROW (before building anything)
 
-We started the design adoption. Tonight we (1) consolidated all pre-design feature
-work into `dev`, (2) branched a clean redesign branch off it, and (3) built the
-**foundation**: the full design-token system, theme + font hooks, and the core
-money logic (currency formatting + configurable 40/40/20 split).
+**Remind Luka to walk through the whole app in the simulator and actually test it.**
+Last night was late and he hadn't done much testing yet. Do a real run-through —
+onboarding (both parent + kid branches), the kid tabs, the parent tabs, and a
+dark-mode pass — and note anything that looks/feels off **before** starting new
+work. Then kick off the next phase together.
 
-Everything is committed. Working tree is clean. **Nothing is pushed to `origin` yet.**
+How to run + test:
+- Start: `npx expo start -c` (the `-c` clears cache; needed if fonts/routes seem stale). Then `r` in Metro to reload.
+- The app now **boots into the new onboarding**. Finish as a parent → lands on the new Parent app; finish as a kid → lands on the new Kid app.
+- Dark mode: there is **no in-app toggle** (by design it follows the phone). To test, toggle the simulator appearance: **Features → Toggle Appearance** or **⇧⌘A**.
 
-We stopped at a decision point: **what to build next** (see "Resume Here").
+## Where everything stands
 
-## Git State
+**Branch:** `feature/design-system-redesign` (off `dev`). Working tree clean. **Nothing pushed to origin yet.**
 
-- **Current branch:** `feature/design-system-redesign` (branched off `dev`). No upstream set — not pushed.
-- **`dev` now contains all pre-design work.** Tonight we merged three previously-unmerged feature branches into `dev`, resolving real conflicts in the parent/child dashboard files by **keeping both features** (giving + settlement + spend-wishlist all coexist):
-  - `feature/giving-options`
-  - `feature/settlement-foundation`
-  - `feature/spend-wishlist`
-  - (`feature/entitlements` and the parent-tab/navigation branches were already in `dev`.)
-- Recent commits on `feature/design-system-redesign`:
-  - `92fb6e1 feat: add locale currency formatter and configurable 40/40/20 split`
-  - `1c150ae feat: port Chorey design tokens, theme hook, and font loading`
-  - `94a0b43 Merge feature/spend-wishlist into dev`
-  - `d675df4 Merge feature/settlement-foundation into dev`
-  - `094f24a Merge feature/giving-options into dev`
+The whole **visual redesign is DONE** and every original build-checklist item is complete. Typecheck clean; **160 tests across 39 suites all pass** (`npx jest`).
 
-> If we want the merged `dev` and the redesign branch on the remote, push both
-> (not done yet, intentionally): `git push -u origin dev` and
-> `git push -u origin feature/design-system-redesign`.
+| Build-order item | State |
+|---|---|
+| Theme tokens + fonts (Bricolage/Jakarta/JetBrains) + Lucide | ✅ |
+| 40/40/20 logic + locked savings + configurable split | ✅ |
+| Currency locale formatter (replaces `$`; USD/EUR/GBP/RSD) | ✅ |
+| Supabase schema (country/currency, split, budget/cadence, payouts) | ✅ migration written |
+| Kid app: Home → Wishlist → You | ✅ |
+| Parent app: Kids → Payments → Chores → Settings | ✅ |
+| Onboarding (12 screens, parent + kid branches) | ✅ |
+| Dark-mode pass | ✅ |
 
-## What's Done This Session
+Recent commits (newest first): `a6771d7` dark-mode pass · `70381c0` onboarding add-kid redesign · `1fb7a57` boot into onboarding + walkable home routes · `141f25a` onboarding flow · Parent tabs (`edef59e`/`b2359bd`/`7b0a2e2`/`9c70cc9`) · Kid app (`411e206`/`2c87c24`) · data model (`99d7bd1`) · money utils (`92fb6e1`) · tokens (`1c150ae`).
 
-### Step 1 — Read the handoff ✅
-Read `design_handoff_chorey/README.md`, `colors_and_type.css`, and `CLAUDE_CODE_PROMPT.md`.
-Design is authoritative; we replace existing logic where it differs.
+## ⚠️ The big thing left: "make it real" (the wiring)
 
-### Step 2 — Token system + hooks + fonts ✅ (committed `1c150ae`)
-- **`src/theme/chorey-theme.ts`** — single source of truth. Full design tokens:
-  cream 0–4 + ink 0–4 ramps, fg/fgDark text ramps, the **40/40/20 trio**
-  (allowance/savings/giving, each `100/200/400/600/800` + `tintDark`), accent,
-  semantic, borders, radii, 4-pt spacing, type presets (`typography.text.*`),
-  warm RN shadows (light/dark), motion (bezier easings + 140/220/360 durations),
-  and light/dark `schemes`.
-  - **Legacy keys preserved** (`colors`, `radii`, `spacing`, `shadows`, `buckets`)
-    but remapped to design-authoritative values so the ~15 existing screens keep
-    compiling untouched. Notably **`colors.primary` is now peach `#C58A72`** (was
-    the old green) and surfaces use the exact cream ramp.
-- **`src/theme/use-chorey-theme.ts`** — `useChoreyTheme(override?)`: returns all
-  static tokens + the `scheme` resolved for the device light/dark mode
-  (`scheme`, `mode`, `isDark`). Pull surfaces/text/borders from `scheme`; pull
-  the brand trio + type presets from the static tokens.
-- **`src/theme/use-chorey-fonts.ts`** — loads Bricolage Grotesque, Plus Jakarta
-  Sans, JetBrains Mono and registers them under the short family names the theme
-  uses (e.g. `Bricolage_700Bold`, `Jakarta_400Regular`). Never blocks on font error.
-- **`src/app/_layout.tsx`** — gates the splash screen until fonts load (no font swap).
-- Deps added: `@expo-google-fonts/{bricolage-grotesque,plus-jakarta-sans,jetbrains-mono}`.
-  `lucide-react-native` already present; verified all 13 design-referenced icons export.
+The app is a **beautiful showroom**: every screen looks and works, but **nothing is saved to the database yet**, and the numbers in the kid/parent apps are **stand-in sample data**, not real. Luka understands this in plain terms.
 
-### Step 3 (logic half) — Money model ✅ (committed `92fb6e1`)
-- **`src/features/money/currency.ts`** — replaces the hard-coded `$`.
-  `currencyForCountry(countryCode)` + `formatMoney(cents, currency)` +
-  `formatMoneyDelta`. Verified: USD `$25.00`, EUR `€25,00`, RSD `1.500 дин`
-  (0 decimals, symbol after). Amounts stay stored as integer **cents**.
-- **`src/features/money/split.ts`** — configurable 40/40/20. `DEFAULT_SPLIT`,
-  `balanceSplit(spend, give)` (**Save auto-balances**, never negative, step 5),
-  `isValidSplit`, `splitCents(cents, split)` (remainder-safe, generalizes the old
-  fixed `splitRewardCents`). Savings is conceptually **locked** (no spend path).
-- Tests: `src/__tests__/currency.test.ts`, `src/__tests__/split.test.ts`.
+This is the agreed **next phase** and the headline task. It needs Luka's explicit
+**"go"** because step 1 changes his **live Supabase database**:
 
-## Verification
+1. **Apply the data-model migration** to the live project — `supabase/migrations/20260602080000_design_data_model.sql` (adds country/currency + split to households, budget/cadence/age/tone to child_profiles, and the `payouts` table). It has NOT been applied to any DB yet (no local Docker this session). Can apply via the Supabase MCP `apply_migration` — but confirm with Luka first; explain each step since he's non-technical.
+2. **Onboarding persistence** — make `onComplete` actually create the household (+country/currency/split/budget/cadence), the kid(s), the picked chores, and the charities in Supabase, instead of the in-memory handoff.
+3. **Real data in the apps** — point the parent route at `ParentApp` fed by live per-kid aggregates (earned/allowance/savings/giving, chores done/total, pending approvals, assigned-vs-budget), and the kid route at real ledger/chore/wishlist data (the kid `/child/dashboard` route is already wired to `KidApp` from real data; the seeded `/child/home` + `/parent/home` are preview-only).
 
-- `npx tsc --noEmit` → clean.
-- `npx jest` → **all green** (34 suites / 129 tests as of the last run; re-run to confirm).
-- Has NOT been launched in a simulator this session — only typecheck + tests.
-  Worth a `expo start` smoke test in the morning to see the peach CTA / fonts live.
+### Smaller follow-ups (do alongside the wiring)
+- **Premium kid gating:** onboarding's "+ Add another kid" should respect the plan (free = 1 kid; the backend `canAddChild` already enforces it, the UI doesn't).
+- **Kid "Add a wish" / "suggest giving" inputs** aren't in the new Kid UI yet (the old `ChildDashboardScreen` that had them is now orphaned/unused).
+- **In-app dark-mode toggle:** Luka declined for now — the "Dark mode · Auto" row in Parent Settings is a static label, not wired. Leave as-is unless asked.
 
-## Resume Here (the open decision)
+## How the preview wiring works (so you don't get confused)
+- Entry `src/app/index.tsx` → `OnboardingFlow`; on finish it stashes the result in `src/features/onboarding/onboarding-handoff.ts` (in-memory) and routes to `/parent/home` or `/child/home`.
+- `/parent/home` + `/child/home` render the real `ParentApp`/`KidApp` **seeded from that handoff with light sample activity** — this is preview plumbing so the redesign is walkable without the DB. Replace with real data in the wiring phase.
 
-Step 3 still needs **Supabase persistence**, and Step 4 (screen rebuilds) hasn't
-started. We paused to choose the next chunk. Options on the table:
-
-1. **Kid Home screen (Step 4 — "the heart").** Highest visible value. Rebuild
-   pixel-faithful: header + streak chip, hero balance card, 3 bucket cards
-   (Save shows a lock), Today chore list with the **220ms spring** check-off that
-   live-recomputes the hero balance + buckets. Use the new theme + `splitCents` +
-   `formatMoney`. Note: design splits the Kid app into 3 tabs (Home/Wishlist/You),
-   so this also implies starting the Kid tab nav.
-2. **Supabase data model (finish Step 3).** One migration adding: `households`
-   → `country`, `currency`, `split_spend/save/give`; `child_profiles` → `age`,
-   `tone`, `budget_cents`, `cadence` (reuse `settlement_frequency` enum =
-   weekly|monthly); new **`payouts`** table (`household_id`, `child_profile_id`,
-   `amount_cents`, `method` cash|bank_transfer|other, `paid_at`). Plus actions +
-   SQL tests. Less visible but unblocks Parent Payments/Settings.
-3. **Country/currency context.** Smaller slice: a `CurrencyProvider` + `useCurrency()`
-   so every screen formats in the family currency; sets up the registration country step.
-
-**Recommendation:** do #2 (data model) briefly to unblock real data, then #1
-(Kid Home) — OR just do #1 against client-computed/mock data if we want a visual
-win first. Your call in the morning.
-
-## Build-Order Checklist (from the handoff prompt)
-
-- [x] Theme/tokens ported + fonts + Lucide wired
-- [~] 40/40/20 derive logic + locked savings (logic done; locked-savings UI pending)
-- [x] Currency locale formatter (replaces `$`)
-- [ ] Supabase schema: kids(budget, cadence), split, country/currency, payouts(amount, method, date)
-- [ ] Kid: Home → Wishlist → You
-- [ ] Parent: Kids → Payments → Chores → Settings
-- [ ] Onboarding 12 screens (incl. country step)
-- [ ] Dark mode pass
-
-## Gotchas / Notes
-
-- **The project directory name has a trailing space**: `/Users/kapza/Documents/Projects/Chorey ` (note the space). Plain `cd .../Chorey` fails — quote the path with the trailing space.
-- The HTML/JSX in `design_handoff_chorey/` is **design reference only** — match
-  visuals/copy/spacing/motion; do NOT paste the Babel/`window` scaffolding or iOS frame. Rebuild natively.
-- Keep the existing Supabase auth/data layer; swap presentation + the logic noted above.
-- Theme font-family strings in `chorey-theme.ts` MUST stay in sync with the keys
-  registered in `use-chorey-fonts.ts`.
-- Use cream surfaces (never pure white), warm-dark (never blue-black), tabular
-  figures for money, Lucide icons (no emoji).
+## Gotchas
+- **Project dir name has a trailing space:** `/Users/kapza/Documents/Projects/Chorey ` — quote it; plain `cd .../Chorey` fails.
+- Design files in `design_handoff_chorey/` are **reference only** (prototype HTML/JSX) — match visuals/copy, don't paste their scaffolding.
+- Theme: brand bucket colors used as **text** go through `bucketInk(bucket)` (light=deep, dark=light pastel); solid `-400/-200` backgrounds stay constant. Surfaces/text come from `useChoreyTheme().scheme`.
+- Old screens (`WelcomeScreen`, old parent/child dashboards) still exist but are no longer the entry; they'll be removed once the new flow fully replaces them.
