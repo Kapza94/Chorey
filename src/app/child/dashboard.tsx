@@ -1,21 +1,17 @@
-import { useEffect, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 
-import { ChildDashboardScreen } from "@/features/child-dashboard/child-dashboard-screen";
+import { KidApp } from "@/features/kid-home/kid-app";
+import type { KidChore } from "@/features/kid-home/kid-home-screen";
+import type { KidWish } from "@/features/kid-home/kid-wishlist-screen";
 import type { ChildChore } from "@/features/chores/child-chore-actions";
 import type { BucketBalances } from "@/features/chores/money";
 import {
   listChoresForChild,
   submitChoreForChild,
 } from "@/features/chores/default-child-chore-actions";
-import {
-  listGivingOptionsForChild,
-  suggestGivingOptionForChild,
-} from "@/features/giving/default-giving-actions";
-import type { GivingOption } from "@/features/giving/giving-actions";
 import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
 import {
-  createWishlistItemForChild,
   listWishlistForChild,
   requestWishlistPurchase,
 } from "@/features/spend-wishlist/default-spend-wishlist-actions";
@@ -27,8 +23,11 @@ const emptyBalances: BucketBalances = {
   spendCents: 0,
 };
 
+function isDone(status: ChildChore["status"]) {
+  return status === "submitted" || status === "approved";
+}
+
 export default function ChildDashboardRoute() {
-  const router = useRouter();
   const params = useLocalSearchParams<{ accessCode?: string; childName?: string }>();
   const accessCode = Array.isArray(params.accessCode)
     ? params.accessCode[0]
@@ -36,14 +35,11 @@ export default function ChildDashboardRoute() {
   const childName = Array.isArray(params.childName)
     ? params.childName[0]
     : params.childName;
+
   const [chores, setChores] = useState<ChildChore[]>([]);
-  const [givingOptions, setGivingOptions] = useState<GivingOption[]>([]);
   const [wishlistItems, setWishlistItems] = useState<SpendWishlistItem[]>([]);
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
-  const [submittingChoreId, setSubmittingChoreId] = useState<string | null>(
-    null,
-  );
 
   useEffect(() => {
     let mounted = true;
@@ -55,13 +51,11 @@ export default function ChildDashboardRoute() {
     Promise.all([
       listChoresForChild(accessCode),
       getBucketBalancesForChild(accessCode),
-      listGivingOptionsForChild(accessCode),
       listWishlistForChild(accessCode),
-    ]).then(([nextChores, nextBalances, nextGivingOptions, nextWishlistItems]) => {
+    ]).then(([nextChores, nextBalances, nextWishlistItems]) => {
       if (mounted) {
         setChores(nextChores);
         setBucketBalances(nextBalances);
-        setGivingOptions(nextGivingOptions);
         setWishlistItems(nextWishlistItems);
       }
     });
@@ -71,62 +65,64 @@ export default function ChildDashboardRoute() {
     };
   }, [accessCode]);
 
+  const kidChores = useMemo<KidChore[]>(
+    () =>
+      chores.map((chore) => ({
+        id: chore.id,
+        name: chore.title,
+        valueCents: chore.rewardCents,
+        done: isDone(chore.status),
+      })),
+    [chores],
+  );
+
+  const wishes = useMemo<KidWish[]>(
+    () =>
+      wishlistItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        targetCents: item.targetCents,
+        status: item.status,
+      })),
+    [wishlistItems],
+  );
+
   return (
-    <ChildDashboardScreen
-      bucketBalances={bucketBalances}
-      childName={childName}
-      chores={chores}
-      givingOptions={givingOptions}
-      onCreateWishlistItem={async (input) => {
+    <KidApp
+      name={childName}
+      currency="USD"
+      chores={kidChores}
+      onToggleChore={async (choreId) => {
         if (!accessCode) {
           return;
         }
 
-        const item = await createWishlistItemForChild({
-          accessCode,
-          name: input.name,
-          targetCents: input.targetCents,
-        });
-        setWishlistItems((current) => [item, ...current]);
+        const target = chores.find((chore) => chore.id === choreId);
+        if (!target || isDone(target.status)) {
+          return; // already submitted/approved — no un-check path in v1
+        }
+
+        const submitted = await submitChoreForChild({ accessCode, choreId });
+        setChores((current) =>
+          current.map((chore) => (chore.id === choreId ? submitted : chore)),
+        );
       }}
-      onBack={() => router.back()}
-      onRequestPurchase={async (wishlistItemId) => {
+      spendableCents={bucketBalances.spendCents}
+      wishes={wishes}
+      onRequestPurchase={async (wishId) => {
         if (!accessCode) {
           return;
         }
 
-        await requestWishlistPurchase({ accessCode, wishlistItemId });
+        await requestWishlistPurchase({ accessCode, wishlistItemId: wishId });
         setWishlistItems((current) =>
           current.map((item) =>
-            item.id === wishlistItemId ? { ...item, status: "requested" } : item,
+            item.id === wishId ? { ...item, status: "requested" } : item,
           ),
         );
       }}
-      onSubmitChore={async (choreId) => {
-        if (!accessCode) {
-          return;
-        }
-
-        setSubmittingChoreId(choreId);
-
-        try {
-          const submitted = await submitChoreForChild({ accessCode, choreId });
-          setChores((current) =>
-            current.map((chore) => (chore.id === choreId ? submitted : chore)),
-          );
-        } finally {
-          setSubmittingChoreId(null);
-        }
-      }}
-      onSuggestGivingOption={async (name) => {
-        if (!accessCode) {
-          return;
-        }
-
-        await suggestGivingOptionForChild({ accessCode, name });
-      }}
-      submittingChoreId={submittingChoreId}
-      wishlistItems={wishlistItems}
+      savingsCents={bucketBalances.savingsCents}
+      givingCents={bucketBalances.givingCents}
     />
   );
 }

@@ -58,15 +58,6 @@ describe("KidHomeScreen", () => {
     expect(onToggleChore).toHaveBeenCalledWith("c1");
   });
 
-  it("switches tabs from the bottom bar", () => {
-    const onChangeTab = jest.fn();
-    renderHome({ onChangeTab });
-
-    fireEvent.press(screen.getByLabelText("Wishlist tab"));
-
-    expect(onChangeTab).toHaveBeenCalledWith("wish");
-  });
-
   it("formats money in the family currency", () => {
     renderHome({ currency: "RSD" });
     // 300 cents → 3 дин earned; buckets 120/120/60 → 1 дин each

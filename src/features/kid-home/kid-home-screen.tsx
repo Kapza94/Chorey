@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
-import { Check, Flame, Heart, Home, Lock, Sparkles, User } from "lucide-react-native";
+import { Check, Flame, Lock, Sparkles } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -21,8 +21,6 @@ export type KidChore = {
   note?: string;
 };
 
-export type KidTab = "home" | "wish" | "you";
-
 type Props = {
   name?: string;
   streakDays?: number;
@@ -32,8 +30,6 @@ type Props = {
   currency?: CurrencyCode;
   chores?: KidChore[];
   onToggleChore?: (id: string) => void;
-  activeTab?: KidTab;
-  onChangeTab?: (tab: KidTab) => void;
 };
 
 const WEEKDAYS = [
@@ -54,8 +50,6 @@ export function KidHomeScreen({
   currency = DEFAULT_CURRENCY,
   chores = [],
   onToggleChore,
-  activeTab = "home",
-  onChangeTab,
 }: Props) {
   const theme = useChoreyTheme();
   const { scheme, typography, space, radius } = theme;
@@ -246,8 +240,6 @@ export function KidHomeScreen({
           </View>
         </View>
       </ScrollView>
-
-      <KidTabBar active={activeTab} onChange={onChangeTab} />
     </View>
   );
 }
@@ -418,60 +410,5 @@ function SpringCheckbox({ done }: { done: boolean }) {
     >
       {done ? <Check size={16} color={giving[800]} strokeWidth={3} /> : null}
     </Animated.View>
-  );
-}
-
-function KidTabBar({
-  active,
-  onChange,
-}: {
-  active: KidTab;
-  onChange?: (tab: KidTab) => void;
-}) {
-  const { scheme, typography, palette } = useChoreyTheme();
-  const tabs: { id: KidTab; label: string; Icon: typeof Home }[] = [
-    { id: "home", label: "Home", Icon: Home },
-    { id: "wish", label: "Wishlist", Icon: Heart },
-    { id: "you", label: "You", Icon: User },
-  ];
-
-  return (
-    <View
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        flexDirection: "row",
-        justifyContent: "space-around",
-        paddingHorizontal: 24,
-        paddingTop: 10,
-        paddingBottom: 28,
-        backgroundColor: scheme.bgPage,
-        borderTopWidth: 1,
-        borderTopColor: scheme.border,
-      }}
-    >
-      {tabs.map((tab) => {
-        const isActive = tab.id === active;
-        const color = isActive ? palette.accent[600] : scheme.fgFaint;
-
-        return (
-          <Pressable
-            key={tab.id}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: isActive }}
-            accessibilityLabel={`${tab.label} tab`}
-            onPress={() => onChange?.(tab.id)}
-            style={{ alignItems: "center", gap: 3, paddingHorizontal: 14, paddingVertical: 4 }}
-          >
-            <tab.Icon size={22} color={color} strokeWidth={isActive ? 2.4 : 2} />
-            <Text style={[typography.text.caption, { color, fontWeight: "700" }]}>
-              {tab.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
   );
 }
