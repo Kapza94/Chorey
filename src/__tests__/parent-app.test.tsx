@@ -129,3 +129,44 @@ describe("ParentApp · Payments", () => {
     expect(screen.getByText("All paid up.")).toBeOnTheScreen();
   });
 });
+
+describe("ParentApp · Chores", () => {
+  const chores = [
+    { id: "c1", name: "Walk Buddy", valueCents: 300, freq: "Daily", assignedTo: "Mia" },
+  ];
+
+  it("lists the chore library and per-kid assigned-vs-cap", () => {
+    render(<ParentApp initialTab="chores" kids={[mia]} chores={chores} />);
+
+    expect(screen.getByText("Chores.")).toBeOnTheScreen();
+    expect(screen.getByText("Walk Buddy")).toBeOnTheScreen();
+    expect(screen.getByText("Daily · Mia")).toBeOnTheScreen();
+    // Mia: assigned 22.00 of 25.00 budget → $3.00 left
+    expect(screen.getByText("$3.00 left")).toBeOnTheScreen();
+  });
+
+  it("adds a chore with a live split preview", () => {
+    const onAddChore = jest.fn();
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        chores={chores}
+        assignees={[{ id: "k1", name: "Mia" }]}
+        onAddChore={onAddChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("New chore"));
+    fireEvent.changeText(screen.getByLabelText("Chore name"), "Dishes");
+    fireEvent.changeText(screen.getByLabelText("Chore reward"), "2.50");
+    // default reward 2.00 → preview splits shown; after change, confirm
+    fireEvent.press(screen.getByLabelText("Add chore"));
+
+    expect(onAddChore).toHaveBeenCalledWith({
+      name: "Dishes",
+      rewardCents: 250,
+      assigneeId: "k1",
+    });
+  });
+});

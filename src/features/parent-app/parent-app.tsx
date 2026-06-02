@@ -9,16 +9,23 @@ import {
   type PayoutHistoryRow,
 } from "@/features/parent-app/parent-payments-screen";
 import {
+  ParentChoresScreen,
+  type ChoreAssignee,
+  type ChoreLibraryItem,
+} from "@/features/parent-app/parent-chores-screen";
+import {
   ParentTabBar,
   type ParentKid,
   type ParentTab,
 } from "@/features/parent-app/parent-primitives";
 import type { CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
+import type { Split } from "@/features/money/split";
 
 type Props = {
   subtitle?: string;
   currency?: CurrencyCode;
+  split?: Split;
   kids?: ParentKid[];
   onSelectKid?: (id: string) => void;
   onAddKid?: () => void;
@@ -28,6 +35,10 @@ type Props = {
   payoutHistory?: PayoutHistoryRow[];
   paidThisMonthCents?: number;
   onMarkPaid?: (kidId: string, amountCents: number, method: PayoutMethod) => void;
+  // Chores
+  chores?: ChoreLibraryItem[];
+  assignees?: ChoreAssignee[];
+  onAddChore?: (input: { name: string; rewardCents: number; assigneeId: string }) => void;
   initialTab?: ParentTab;
 };
 
@@ -38,6 +49,7 @@ type Props = {
 export function ParentApp({
   subtitle,
   currency,
+  split,
   kids,
   onSelectKid,
   onAddKid,
@@ -46,6 +58,9 @@ export function ParentApp({
   payoutHistory,
   paidThisMonthCents,
   onMarkPaid,
+  chores,
+  assignees,
+  onAddChore,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -61,6 +76,15 @@ export function ParentApp({
           onSelectKid={onSelectKid}
           onAddKid={onAddKid}
           onReviewApprovals={onReviewApprovals}
+        />
+      ) : tab === "chores" ? (
+        <ParentChoresScreen
+          currency={currency}
+          split={split}
+          kids={kids}
+          chores={chores}
+          assignees={assignees}
+          onAddChore={onAddChore}
         />
       ) : tab === "pay" ? (
         <ParentPaymentsScreen
