@@ -109,6 +109,51 @@ function groupInteger(digits: string, groupSeparator: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, groupSeparator);
 }
 
+export type MoneyParts = {
+  /** "-" for negatives, else "" */
+  sign: string;
+  /** symbol + grouped integer (e.g. "$12", "1.500") */
+  lead: string;
+  /** decimal separator + digits, plus a trailing symbol for "after" currencies
+   *  (e.g. ".00", ",00", " дин"). Empty when there is nothing to render small. */
+  fraction: string;
+};
+
+/**
+ * Break a cents amount into the pieces a hero balance renders at two sizes:
+ * a large `lead` (symbol + whole units) and a smaller `fraction` (cents and/or
+ * a trailing symbol). `sign` carries the minus for negatives.
+ */
+export function formatMoneyParts(
+  cents: number,
+  currency: CurrencyCode | CurrencyFormat = DEFAULT_CURRENCY,
+): MoneyParts {
+  const fmt = resolveFormat(currency);
+  const sign = cents < 0 ? "-" : "";
+  const absCents = Math.abs(cents);
+
+  // Convert cents → major units at the currency's precision.
+  const factor = 10 ** fmt.decimals;
+  const scaled = Math.round((absCents / 100) * factor);
+  const integerPart = Math.floor(scaled / factor);
+  const fractionPart = scaled - integerPart * factor;
+
+  const grouped = groupInteger(String(integerPart), fmt.groupSeparator);
+  const gap = fmt.spaceBetweenSymbol ? " " : "";
+
+  const lead =
+    fmt.symbolPosition === "before" ? `${fmt.symbol}${gap}${grouped}` : grouped;
+
+  const decimals =
+    fmt.decimals > 0
+      ? fmt.decimalSeparator + String(fractionPart).padStart(fmt.decimals, "0")
+      : "";
+  const trailingSymbol =
+    fmt.symbolPosition === "after" ? `${gap}${fmt.symbol}` : "";
+
+  return { sign, lead, fraction: decimals + trailingSymbol };
+}
+
 /**
  * Format an integer cents amount for the given currency.
  *
@@ -123,31 +168,9 @@ export function formatMoney(
   cents: number,
   currency: CurrencyCode | CurrencyFormat = DEFAULT_CURRENCY,
 ): string {
-  const fmt = resolveFormat(currency);
-  const negative = cents < 0;
-  const absCents = Math.abs(cents);
+  const { sign, lead, fraction } = formatMoneyParts(cents, currency);
 
-  // Convert cents → major units at the currency's precision.
-  const majorFloat = absCents / 100;
-  const factor = 10 ** fmt.decimals;
-  const scaled = Math.round(majorFloat * factor);
-  const integerPart = Math.floor(scaled / factor);
-  const fractionPart = scaled - integerPart * factor;
-
-  const grouped = groupInteger(String(integerPart), fmt.groupSeparator);
-  const fraction =
-    fmt.decimals > 0
-      ? fmt.decimalSeparator + String(fractionPart).padStart(fmt.decimals, "0")
-      : "";
-
-  const number = grouped + fraction;
-  const gap = fmt.spaceBetweenSymbol ? " " : "";
-  const withSymbol =
-    fmt.symbolPosition === "before"
-      ? `${fmt.symbol}${gap}${number}`
-      : `${number}${gap}${fmt.symbol}`;
-
-  return negative ? `-${withSymbol}` : withSymbol;
+  return `${sign}${lead}${fraction}`;
 }
 
 /**
