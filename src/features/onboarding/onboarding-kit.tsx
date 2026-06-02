@@ -1,4 +1,14 @@
-import { Pressable, ScrollView, Text, TextInput, View, type KeyboardTypeOptions } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  type KeyboardTypeOptions,
+  type ReturnKeyTypeOptions,
+} from "react-native";
 import { ChevronLeft } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -19,7 +29,10 @@ export function OBShell({
   const { scheme } = useChoreyTheme();
 
   return (
-    <View style={{ flex: 1, backgroundColor: scheme.bgPage, paddingTop: 52 }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: scheme.bgPage, paddingTop: 52 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <View
         style={{
           flexDirection: "row",
@@ -37,6 +50,7 @@ export function OBShell({
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 10, paddingBottom: 20 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {children}
       </ScrollView>
@@ -45,7 +59,7 @@ export function OBShell({
           {footer}
         </View>
       ) : null}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -181,6 +195,8 @@ export function OBField({
   keyboardType,
   autoFocus,
   maxLength,
+  returnKeyType,
+  onSubmitEditing,
 }: {
   label?: string;
   value: string;
@@ -190,6 +206,8 @@ export function OBField({
   keyboardType?: KeyboardTypeOptions;
   autoFocus?: boolean;
   maxLength?: number;
+  returnKeyType?: ReturnKeyTypeOptions;
+  onSubmitEditing?: () => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   return (
@@ -223,6 +241,8 @@ export function OBField({
           keyboardType={keyboardType}
           autoFocus={autoFocus}
           maxLength={maxLength}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
           style={{
             backgroundColor: scheme.bgRaised,
             borderColor: palette.border.mid,

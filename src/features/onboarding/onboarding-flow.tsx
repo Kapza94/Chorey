@@ -670,7 +670,14 @@ function OBAddKid({
       >
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
           <View style={{ flex: 2 }}>
-            <OBField label="Name" value={name} onChange={setName} placeholder="Kid's name" />
+            <OBField
+              label="Name"
+              value={name}
+              onChange={setName}
+              placeholder="Kid's name"
+              returnKeyType="done"
+              onSubmitEditing={addKid}
+            />
           </View>
           <View style={{ flex: 1 }}>
             <OBField
