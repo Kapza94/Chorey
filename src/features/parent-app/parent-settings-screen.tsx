@@ -370,10 +370,9 @@ function SplitPill({
   label: string;
   value: number;
 }) {
-  const { typography } = useChoreyTheme();
-  const ramp = bucketTokens[tone].ramp;
+  const { typography, scheme, bucketInk } = useChoreyTheme();
   const tintKey = tone === "spend" ? "allowance" : tone;
-  const { scheme } = useChoreyTheme();
+  const ink = bucketInk(tone);
 
   return (
     <View
@@ -385,12 +384,12 @@ function SplitPill({
         paddingVertical: 10,
       }}
     >
-      <Text style={[typography.text.overline, { color: ramp[800], fontSize: 10 }]}>{label}</Text>
+      <Text style={[typography.text.overline, { color: ink, fontSize: 10 }]}>{label}</Text>
       <Text
         style={{
           fontFamily: typography.family.display.semibold,
           fontSize: 22,
-          color: ramp[800],
+          color: ink,
           marginTop: 2,
         }}
       >

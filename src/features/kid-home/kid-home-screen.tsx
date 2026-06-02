@@ -279,8 +279,8 @@ function BucketCard({
   currency: CurrencyCode;
   locked?: boolean;
 }) {
-  const { scheme, typography } = useChoreyTheme();
-  const tone = bucketTokens[bucket].ramp;
+  const { scheme, typography, bucketInk } = useChoreyTheme();
+  const ink = bucketInk(bucket);
   const tintKey = bucket === "spend" ? "allowance" : bucket === "savings" ? "savings" : "giving";
 
   return (
@@ -295,11 +295,11 @@ function BucketCard({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-        {locked ? <Lock size={11} color={tone[800]} strokeWidth={2.4} /> : null}
+        {locked ? <Lock size={11} color={ink} strokeWidth={2.4} /> : null}
         <Text
           style={[
             typography.text.overline,
-            { color: tone[800], fontSize: 10, letterSpacing: 0.6 },
+            { color: ink, fontSize: 10, letterSpacing: 0.6 },
           ]}
         >
           {label}
@@ -308,7 +308,7 @@ function BucketCard({
       <Text
         style={[
           typography.text.money,
-          { color: tone[800], fontSize: 19 },
+          { color: ink, fontSize: 19 },
         ]}
       >
         {formatMoney(cents, currency)}

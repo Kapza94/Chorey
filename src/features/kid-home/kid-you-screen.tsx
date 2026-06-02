@@ -36,7 +36,7 @@ export function KidYouScreen({
   onSeeEarnings,
   onTellParent,
 }: Props) {
-  const { scheme, typography, radius } = useChoreyTheme();
+  const { scheme, typography, radius, bucketInk } = useChoreyTheme();
   const savings = bucketTokens.savings.ramp;
   const giving = bucketTokens.giving.ramp;
   const allowance = bucketTokens.spend.ramp;
@@ -136,7 +136,7 @@ export function KidYouScreen({
                 marginTop: 4,
               }}
             >
-              <Text style={[typography.text.moneyHero, { color: savings[800], fontSize: 36 }]}>
+              <Text style={[typography.text.moneyHero, { color: bucketInk("savings"), fontSize: 36 }]}>
                 {formatMoney(savingsCents, currency)}
               </Text>
               <View
@@ -169,7 +169,7 @@ export function KidYouScreen({
                 marginTop: 4,
               }}
             >
-              <Text style={[typography.text.moneyHero, { color: giving[800], fontSize: 36 }]}>
+              <Text style={[typography.text.moneyHero, { color: bucketInk("giving"), fontSize: 36 }]}>
                 {formatMoney(givingCents, currency)}
               </Text>
               <Pressable

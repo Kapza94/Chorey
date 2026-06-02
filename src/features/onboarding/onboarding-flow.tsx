@@ -314,7 +314,7 @@ function Dot({ color }: { color: string }) {
 /* ---------- 2. The big idea ---------- */
 
 function OBIdea({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, bucketInk } = useChoreyTheme();
   const bars = [
     { tone: "spend" as const, pct: 40, label: "Spend", cents: 400 },
     { tone: "savings" as const, pct: 40, label: "Save", cents: 400 },
@@ -343,7 +343,7 @@ function OBIdea({ onNext, onBack }: { onNext: () => void; onBack: () => void }) 
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={{ fontFamily: typography.family.display.bold, fontSize: 22, color: ramp[800] }}>
+                <Text style={{ fontFamily: typography.family.display.bold, fontSize: 22, color: bucketInk(bar.tone) }}>
                   {bar.pct}%
                 </Text>
                 <Text style={[typography.text.label, { fontSize: 15, color: scheme.fg }]}>
@@ -950,15 +950,16 @@ function SplitStepper({
   value: number;
   onStep?: (dir: 1 | -1) => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, bucketInk } = useChoreyTheme();
   const ramp = bucketTokens[tone].ramp;
   const tintKey = tone === "spend" ? "allowance" : tone;
+  const ink = bucketInk(tone);
   return (
     <View style={{ flex: 1, backgroundColor: scheme.tint[tintKey], borderRadius: 14, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10 }}>
-      <Text style={[typography.text.overline, { color: ramp[800], fontSize: 10, textAlign: "center" }]}>
+      <Text style={[typography.text.overline, { color: ink, fontSize: 10, textAlign: "center" }]}>
         {label}
       </Text>
-      <Text style={{ fontFamily: typography.family.display.bold, fontSize: 28, color: ramp[800], textAlign: "center" }}>
+      <Text style={{ fontFamily: typography.family.display.bold, fontSize: 28, color: ink, textAlign: "center" }}>
         {value}
         <Text style={{ fontSize: 14 }}>%</Text>
       </Text>
@@ -1394,7 +1395,7 @@ function OBKidHow({
   onFinish: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, bucketInk } = useChoreyTheme();
   const rows = [
     { tone: "spend" as const, Icon: Gift, title: "Spend", body: "Yours to use on your wishlist." },
     { tone: "savings" as const, Icon: Lock, title: "Save", body: "Grows over time. Stays locked." },
@@ -1437,7 +1438,7 @@ function OBKidHow({
                 <r.Icon size={24} color={ramp[800]} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[typography.text.h3, { color: ramp[800], fontSize: 16 }]}>{r.title}</Text>
+                <Text style={[typography.text.h3, { color: bucketInk(r.tone), fontSize: 16 }]}>{r.title}</Text>
                 <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 1 }]}>{r.body}</Text>
               </View>
             </View>

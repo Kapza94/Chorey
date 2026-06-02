@@ -20,7 +20,7 @@ export function KidCard({
   currency?: CurrencyCode;
   onTap?: () => void;
 }) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const allowance = bucketTokens.spend.ramp;
   const savings = bucketTokens.savings.ramp;
   const giving = bucketTokens.giving.ramp;
@@ -157,19 +157,19 @@ export function KidCard({
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
           <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-            <Text style={{ color: allowance[800], fontWeight: "700" }}>
+            <Text style={{ color: bucketInk("spend"), fontWeight: "700" }}>
               {formatMoney(kid.allowanceCents, currency)}
             </Text>{" "}
             spend
           </Text>
           <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-            <Text style={{ color: savings[800], fontWeight: "700" }}>
+            <Text style={{ color: bucketInk("savings"), fontWeight: "700" }}>
               {formatMoney(kid.savingsCents, currency)}
             </Text>{" "}
             save
           </Text>
           <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-            <Text style={{ color: giving[800], fontWeight: "700" }}>
+            <Text style={{ color: bucketInk("giving"), fontWeight: "700" }}>
               {formatMoney(kid.givingCents, currency)}
             </Text>{" "}
             give

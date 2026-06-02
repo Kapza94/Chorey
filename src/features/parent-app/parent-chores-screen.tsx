@@ -40,7 +40,7 @@ export function ParentChoresScreen({
   assignees = [],
   onAddChore,
 }: Props) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [showAdd, setShowAdd] = useState(false);
 
   return (
@@ -212,7 +212,7 @@ function AddChoreSheet({
   onClose: () => void;
   onConfirm: (input: { name: string; rewardCents: number; assigneeId: string }) => void;
 }) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [name, setName] = useState("");
   const [value, setValue] = useState("2.00");
   const options: ChoreAssignee[] = [...assignees, { id: "all", name: "Everyone" }];
@@ -371,19 +371,19 @@ function AddChoreSheet({
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
             <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-              <Text style={{ color: bucketTokens.spend.ramp[800], fontWeight: "700" }}>
+              <Text style={{ color: bucketInk("spend"), fontWeight: "700" }}>
                 {formatMoney(preview.spendCents, currency)}
               </Text>{" "}
               spend
             </Text>
             <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-              <Text style={{ color: bucketTokens.savings.ramp[800], fontWeight: "700" }}>
+              <Text style={{ color: bucketInk("savings"), fontWeight: "700" }}>
                 {formatMoney(preview.savingsCents, currency)}
               </Text>{" "}
               save
             </Text>
             <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-              <Text style={{ color: bucketTokens.giving.ramp[800], fontWeight: "700" }}>
+              <Text style={{ color: bucketInk("giving"), fontWeight: "700" }}>
                 {formatMoney(preview.givingCents, currency)}
               </Text>{" "}
               give

@@ -59,7 +59,7 @@ export function ParentPaymentsScreen({
   thisMonthCents = 0,
   onMarkPaid,
 }: Props) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [sheetKid, setSheetKid] = useState<DuePayout | null>(null);
 
   const dueTotal = due.reduce((sum, kid) => sum + kid.earnedCents, 0);
@@ -189,7 +189,7 @@ export function ParentPaymentsScreen({
           }}
         >
           {history.map((row, index) => {
-            const tone = bucketTokens[row.tone === "allowance" ? "spend" : row.tone].ramp;
+            const bucketKey = row.tone === "allowance" ? "spend" : row.tone;
 
             return (
               <View
@@ -214,7 +214,7 @@ export function ParentPaymentsScreen({
                     justifyContent: "center",
                   }}
                 >
-                  <Wallet size={16} color={tone[800]} strokeWidth={2} />
+                  <Wallet size={16} color={bucketInk(bucketKey)} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[typography.text.label, { color: scheme.fg }]}>{row.kidName}</Text>

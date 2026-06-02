@@ -2,7 +2,6 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { ChevronRight, Plus, Sparkles } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
-import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
   DEFAULT_CURRENCY,
   formatMoney,
@@ -28,10 +27,7 @@ export function ParentKidsScreen({
   onAddKid,
   onReviewApprovals,
 }: Props) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
-  const allowance = bucketTokens.spend.ramp;
-  const savings = bucketTokens.savings.ramp;
-  const giving = bucketTokens.giving.ramp;
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
 
   const totalPending = kids.reduce((sum, kid) => sum + kid.pendingApprovals, 0);
   const sum = (pick: (kid: ParentKid) => number) =>
@@ -133,9 +129,9 @@ export function ParentKidsScreen({
             {formatMoney(sum((kid) => kid.earnedCents), currency)}
           </Text>
           <View style={{ flexDirection: "row", gap: 18, marginTop: 14 }}>
-            <TotalCell label="To spend" cents={sum((k) => k.allowanceCents)} color={allowance[800]} currency={currency} />
-            <TotalCell label="To save" cents={sum((k) => k.savingsCents)} color={savings[800]} currency={currency} />
-            <TotalCell label="To give" cents={sum((k) => k.givingCents)} color={giving[800]} currency={currency} />
+            <TotalCell label="To spend" cents={sum((k) => k.allowanceCents)} color={bucketInk("spend")} currency={currency} />
+            <TotalCell label="To save" cents={sum((k) => k.savingsCents)} color={bucketInk("savings")} currency={currency} />
+            <TotalCell label="To give" cents={sum((k) => k.givingCents)} color={bucketInk("giving")} currency={currency} />
           </View>
         </View>
       </ScrollView>

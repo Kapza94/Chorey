@@ -33,7 +33,7 @@ export function KidWishlistScreen({
   onRequestPurchase,
   onAddWish,
 }: Props) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const allowance = bucketTokens.spend.ramp;
 
   return (
@@ -72,7 +72,7 @@ export function KidWishlistScreen({
           <Text
             style={[
               typography.text.moneyHero,
-              { color: allowance[800], fontSize: 38, marginTop: 4 },
+              { color: bucketInk("spend"), fontSize: 38, marginTop: 4 },
             ]}
           >
             {formatMoney(spendableCents, currency)}
