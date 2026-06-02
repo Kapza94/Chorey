@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { ParentKidsScreen } from "@/features/parent-app/parent-kids-screen";
@@ -13,6 +13,7 @@ import {
   type ChoreAssignee,
   type ChoreLibraryItem,
 } from "@/features/parent-app/parent-chores-screen";
+import { ParentSettingsScreen } from "@/features/parent-app/parent-settings-screen";
 import {
   ParentTabBar,
   type ParentKid,
@@ -21,6 +22,7 @@ import {
 import type { CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { Split } from "@/features/money/split";
+import type { SettlementFrequency } from "@/features/household/household-actions";
 
 type Props = {
   subtitle?: string;
@@ -39,6 +41,10 @@ type Props = {
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];
   onAddChore?: (input: { name: string; rewardCents: number; assigneeId: string }) => void;
+  // Settings
+  onChangeBudget?: (kidId: string, budgetCents: number) => void;
+  onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
+  onEditSplits?: () => void;
   initialTab?: ParentTab;
 };
 
@@ -61,6 +67,9 @@ export function ParentApp({
   chores,
   assignees,
   onAddChore,
+  onChangeBudget,
+  onChangeCadence,
+  onEditSplits,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -95,22 +104,17 @@ export function ParentApp({
           onMarkPaid={onMarkPaid}
         />
       ) : (
-        <ComingSoon tab={tab} />
+        <ParentSettingsScreen
+          currency={currency}
+          split={split}
+          kids={kids}
+          onChangeBudget={onChangeBudget}
+          onChangeCadence={onChangeCadence}
+          onEditSplits={onEditSplits}
+        />
       )}
 
       <ParentTabBar active={tab} onChange={setTab} />
-    </View>
-  );
-}
-
-function ComingSoon({ tab }: { tab: ParentTab }) {
-  const { scheme, typography } = useChoreyTheme();
-
-  return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <Text style={[typography.text.h3, { color: scheme.fgFaint, textTransform: "capitalize" }]}>
-        {tab}
-      </Text>
     </View>
   );
 }

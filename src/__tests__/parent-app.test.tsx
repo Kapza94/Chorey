@@ -170,3 +170,35 @@ describe("ParentApp · Chores", () => {
     });
   });
 });
+
+describe("ParentApp · Settings", () => {
+  it("shows the split and per-kid budget cards", () => {
+    render(<ParentApp initialTab="settings" kids={[mia]} />);
+
+    expect(screen.getByText("Settings.")).toBeOnTheScreen();
+    expect(screen.getByText("40 / 40 / 20")).toBeOnTheScreen();
+    expect(screen.getByText("Budget cap")).toBeOnTheScreen();
+    expect(screen.getByText("chorey · v0.1")).toBeOnTheScreen();
+  });
+
+  it("steps a kid's budget by $5", () => {
+    const onChangeBudget = jest.fn();
+    render(
+      <ParentApp initialTab="settings" kids={[mia]} onChangeBudget={onChangeBudget} />,
+    );
+
+    // Mia starts at $25.00 (2500c) → increase to 3000
+    fireEvent.press(screen.getByLabelText("Increase budget"));
+    expect(onChangeBudget).toHaveBeenCalledWith("k1", 3000);
+  });
+
+  it("switches a kid's cadence", () => {
+    const onChangeCadence = jest.fn();
+    render(
+      <ParentApp initialTab="settings" kids={[mia]} onChangeCadence={onChangeCadence} />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Mia monthly"));
+    expect(onChangeCadence).toHaveBeenCalledWith("k1", "monthly");
+  });
+});
