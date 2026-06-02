@@ -1,0 +1,534 @@
+import { useState } from "react";
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Check, Sparkles, Wallet } from "lucide-react-native";
+
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
+import { buckets as bucketTokens } from "@/theme/chorey-theme";
+import {
+  DEFAULT_CURRENCY,
+  formatMoney,
+  type CurrencyCode,
+} from "@/features/money/currency";
+import { formatReward, parseRewardCents } from "@/features/chores/money";
+import type { PayoutMethod } from "@/features/payments/payment-actions";
+import { ParentHeader } from "@/features/parent-app/parent-primitives";
+
+export type DuePayout = {
+  id: string;
+  name: string;
+  tone: "allowance" | "savings" | "giving";
+  earnedCents: number;
+  allowanceCents: number;
+  savingsCents: number;
+  givingCents: number;
+  choresDone: number;
+  cadence: "weekly" | "monthly";
+};
+
+export type PayoutHistoryRow = {
+  id: string;
+  kidName: string;
+  tone: "allowance" | "savings" | "giving";
+  dateLabel: string;
+  method: PayoutMethod;
+  amountCents: number;
+};
+
+const METHODS: { id: PayoutMethod; label: string }[] = [
+  { id: "cash", label: "Cash" },
+  { id: "bank_transfer", label: "Bank transfer" },
+  { id: "other", label: "Other" },
+];
+
+function methodLabel(method: PayoutMethod) {
+  return METHODS.find((m) => m.id === method)?.label ?? "Other";
+}
+
+type Props = {
+  currency?: CurrencyCode;
+  due?: DuePayout[];
+  history?: PayoutHistoryRow[];
+  thisMonthCents?: number;
+  onMarkPaid?: (kidId: string, amountCents: number, method: PayoutMethod) => void;
+};
+
+export function ParentPaymentsScreen({
+  currency = DEFAULT_CURRENCY,
+  due = [],
+  history = [],
+  thisMonthCents = 0,
+  onMarkPaid,
+}: Props) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const [sheetKid, setSheetKid] = useState<DuePayout | null>(null);
+
+  const dueTotal = due.reduce((sum, kid) => sum + kid.earnedCents, 0);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
+        <ParentHeader subtitle="Off-app payouts" title="Payments." />
+
+        {/* Explainer */}
+        <View
+          style={{
+            marginHorizontal: 18,
+            marginBottom: 16,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            backgroundColor: scheme.tint.info,
+            borderRadius: radius.sm,
+            flexDirection: "row",
+            gap: 10,
+            alignItems: "flex-start",
+          }}
+        >
+          <Sparkles size={16} color={palette.semantic.info[600]} strokeWidth={2.2} />
+          <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}>
+            Pay your kids however you like — cash or bank transfer. Chorey just keeps the
+            record.
+          </Text>
+        </View>
+
+        <SectionLabel>Due this period</SectionLabel>
+
+        {due.length === 0 ? (
+          <View
+            style={{
+              marginHorizontal: 18,
+              paddingHorizontal: 18,
+              paddingVertical: 22,
+              alignItems: "center",
+              backgroundColor: scheme.bgRaised,
+              borderColor: scheme.border,
+              borderWidth: 1,
+              borderRadius: 16,
+            }}
+          >
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: radius.pill,
+                backgroundColor: bucketTokens.giving.ramp[200],
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 8,
+              }}
+            >
+              <Check size={22} color={bucketTokens.giving.ramp[800]} strokeWidth={3} />
+            </View>
+            <Text style={[typography.text.h3, { color: scheme.fg }]}>All paid up.</Text>
+            <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
+              Nothing owed this period.
+            </Text>
+          </View>
+        ) : (
+          <View style={{ gap: 10, paddingHorizontal: 18 }}>
+            {due.map((kid) => (
+              <DueCard
+                key={kid.id}
+                kid={kid}
+                currency={currency}
+                onMarkPaid={() => setSheetKid(kid)}
+              />
+            ))}
+          </View>
+        )}
+
+        {due.length > 0 ? (
+          <View
+            style={{
+              marginHorizontal: 18,
+              marginTop: 16,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              backgroundColor: scheme.bgSunken,
+              borderRadius: radius.md,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
+              Total to pay out
+            </Text>
+            <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 22 }]}>
+              {formatMoney(dueTotal, currency)}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* History */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            paddingHorizontal: 22,
+            paddingTop: 26,
+            paddingBottom: 8,
+          }}
+        >
+          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
+            Payout history
+          </Text>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+            {formatMoney(thisMonthCents, currency)} this month
+          </Text>
+        </View>
+
+        <View
+          style={{
+            marginHorizontal: 18,
+            backgroundColor: scheme.bgRaised,
+            borderColor: scheme.border,
+            borderWidth: 1,
+            borderRadius: 16,
+            overflow: "hidden",
+          }}
+        >
+          {history.map((row, index) => {
+            const tone = bucketTokens[row.tone === "allowance" ? "spend" : row.tone].ramp;
+
+            return (
+              <View
+                key={row.id}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 13,
+                  borderBottomWidth: index < history.length - 1 ? 1 : 0,
+                  borderBottomColor: scheme.border,
+                }}
+              >
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: radius.pill,
+                    backgroundColor: scheme.tint[row.tone === "allowance" ? "allowance" : row.tone],
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Wallet size={16} color={tone[800]} strokeWidth={2} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[typography.text.label, { color: scheme.fg }]}>{row.kidName}</Text>
+                  <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+                    {row.dateLabel} · {methodLabel(row.method)}
+                  </Text>
+                </View>
+                <Text style={[typography.text.money, { fontSize: 14, color: scheme.fg }]}>
+                  {formatMoney(row.amountCents, currency)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      <MarkPaidSheet
+        kid={sheetKid}
+        currency={currency}
+        onClose={() => setSheetKid(null)}
+        onConfirm={(amountCents, method) => {
+          if (sheetKid) {
+            onMarkPaid?.(sheetKid.id, amountCents, method);
+          }
+          setSheetKid(null);
+        }}
+      />
+    </View>
+  );
+
+  function SectionLabel({ children }: { children: React.ReactNode }) {
+    return (
+      <Text
+        style={[
+          typography.text.overline,
+          { color: scheme.fgFaint, paddingHorizontal: 22, paddingBottom: 8 },
+        ]}
+      >
+        {children}
+      </Text>
+    );
+  }
+}
+
+function DueCard({
+  kid,
+  currency,
+  onMarkPaid,
+}: {
+  kid: DuePayout;
+  currency: CurrencyCode;
+  onMarkPaid: () => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const tone = bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp;
+  const allowance = bucketTokens.spend.ramp;
+  const savings = bucketTokens.savings.ramp;
+  const giving = bucketTokens.giving.ramp;
+
+  return (
+    <View
+      style={{
+        backgroundColor: scheme.bgRaised,
+        borderColor: scheme.border,
+        borderWidth: 1,
+        borderRadius: 16,
+        padding: 16,
+        ...scheme.shadow.xs,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: radius.pill,
+            backgroundColor: tone[200],
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: typography.family.display.bold,
+              fontSize: 19,
+              color: tone[800],
+            }}
+          >
+            {kid.name.trim().charAt(0).toUpperCase() || "?"}
+          </Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>{kid.name}</Text>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+            {kid.cadence === "monthly" ? "This month" : "This week"} · {kid.choresDone} chores
+            done
+          </Text>
+        </View>
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26 }]}>
+            {formatMoney(kid.earnedCents, currency)}
+          </Text>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
+            to pay out
+          </Text>
+        </View>
+      </View>
+
+      {/* split mini */}
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 14,
+          paddingBottom: 12,
+          marginBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: scheme.border,
+        }}
+      >
+        <SplitDot color={allowance[400]} label="spend" value={formatMoney(kid.allowanceCents, currency)} />
+        <SplitDot color={savings[400]} label="save" value={formatMoney(kid.savingsCents, currency)} />
+        <SplitDot color={giving[400]} label="give" value={formatMoney(kid.givingCents, currency)} />
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Mark ${kid.name} as paid`}
+        onPress={onMarkPaid}
+        style={({ pressed }) => ({
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          paddingVertical: 12,
+          borderRadius: radius.pill,
+          backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+        })}
+      >
+        <Wallet size={16} color={palette.cream[4]} strokeWidth={2} />
+        <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 14 }]}>
+          Mark as paid
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function SplitDot({ color, label, value }: { color: string; label: string; value: string }) {
+  const { scheme, typography } = useChoreyTheme();
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+      <View style={{ width: 7, height: 7, borderRadius: 9, backgroundColor: color }} />
+      <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
+        <Text style={{ fontWeight: "700", color: scheme.fg }}>{value}</Text> {label}
+      </Text>
+    </View>
+  );
+}
+
+function MarkPaidSheet({
+  kid,
+  currency,
+  onClose,
+  onConfirm,
+}: {
+  kid: DuePayout | null;
+  currency: CurrencyCode;
+  onClose: () => void;
+  onConfirm: (amountCents: number, method: PayoutMethod) => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<PayoutMethod>("cash");
+
+  // Reset the form whenever a new kid opens the sheet.
+  const visible = kid != null;
+  const amountValue = amount || (kid ? formatReward(kid.earnedCents) : "");
+
+  let amountCents = 0;
+  try {
+    amountCents = parseRewardCents(amountValue);
+  } catch {
+    amountCents = 0;
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable
+        accessibilityLabel="Dismiss"
+        onPress={() => {
+          setAmount("");
+          setMethod("cash");
+          onClose();
+        }}
+        style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: scheme.bgModal,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingHorizontal: 22,
+          paddingTop: 14,
+          paddingBottom: 30,
+          ...scheme.shadow.lg,
+        }}
+      >
+        <View
+          style={{
+            width: 38,
+            height: 4,
+            borderRadius: radius.pill,
+            backgroundColor: palette.border.strong,
+            alignSelf: "center",
+            marginBottom: 16,
+          }}
+        />
+        <Text style={[typography.text.h2, { color: scheme.fg, fontSize: 24, marginBottom: 4 }]}>
+          Pay {kid?.name}.
+        </Text>
+        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginBottom: 18 }]}>
+          Confirm once you&apos;ve handed over the money. This only records it — no transfer
+          happens in the app.
+        </Text>
+
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+          Amount
+        </Text>
+        <View style={{ marginBottom: 16, justifyContent: "center" }}>
+          <TextInput
+            accessibilityLabel="Payout amount"
+            keyboardType="decimal-pad"
+            value={amountValue}
+            onChangeText={setAmount}
+            style={{
+              backgroundColor: scheme.bgPage,
+              borderColor: palette.border.mid,
+              borderWidth: 1.5,
+              borderRadius: radius.sm,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              fontFamily: typography.family.body.bold,
+              fontSize: 18,
+              color: scheme.fg,
+            }}
+          />
+        </View>
+
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+          How you paid
+        </Text>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 22 }}>
+          {METHODS.map((option) => {
+            const selected = option.id === method;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="button"
+                accessibilityLabel={option.label}
+                accessibilityState={{ selected }}
+                onPress={() => setMethod(option.id)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 11,
+                  paddingHorizontal: 6,
+                  borderRadius: radius.sm,
+                  alignItems: "center",
+                  backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
+                  borderWidth: 1.5,
+                  borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.text.label,
+                    { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Confirm payout"
+          onPress={() => {
+            onConfirm(amountCents, method);
+            setAmount("");
+            setMethod("cash");
+          }}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            paddingVertical: 15,
+            borderRadius: radius.pill,
+            backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+          })}
+        >
+          <Check size={17} color={palette.cream[4]} strokeWidth={3} />
+          <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 16 }]}>
+            Mark {formatMoney(amountCents, currency)} paid
+          </Text>
+        </Pressable>
+      </View>
+    </Modal>
+  );
+}

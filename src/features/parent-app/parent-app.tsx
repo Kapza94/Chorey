@@ -4,11 +4,17 @@ import { Text, View } from "react-native";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { ParentKidsScreen } from "@/features/parent-app/parent-kids-screen";
 import {
+  ParentPaymentsScreen,
+  type DuePayout,
+  type PayoutHistoryRow,
+} from "@/features/parent-app/parent-payments-screen";
+import {
   ParentTabBar,
   type ParentKid,
   type ParentTab,
 } from "@/features/parent-app/parent-primitives";
 import type { CurrencyCode } from "@/features/money/currency";
+import type { PayoutMethod } from "@/features/payments/payment-actions";
 
 type Props = {
   subtitle?: string;
@@ -17,6 +23,11 @@ type Props = {
   onSelectKid?: (id: string) => void;
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
+  // Payments
+  due?: DuePayout[];
+  payoutHistory?: PayoutHistoryRow[];
+  paidThisMonthCents?: number;
+  onMarkPaid?: (kidId: string, amountCents: number, method: PayoutMethod) => void;
   initialTab?: ParentTab;
 };
 
@@ -31,6 +42,10 @@ export function ParentApp({
   onSelectKid,
   onAddKid,
   onReviewApprovals,
+  due,
+  payoutHistory,
+  paidThisMonthCents,
+  onMarkPaid,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -46,6 +61,14 @@ export function ParentApp({
           onSelectKid={onSelectKid}
           onAddKid={onAddKid}
           onReviewApprovals={onReviewApprovals}
+        />
+      ) : tab === "pay" ? (
+        <ParentPaymentsScreen
+          currency={currency}
+          due={due}
+          history={payoutHistory}
+          thisMonthCents={paidThisMonthCents}
+          onMarkPaid={onMarkPaid}
         />
       ) : (
         <ComingSoon tab={tab} />

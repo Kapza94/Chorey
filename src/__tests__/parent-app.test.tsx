@@ -70,3 +70,62 @@ describe("ParentApp · Kids", () => {
     expect(screen.queryByText("Kids.")).toBeNull();
   });
 });
+
+describe("ParentApp · Payments", () => {
+  const due = [
+    {
+      id: "k1",
+      name: "Mia",
+      tone: "allowance" as const,
+      earnedCents: 1850,
+      allowanceCents: 740,
+      savingsCents: 740,
+      givingCents: 370,
+      choresDone: 4,
+      cadence: "weekly" as const,
+    },
+  ];
+  const history = [
+    {
+      id: "h1",
+      kidName: "Mia",
+      tone: "allowance" as const,
+      dateLabel: "May 25",
+      method: "cash" as const,
+      amountCents: 2200,
+    },
+  ];
+
+  it("lists who is due and the total to pay out", () => {
+    render(
+      <ParentApp
+        initialTab="pay"
+        due={due}
+        payoutHistory={history}
+        paidThisMonthCents={2200}
+      />,
+    );
+
+    expect(screen.getByText("Payments.")).toBeOnTheScreen();
+    expect(screen.getByText("to pay out")).toBeOnTheScreen();
+    expect(screen.getByText("Total to pay out")).toBeOnTheScreen();
+    expect(screen.getByText("$22.00 this month")).toBeOnTheScreen();
+  });
+
+  it("records a payout through the mark-as-paid sheet", () => {
+    const onMarkPaid = jest.fn();
+    render(<ParentApp initialTab="pay" due={due} onMarkPaid={onMarkPaid} />);
+
+    fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
+    // sheet opens, amount prefilled to 18.50
+    fireEvent.press(screen.getByLabelText("Bank transfer"));
+    fireEvent.press(screen.getByLabelText("Confirm payout"));
+
+    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "bank_transfer");
+  });
+
+  it("shows the all-paid-up empty state", () => {
+    render(<ParentApp initialTab="pay" due={[]} payoutHistory={history} />);
+    expect(screen.getByText("All paid up.")).toBeOnTheScreen();
+  });
+});
