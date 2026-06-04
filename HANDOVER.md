@@ -30,8 +30,23 @@ container is now **`supabase_db_Chorey`** (no trailing underscore) — or just
 - The **wiring phase** is underway. **Onboarding persistence is built, tested,
   and committed** — finishing the parent onboarding now writes real Supabase
   rows instead of the in-memory preview.
-- We are **mid a live end-to-end round-trip against LOCAL Supabase** to watch
-  the rows land. That's the only thing left to finish for today.
+- ✅ **The live end-to-end round-trip against LOCAL Supabase is DONE.** Walking
+  the parent onboarding in the simulator landed real rows:
+  `households=1, kids=1, codes=1, chores=3, giving=4`. The persistence path is
+  verified against local Supabase.
+
+## How to bring the stack back up (after a Docker/Metro restart)
+
+```
+open -a Docker                     # wait for the daemon
+npx supabase start                 # restarts the Chorey_ containers
+# (DB persists; only run `npm run db:reset` if you want an empty DB)
+npx expo start -c                  # then open in the booted sim:
+xcrun simctl openurl booted "exp://127.0.0.1:8081"
+```
+
+DB container is **`supabase_db_Chorey_`** (project_id is `Chorey_`). Ports
+55431–55434; Mailpit (OTP inbox) at http://127.0.0.1:55434.
 
 ## What shipped today (committed)
 
@@ -52,7 +67,7 @@ container is now **`supabase_db_Chorey`** (no trailing underscore) — or just
 - Verified: `npm run db:reset` clean, **128 SQL tests** + **152 Jest tests** pass,
   `npm run typecheck` clean.
 
-## How to finish the round-trip (the open task)
+## How the round-trip was verified (✅ done — kept for reference)
 
 The app's `.env.local` already points at **local** Supabase
 (`http://127.0.0.1:55431`) — zero risk to the live DB. Local DB starts empty.
@@ -95,4 +110,3 @@ no prompt. Two ways forward:
 - Premium kid gating in onboarding (free = 1 kid; backend already enforces it).
 - Wiring **step 3**: feed the Parent + Kid apps from real data instead of the
   sample handoff (`onboarding-handoff.ts`).
-- `BUILD_PLAN.md` has one uncommitted note (per-child payout-history tabs).

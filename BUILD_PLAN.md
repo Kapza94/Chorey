@@ -475,3 +475,4 @@ Verify:
 - Real charity integrations.
 - Bank/payment integrations.
 - Advanced parent permissions.
+- Payout history: if more kids show in tabs children, show child one, child two, and child three tabs to show their individual payout history. 
