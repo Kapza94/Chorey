@@ -35,7 +35,7 @@ describe("SettlementReviewScreen", () => {
     expect(screen.getByText("2026-05-30 to 2026-06-05")).toBeOnTheScreen();
     expect(screen.getByText("Spend paid to child")).toBeOnTheScreen();
     expect(screen.getByText("Savings set aside")).toBeOnTheScreen();
-    expect(screen.getByText("Giving donated or reserved")).toBeOnTheScreen();
+    expect(screen.getByText("Giving — handed over in real life")).toBeOnTheScreen();
     expect(screen.getByText("10.00 total")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("Mark all settled"));

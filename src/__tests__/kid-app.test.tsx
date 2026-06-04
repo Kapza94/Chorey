@@ -14,8 +14,8 @@ const baseProps = {
   ],
   savingsCents: 1280,
   givingCents: 120,
-  charityName: "City Food Bank",
-  givenThisMonthCents: 120,
+  causeName: "Animals",
+  givenCents: 120,
 };
 
 describe("KidApp shell", () => {
@@ -46,11 +46,13 @@ describe("KidApp shell", () => {
     expect(screen.queryByLabelText("Request Skateboard")).toBeNull();
   });
 
-  it("shows locked savings and the picked charity on You", () => {
+  it("shows locked savings and the chosen cause on You", () => {
     render(<KidApp {...baseProps} initialTab="you" />);
 
     expect(screen.getByText("not spendable")).toBeOnTheScreen();
     expect(screen.getByText("$12.80")).toBeOnTheScreen(); // savings
-    expect(screen.getByText(/City Food Bank/)).toBeOnTheScreen();
+    expect(screen.getByText(/Saving up to give to/)).toBeOnTheScreen();
+    expect(screen.getByText(/Animals/)).toBeOnTheScreen();
+    expect(screen.getByLabelText("Mark as given")).toBeOnTheScreen();
   });
 });

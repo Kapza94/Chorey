@@ -42,7 +42,7 @@ function parseAge(age: string): number | null {
  *
  * Writes, in order: the household (locale + split + cadence), then for each
  * kid a child profile (budget/cadence/age/tone), a 6-digit access code, and
- * the starter chores; finally the family's chosen charities.
+ * the starter chores; finally the family's chosen giving causes.
  */
 export function createOnboardingPersistence(
   client: PersistenceClient,
@@ -99,8 +99,8 @@ export function createOnboardingPersistence(
         });
       }
 
-      // Charities seed giving_options (parent-admin insert policy required).
-      for (const name of result.charities) {
+      // Chosen causes seed giving_options (parent-admin insert policy required).
+      for (const name of result.causes) {
         const trimmed = name.trim();
         if (!trimmed) {
           continue;

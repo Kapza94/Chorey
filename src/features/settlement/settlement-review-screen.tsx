@@ -23,7 +23,7 @@ const settlementRows = [
   },
   {
     bucket: "giving",
-    label: "Giving donated or reserved",
+    label: "Giving — handed over in real life",
   },
 ] as const;
 

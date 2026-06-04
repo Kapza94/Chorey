@@ -29,7 +29,7 @@ type Props = {
 };
 
 const DEFAULT_GENERAL: GeneralRow[] = [
-  { label: "Charities kids can give to", meta: "3 picked" },
+  { label: "Causes kids can give to", meta: "3 picked" },
   { label: "Pay-out day", meta: "Sunday" },
   { label: "Notifications", meta: "On" },
   { label: "Dark mode", meta: "Auto" },

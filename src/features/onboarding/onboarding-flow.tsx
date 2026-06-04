@@ -1,6 +1,20 @@
 import { useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
-import { Check, ChevronRight, Gift, Heart, Lock, Plus, Sparkles, User, X } from "lucide-react-native";
+import {
+  Apple,
+  Check,
+  ChevronRight,
+  Gift,
+  Globe,
+  HandHeart,
+  Heart,
+  Lock,
+  PawPrint,
+  Plus,
+  Sparkles,
+  User,
+  X,
+} from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -51,11 +65,14 @@ const CHORE_PICKS = [
   { name: "Walk the dog", valueCents: 300 },
 ];
 
-const CHARITY_PICKS = [
-  { name: "City Food Bank", desc: "Meals for local families", Icon: Gift },
-  { name: "Animal Shelter", desc: "Care for rescue pets", Icon: Heart },
-  { name: "Clean Oceans", desc: "Protect beaches & seas", Icon: Sparkles },
-  { name: "Children's Hospital", desc: "Help kids get well", Icon: Heart },
+// Broad causes a kid can care about — ideas the family gives toward in real
+// life, NOT real charities wired to any payment. Parents hand over the giving
+// pile themselves; Chorey just remembers where the kid wanted it to go.
+const CAUSE_PICKS = [
+  { name: "Animals", desc: "Shelters & rescue pets", Icon: PawPrint },
+  { name: "Hunger", desc: "Food for families nearby", Icon: Apple },
+  { name: "The planet", desc: "Oceans, parks & wildlife", Icon: Globe },
+  { name: "Helping kids", desc: "Health & a fair start", Icon: HandHeart },
 ];
 
 /** Resolve a kid tone to concrete colors (sky maps onto the info palette). */
@@ -85,7 +102,7 @@ type OnboardingData = {
   cadence: "weekly" | "monthly";
   budgetDollars: number;
   chores: { name: string; valueCents: number }[];
-  charities: string[];
+  causes: string[];
   kidName: string;
   kidTone: KidTone;
 };
@@ -102,7 +119,7 @@ export type OnboardingResult =
       cadence: "weekly" | "monthly";
       budgetCents: number;
       chores: { name: string; valueCents: number }[];
-      charities: string[];
+      causes: string[];
       joinCode: string;
     }
   | { role: "kid"; code: string; kidName: string; kidTone: KidTone };
@@ -115,7 +132,7 @@ type Step =
   | "p_addkid"
   | "p_split"
   | "p_chores"
-  | "p_charity"
+  | "p_causes"
   | "p_account"
   | "p_done"
   | "k_code"
@@ -131,7 +148,7 @@ const INITIAL: OnboardingData = {
   cadence: "weekly",
   budgetDollars: 25,
   chores: [],
-  charities: [],
+  causes: [],
   kidName: "",
   kidTone: "allowance",
 };
@@ -186,7 +203,7 @@ export function OnboardingFlow({
     cadence: data.cadence,
     budgetCents: data.budgetDollars * 100,
     chores: data.chores,
-    charities: data.charities,
+    causes: data.causes,
     joinCode: joinCodeFor(data.familyName),
   });
 
@@ -248,13 +265,13 @@ export function OnboardingFlow({
         <OBChores
           data={data}
           patch={patch}
-          onNext={() => setStep("p_charity")}
+          onNext={() => setStep("p_causes")}
           onBack={() => setStep("p_split")}
         />
       );
-    case "p_charity":
+    case "p_causes":
       return (
-        <OBCharities
+        <OBCauses
           data={data}
           patch={patch}
           onNext={() => setStep("p_account")}
@@ -267,7 +284,7 @@ export function OnboardingFlow({
           auth={auth}
           onPersist={persistParent}
           onNext={() => setStep("p_done")}
-          onBack={() => setStep("p_charity")}
+          onBack={() => setStep("p_causes")}
         />
       );
     case "p_done":
@@ -1332,9 +1349,9 @@ function OBChores({
   );
 }
 
-/* ---------- 8. Charities ---------- */
+/* ---------- 8. Causes (giving is given in real life) ---------- */
 
-function OBCharities({
+function OBCauses({
   data,
   patch,
   onNext,
@@ -1347,30 +1364,49 @@ function OBCharities({
 }) {
   const { scheme, typography } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
+  const [customCause, setCustomCause] = useState("");
+
   const toggle = (name: string) => {
-    if (data.charities.includes(name)) {
-      patch({ charities: data.charities.filter((c) => c !== name) });
+    if (data.causes.includes(name)) {
+      patch({ causes: data.causes.filter((c) => c !== name) });
     } else {
-      patch({ charities: [...data.charities, name] });
+      patch({ causes: [...data.causes, name] });
     }
   };
+
+  const addCustom = () => {
+    const name = customCause.trim();
+    if (!name || data.causes.includes(name)) {
+      return;
+    }
+    patch({ causes: [...data.causes, name] });
+    setCustomCause("");
+  };
+
+  // Causes the parent typed themselves (not one of the suggested picks).
+  const customCauses = data.causes.filter(
+    (c) => !CAUSE_PICKS.some((p) => p.name === c),
+  );
 
   return (
     <OBShell
       onBack={onBack}
       footer={
         <>
-          <OBPrimary onPress={onNext} disabled={data.charities.length === 0}>
-            {data.charities.length ? "Continue" : "Pick at least one"}
+          <OBPrimary onPress={onNext} disabled={data.causes.length === 0}>
+            {data.causes.length ? "Continue" : "Pick at least one"}
           </OBPrimary>
           <OBSecondary onPress={onNext}>Skip for now</OBSecondary>
         </>
       }
     >
-      <OBTitle title="Where giving goes." subtitle="Pick the causes your kids can choose between for their 20%." />
+      <OBTitle
+        title="What matters to your family?"
+        subtitle="Pick a cause your kids care about. You'll give the giving pile in real life — Chorey just remembers where they wanted it to go."
+      />
       <View style={{ gap: 10 }}>
-        {CHARITY_PICKS.map((c) => {
-          const on = data.charities.includes(c.name);
+        {CAUSE_PICKS.map((c) => {
+          const on = data.causes.includes(c.name);
           return (
             <Pressable
               key={c.name}
@@ -1424,6 +1460,73 @@ function OBCharities({
           );
         })}
       </View>
+
+      {/* Add your own cause. */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}>
+        <TextInput
+          accessibilityLabel="Add your own idea"
+          value={customCause}
+          onChangeText={setCustomCause}
+          onSubmitEditing={addCustom}
+          placeholder="Add your own idea"
+          placeholderTextColor={scheme.fgFaint}
+          returnKeyType="done"
+          style={{
+            ...typography.text.body,
+            flex: 1,
+            color: scheme.fg,
+            backgroundColor: scheme.bgSunken,
+            borderColor: scheme.border,
+            borderWidth: 1,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+          }}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add cause"
+          accessibilityState={{ disabled: !customCause.trim() }}
+          onPress={addCustom}
+          disabled={!customCause.trim()}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: customCause.trim() ? giving[400] : scheme.bgSunken,
+            opacity: customCause.trim() ? 1 : 0.6,
+          }}
+        >
+          <Plus size={20} color={customCause.trim() ? giving[800] : scheme.fgFaint} strokeWidth={2.6} />
+        </Pressable>
+      </View>
+
+      {customCauses.length > 0 ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+          {customCauses.map((name) => (
+            <Pressable
+              key={name}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${name}`}
+              onPress={() => toggle(name)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: 999,
+                backgroundColor: giving[200],
+              }}
+            >
+              <Text style={[typography.text.label, { color: giving[800] }]}>{name}</Text>
+              <X size={14} color={giving[800]} strokeWidth={2.6} />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </OBShell>
   );
 }
@@ -1787,7 +1890,7 @@ function OBKidHow({
   const rows = [
     { tone: "spend" as const, Icon: Gift, title: "Spend", body: "Yours to use on your wishlist." },
     { tone: "savings" as const, Icon: Lock, title: "Save", body: "Grows over time. Stays locked." },
-    { tone: "giving" as const, Icon: Heart, title: "Give", body: "Goes to a cause you care about." },
+    { tone: "giving" as const, Icon: Heart, title: "Give", body: "You give it to a cause you care about." },
   ];
   const tintFor = (tone: "spend" | "savings" | "giving") =>
     tone === "spend" ? scheme.tint.allowance : tone === "savings" ? scheme.tint.savings : scheme.tint.giving;

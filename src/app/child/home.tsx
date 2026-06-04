@@ -37,8 +37,8 @@ export default function ChildHomeRoute() {
       ]}
       savingsCents={1280}
       givingCents={320}
-      charityName="City Food Bank"
-      givenThisMonthCents={120}
+      causeName="Animals"
+      givenCents={120}
     />
   );
 }

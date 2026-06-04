@@ -15,10 +15,10 @@ type Props = {
   currency?: CurrencyCode;
   savingsCents?: number;
   givingCents?: number;
-  charityName?: string | null;
-  givenThisMonthCents?: number;
-  onDonate?: () => void;
-  onPickCharity?: () => void;
+  causeName?: string | null;
+  givenCents?: number;
+  onMarkGiven?: () => void;
+  onPickCause?: () => void;
   onSeeEarnings?: () => void;
   onTellParent?: () => void;
 };
@@ -29,10 +29,10 @@ export function KidYouScreen({
   currency = DEFAULT_CURRENCY,
   savingsCents = 0,
   givingCents = 0,
-  charityName,
-  givenThisMonthCents = 0,
-  onDonate,
-  onPickCharity,
+  causeName,
+  givenCents = 0,
+  onMarkGiven,
+  onPickCause,
   onSeeEarnings,
   onTellParent,
 }: Props) {
@@ -43,7 +43,7 @@ export function KidYouScreen({
   const initial = name.trim().charAt(0).toUpperCase() || "?";
 
   const quickActions = [
-    { label: "Pick a different charity", Icon: Heart, onPress: onPickCharity },
+    { label: "Pick a different cause", Icon: Heart, onPress: onPickCause },
     { label: "See all earnings", Icon: Wallet, onPress: onSeeEarnings },
     { label: "Tell a parent something", Icon: Sparkles, onPress: onTellParent },
   ];
@@ -174,8 +174,8 @@ export function KidYouScreen({
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Donate"
-                onPress={onDonate}
+                accessibilityLabel="Mark as given"
+                onPress={onMarkGiven}
                 style={({ pressed }) => ({
                   flexDirection: "row",
                   alignItems: "center",
@@ -188,11 +188,11 @@ export function KidYouScreen({
               >
                 <Heart size={13} color={giving[800]} strokeWidth={2.6} />
                 <Text style={[typography.text.label, { color: giving[800], fontSize: 13 }]}>
-                  Donate
+                  Mark as given
                 </Text>
               </Pressable>
             </View>
-            {charityName ? (
+            {causeName ? (
               <View
                 style={{
                   marginTop: 10,
@@ -202,8 +202,8 @@ export function KidYouScreen({
                 }}
               >
                 <Text style={[typography.text.caption, { color: scheme.fg }]}>
-                  <Text style={{ fontWeight: "700" }}>Picked:</Text> {charityName} —{" "}
-                  {formatMoney(givenThisMonthCents, currency)} sent this month.
+                  <Text style={{ fontWeight: "700" }}>Saving up to give to:</Text> {causeName} —{" "}
+                  {formatMoney(givenCents, currency)} given so far.
                 </Text>
               </View>
             ) : null}

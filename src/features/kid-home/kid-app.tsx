@@ -26,10 +26,10 @@ type Props = {
   // You
   savingsCents?: number;
   givingCents?: number;
-  charityName?: string | null;
-  givenThisMonthCents?: number;
-  onDonate?: () => void;
-  onPickCharity?: () => void;
+  causeName?: string | null;
+  givenCents?: number;
+  onMarkGiven?: () => void;
+  onPickCause?: () => void;
   onSeeEarnings?: () => void;
   onTellParent?: () => void;
   /** override the starting tab (tests) */
@@ -54,10 +54,10 @@ export function KidApp({
   onAddWish,
   savingsCents,
   givingCents,
-  charityName,
-  givenThisMonthCents,
-  onDonate,
-  onPickCharity,
+  causeName,
+  givenCents,
+  onMarkGiven,
+  onPickCause,
   onSeeEarnings,
   onTellParent,
   initialTab = "home",
@@ -91,10 +91,10 @@ export function KidApp({
           currency={currency}
           savingsCents={savingsCents}
           givingCents={givingCents}
-          charityName={charityName}
-          givenThisMonthCents={givenThisMonthCents}
-          onDonate={onDonate}
-          onPickCharity={onPickCharity}
+          causeName={causeName}
+          givenCents={givenCents}
+          onMarkGiven={onMarkGiven}
+          onPickCause={onPickCause}
           onSeeEarnings={onSeeEarnings}
           onTellParent={onTellParent}
         />

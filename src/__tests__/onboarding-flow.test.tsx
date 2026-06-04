@@ -55,8 +55,9 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Make the bed"));
     fireEvent.press(screen.getByText("Add 1 chore"));
 
-    // Charities
-    fireEvent.press(screen.getByLabelText("City Food Bank"));
+    // Causes — pick a broad cause idea, not a real charity
+    expect(screen.getByText("What matters to your family?")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Animals"));
     fireEvent.press(screen.getByText("Continue"));
 
     // Create account — email, then the 6-digit code
@@ -99,7 +100,7 @@ describe("OnboardingFlow", () => {
     expect(result.kids).toHaveLength(1);
     expect(result.kids[0].name).toBe("Mia");
     expect(result.chores).toHaveLength(1);
-    expect(result.charities).toEqual(["City Food Bank"]);
+    expect(result.causes).toEqual(["Animals"]);
     expect(result.joinCode).toBe("CHRIVE");
   });
 

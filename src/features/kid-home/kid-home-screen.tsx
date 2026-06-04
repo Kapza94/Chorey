@@ -235,7 +235,7 @@ export function KidHomeScreen({
               ]}
             >
               {split.spend}% to spend, {split.save}% saved up, {split.give}% to a
-              charity you pick.
+              cause you pick.
             </Text>
           </View>
         </View>

@@ -12,7 +12,7 @@ export type Split = {
   spend: number;
   /** locked savings — lilac. */
   save: number;
-  /** charity — sage. */
+  /** giving — sage. given to a cause in real life. */
   give: number;
 };
 

@@ -104,7 +104,7 @@ const RESULT: ParentOnboardingResult = {
     { name: "Dishes", valueCents: 250 },
     { name: "Walk the dog", valueCents: 300 },
   ],
-  charities: ["City Food Bank", "Animal Shelter"],
+  causes: ["Animals", "Hunger"],
   joinCode: "CHKAP",
 };
 
@@ -183,14 +183,14 @@ describe("onboarding persistence", () => {
     });
   });
 
-  it("seeds the chosen charities into giving options", async () => {
+  it("seeds the chosen causes into giving options", async () => {
     const { client, inserts } = makeClient();
 
     await createOnboardingPersistence(client, "parent-1").persist(RESULT);
 
     expect(inserts.giving_options).toEqual([
-      { household_id: "household-1", name: "City Food Bank" },
-      { household_id: "household-1", name: "Animal Shelter" },
+      { household_id: "household-1", name: "Animals" },
+      { household_id: "household-1", name: "Hunger" },
     ]);
   });
 });
