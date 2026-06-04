@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(16);
 
 select has_table('public', 'giving_options', 'giving options table exists');
 select has_table('public', 'giving_suggestions', 'giving suggestions table exists');
@@ -137,6 +137,19 @@ select ok(
   ),
   'giving approval function exists'
 );
+
+-- A parent admin can seed a giving option directly (onboarding charities),
+-- exercised under RLS as the authenticated parent (not the superuser).
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000801', true);
+
+select lives_ok(
+  $$ insert into public.giving_options (household_id, name)
+     values ('00000000-0000-0000-0000-000000000802', 'City Food Bank') $$,
+  'parent admin can seed a giving option directly'
+);
+
+reset role;
 
 select * from finish();
 

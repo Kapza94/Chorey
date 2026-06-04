@@ -116,6 +116,7 @@ type Step =
   | "p_split"
   | "p_chores"
   | "p_charity"
+  | "p_account"
   | "p_done"
   | "k_code"
   | "k_avatar"
@@ -141,35 +142,50 @@ function joinCodeFor(familyName: string) {
 
 /* ---------- flow controller ---------- */
 
+/** In-app account actions the final onboarding step needs (email 6-digit OTP). */
+export type OnboardingAuth = {
+  sendEmailCode: (email: string) => Promise<void>;
+  verifyEmailCode: (email: string, code: string) => Promise<void>;
+};
+
+type ParentResult = Extract<OnboardingResult, { role: "parent" }>;
+
 export function OnboardingFlow({
   onComplete,
   initialStep = "welcome",
+  auth,
+  persist,
 }: {
   onComplete?: (result: OnboardingResult) => void;
   initialStep?: Step;
+  /** Account creation actions; when omitted the account step just advances. */
+  auth?: OnboardingAuth;
+  /** Persist the finished parent setup (runs after the account is verified). */
+  persist?: (result: ParentResult) => Promise<unknown>;
 }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
   const [code, setCode] = useState("");
   const patch = (next: Partial<OnboardingData>) => setData((d) => ({ ...d, ...next }));
 
-  const finishParent = () => {
-    const currency = currencyForCountry(data.country);
-    onComplete?.({
-      role: "parent",
-      parentName: data.parentName.trim(),
-      familyName: data.familyName.trim(),
-      country: data.country,
-      currency,
-      kids: data.kids,
-      split: balanceSplit(data.split.spend, data.split.give),
-      cadence: data.cadence,
-      budgetCents: data.budgetDollars * 100,
-      chores: data.chores,
-      charities: data.charities,
-      joinCode: joinCodeFor(data.familyName),
-    });
-  };
+  const buildParentResult = (): ParentResult => ({
+    role: "parent",
+    parentName: data.parentName.trim(),
+    familyName: data.familyName.trim(),
+    country: data.country,
+    currency: currencyForCountry(data.country),
+    kids: data.kids,
+    split: balanceSplit(data.split.spend, data.split.give),
+    cadence: data.cadence,
+    budgetCents: data.budgetDollars * 100,
+    chores: data.chores,
+    charities: data.charities,
+    joinCode: joinCodeFor(data.familyName),
+  });
+
+  const finishParent = () => onComplete?.(buildParentResult());
+
+  const persistParent = () => persist?.(buildParentResult());
 
   const finishKid = () =>
     onComplete?.({ role: "kid", code, kidName: data.kidName.trim(), kidTone: data.kidTone });
@@ -228,8 +244,17 @@ export function OnboardingFlow({
         <OBCharities
           data={data}
           patch={patch}
-          onNext={() => setStep("p_done")}
+          onNext={() => setStep("p_account")}
           onBack={() => setStep("p_chores")}
+        />
+      );
+    case "p_account":
+      return (
+        <OBParentAccount
+          auth={auth}
+          onPersist={persistParent}
+          onNext={() => setStep("p_done")}
+          onBack={() => setStep("p_charity")}
         />
       );
     case "p_done":
@@ -1391,6 +1416,138 @@ function OBCharities({
 }
 
 /* ---------- 9. Parent all set ---------- */
+
+/* ---------- 9. Create account (email 6-digit code) ---------- */
+
+function errorMessage(error: unknown): string | null {
+  return error instanceof Error && error.message ? error.message : null;
+}
+
+function OBParentAccount({
+  auth,
+  onPersist,
+  onNext,
+  onBack,
+}: {
+  auth?: OnboardingAuth;
+  onPersist: () => Promise<unknown> | undefined;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const { typography, palette } = useChoreyTheme();
+  const [phase, setPhase] = useState<"email" | "code">("email");
+  const [email, setEmail] = useState("");
+  const [codeValue, setCodeValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const codeValid = codeValue.length === 6;
+
+  const sendCode = async () => {
+    if (!emailValid || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await auth?.sendEmailCode(email.trim());
+      setPhase("code");
+    } catch (e) {
+      setError(errorMessage(e) ?? "Couldn't send the code. Check the email and try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verifyAndSave = async () => {
+    if (!codeValid || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await auth?.verifyEmailCode(email.trim(), codeValue);
+      await onPersist();
+      onNext();
+    } catch (e) {
+      setError(errorMessage(e) ?? "That code didn't work. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <OBShell
+      onBack={
+        phase === "code"
+          ? () => {
+              setPhase("email");
+              setError(null);
+            }
+          : onBack
+      }
+      footer={
+        phase === "email" ? (
+          <OBPrimary onPress={sendCode} disabled={!emailValid || busy}>
+            {busy ? "Sending…" : "Email me a code"}
+          </OBPrimary>
+        ) : (
+          <>
+            <OBPrimary onPress={verifyAndSave} disabled={!codeValid || busy}>
+              {busy ? "Saving…" : "Create account & finish"}
+            </OBPrimary>
+            <OBSecondary onPress={sendCode}>Resend code</OBSecondary>
+          </>
+        )
+      }
+    >
+      <OBTitle
+        title={phase === "email" ? "Save your family." : "Enter your code."}
+        subtitle={
+          phase === "email"
+            ? "Create your free parent account so everything you just set up is saved."
+            : `We sent a 6-digit code to ${email.trim()}. Enter it to finish.`
+        }
+      />
+      {phase === "email" ? (
+        <OBField
+          label="Email"
+          value={email}
+          onChange={(v) => {
+            setEmail(v);
+            setError(null);
+          }}
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          autoFocus
+          returnKeyType="go"
+          onSubmitEditing={sendCode}
+        />
+      ) : (
+        <OBField
+          label="6-digit code"
+          value={codeValue}
+          onChange={(v) => {
+            setCodeValue(v.replace(/\D/g, "").slice(0, 6));
+            setError(null);
+          }}
+          placeholder="123456"
+          keyboardType="number-pad"
+          autoFocus
+          maxLength={6}
+          returnKeyType="go"
+          onSubmitEditing={verifyAndSave}
+        />
+      )}
+      {error ? (
+        <Text style={[typography.text.bodySm, { color: palette.semantic.danger[600], marginTop: 12 }]}>
+          {error}
+        </Text>
+      ) : null}
+    </OBShell>
+  );
+}
 
 function OBParentDone({ data, onFinish }: { data: OnboardingData; onFinish: () => void }) {
   const { scheme, typography, palette } = useChoreyTheme();

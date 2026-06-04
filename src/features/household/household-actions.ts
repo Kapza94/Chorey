@@ -1,4 +1,5 @@
 import { currencyForCountry, type CurrencyCode } from "@/features/money/currency";
+import type { Split } from "@/features/money/split";
 
 export type SettlementFrequency = "weekly" | "monthly";
 
@@ -13,6 +14,8 @@ export type CreateHouseholdInput = {
   country?: string;
   /** explicit override; defaults to the currency for `country`. */
   currency?: CurrencyCode;
+  /** the family's spend/save/give percentages; defaults to the table 40/40/20. */
+  split?: Split;
 };
 
 export type CreatedHousehold = {
@@ -42,6 +45,14 @@ export function createHouseholdActions(
       if (input.country) {
         payload.country = input.country;
         payload.currency = input.currency ?? currencyForCountry(input.country);
+      }
+
+      // Only set split columns when supplied, so non-onboarding callers keep
+      // the table's 40/40/20 default.
+      if (input.split) {
+        payload.split_spend = input.split.spend;
+        payload.split_save = input.split.save;
+        payload.split_give = input.split.give;
       }
 
       const result = await client

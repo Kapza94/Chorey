@@ -15,9 +15,21 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText("Who's setting up?")).toBeOnTheScreen();
   });
 
-  it("completes the parent branch and reports the collected setup", () => {
+  it("completes the parent branch, creates an account, persists and reports the setup", async () => {
     const onComplete = jest.fn();
-    render(<OnboardingFlow initialStep="p_family" onComplete={onComplete} />);
+    const persist = jest.fn().mockResolvedValue({ householdId: "h1", kids: [] });
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+    render(
+      <OnboardingFlow
+        initialStep="p_family"
+        onComplete={onComplete}
+        auth={auth}
+        persist={persist}
+      />,
+    );
 
     // Family + country
     fireEvent.changeText(screen.getByLabelText("Your name"), "Alex");
@@ -44,8 +56,24 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("City Food Bank"));
     fireEvent.press(screen.getByText("Continue"));
 
-    // All set → finish
-    expect(screen.getByText("You're all set.")).toBeOnTheScreen();
+    // Create account — email, then the 6-digit code
+    fireEvent.changeText(await screen.findByLabelText("Email"), "alex@example.com");
+    fireEvent.press(screen.getByText("Email me a code"));
+    expect(auth.sendEmailCode).toHaveBeenCalledWith("alex@example.com");
+
+    fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    fireEvent.press(screen.getByText("Create account & finish"));
+
+    // Verified + persisted → the success screen appears
+    expect(await screen.findByText("You're all set.")).toBeOnTheScreen();
+    expect(auth.verifyEmailCode).toHaveBeenCalledWith("alex@example.com", "123456");
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(persist.mock.calls[0][0]).toMatchObject({
+      role: "parent",
+      parentName: "Alex",
+      kids: [expect.objectContaining({ name: "Mia" })],
+    });
+
     fireEvent.press(screen.getByText("Go to dashboard"));
 
     expect(onComplete).toHaveBeenCalledTimes(1);
