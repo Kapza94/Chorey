@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChevronRight } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
+  CURRENCIES,
   DEFAULT_CURRENCY,
-  formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
 import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
@@ -220,11 +220,14 @@ function BudgetCard({
   const [budgetCents, setBudgetCents] = useState(kid.budgetCents);
   const [cadence, setCadence] = useState<SettlementFrequency>(kid.cadence);
 
-  const step = (direction: 1 | -1) => {
-    const next = Math.max(BUDGET_MIN_CENTS, budgetCents + direction * BUDGET_STEP_CENTS);
-    setBudgetCents(next);
-    onChangeBudget?.(kid.id, next);
+  const setBudget = (nextCents: number) => {
+    const clamped = Math.max(BUDGET_MIN_CENTS, nextCents);
+    setBudgetCents(clamped);
+    onChangeBudget?.(kid.id, clamped);
   };
+
+  const step = (direction: 1 | -1) =>
+    setBudget(budgetCents + direction * BUDGET_STEP_CENTS);
 
   const pickCadence = (next: SettlementFrequency) => {
     setCadence(next);
@@ -309,20 +312,95 @@ function BudgetCard({
           <Text style={[typography.text.overline, { color: scheme.fgFaint, fontSize: 10 }]}>
             Budget cap
           </Text>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4, marginTop: 2 }}>
-            <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26 }]}>
-              {formatMoney(budgetCents, currency)}
-            </Text>
-            <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>
-              / {cadence === "monthly" ? "mo" : "wk"}
-            </Text>
-          </View>
+          <BudgetCapField
+            cents={budgetCents}
+            currency={currency}
+            cadence={cadence}
+            accent={tone[400]}
+            onChange={setBudget}
+          />
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <CapButton label="Decrease budget" symbol="−" onPress={() => step(-1)} />
           <CapButton label="Increase budget" symbol="+" onPress={() => step(1)} />
         </View>
       </View>
+    </View>
+  );
+}
+
+// Tappable budget cap: type a custom amount (whole major units) instead of only
+// stepping ±5 — essential for low-value currencies like RSD. Stores back as cents.
+function BudgetCapField({
+  cents,
+  currency,
+  cadence,
+  accent,
+  onChange,
+}: {
+  cents: number;
+  currency: CurrencyCode;
+  cadence: SettlementFrequency;
+  accent: string;
+  onChange: (nextCents: number) => void;
+}) {
+  const { scheme, typography } = useChoreyTheme();
+  const fmt = CURRENCIES[currency];
+  const major = Math.round(cents / 100);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(major));
+
+  const text = editing ? draft : String(major);
+  const commit = () => {
+    setEditing(false);
+    const parsed = parseInt(draft, 10);
+    onChange(Number.isFinite(parsed) && parsed > 0 ? parsed * 100 : cents);
+  };
+
+  const symbolGap = fmt.spaceBetweenSymbol ? " " : "";
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4, marginTop: 2 }}>
+      {fmt.symbolPosition === "before" ? (
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26 }]}>
+          {fmt.symbol}
+          {symbolGap}
+        </Text>
+      ) : null}
+      <TextInput
+        accessibilityLabel="Budget amount"
+        value={text}
+        onFocus={() => {
+          setDraft(String(major));
+          setEditing(true);
+        }}
+        onChangeText={(t) => setDraft(t.replace(/[^0-9]/g, ""))}
+        onBlur={commit}
+        onSubmitEditing={commit}
+        keyboardType="number-pad"
+        returnKeyType="done"
+        selectTextOnFocus
+        style={{
+          ...typography.text.h1,
+          color: scheme.fg,
+          fontSize: 26,
+          paddingVertical: 0,
+          paddingHorizontal: 0,
+          minWidth: 28,
+          width: Math.max(28, text.length * 16),
+          borderBottomWidth: 2,
+          borderBottomColor: accent,
+        }}
+      />
+      {fmt.symbolPosition === "after" ? (
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26 }]}>
+          {symbolGap}
+          {fmt.symbol}
+        </Text>
+      ) : null}
+      <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>
+        / {cadence === "monthly" ? "mo" : "wk"}
+      </Text>
     </View>
   );
 }

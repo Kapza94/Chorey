@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
-import { Check, ChevronRight, Gift, Heart, Lock, Plus, Sparkles, User } from "lucide-react-native";
+import { Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Check, ChevronRight, Gift, Heart, Lock, Plus, Sparkles, User, X } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
+  CURRENCIES,
   currencyForCountry,
   formatMoney,
   type CurrencyCode,
@@ -43,15 +44,11 @@ const KID_TONES: { tone: KidTone; label: string }[] = [
   { tone: "sky", label: "Sky" },
 ];
 
+// A couple of ready-made suggestions to tap; parents add their own below.
 const CHORE_PICKS = [
   { name: "Make the bed", valueCents: 100 },
   { name: "Dishes", valueCents: 250 },
   { name: "Walk the dog", valueCents: 300 },
-  { name: "Take out trash", valueCents: 200 },
-  { name: "Tidy room", valueCents: 200 },
-  { name: "Homework done", valueCents: 150 },
-  { name: "Set the table", valueCents: 100 },
-  { name: "Water plants", valueCents: 100 },
 ];
 
 const CHARITY_PICKS = [
@@ -800,6 +797,75 @@ function ColorSwatch({
 
 /* ---------- 6. Budget & split ---------- */
 
+// Tappable budget amount: type a custom value directly (handy for currencies
+// like RSD where stepping ±5 would take forever), with the ± buttons alongside.
+function BudgetAmountField({
+  symbol,
+  value,
+  cadence,
+  groupSeparator,
+  onChange,
+}: {
+  symbol: string;
+  value: number;
+  cadence: "weekly" | "monthly";
+  groupSeparator: string;
+  onChange: (next: number) => void;
+}) {
+  const { scheme, typography } = useChoreyTheme();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+
+  // Group thousands (e.g. "1.000 дин") once the amount passes three digits, but
+  // show the raw digits while editing so the keypad stays simple.
+  const grouped = String(value).replace(/\B(?=(\d{3})+(?!\d))/g, groupSeparator);
+  const text = editing ? draft : grouped;
+  // Drop a font size at five+ visible chars so four digits (plus a separator)
+  // never clip; the field also widens with the content.
+  const fontSize = text.length > 4 ? 28 : 32;
+  const commit = () => {
+    setEditing(false);
+    const parsed = parseInt(draft, 10);
+    onChange(Number.isFinite(parsed) && parsed > 0 ? parsed : value);
+  };
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
+      <Text style={{ fontFamily: typography.family.display.bold, fontSize, color: scheme.fg }}>
+        {symbol}
+      </Text>
+      <TextInput
+        accessibilityLabel="Budget amount"
+        value={text}
+        onFocus={() => {
+          setDraft(String(value));
+          setEditing(true);
+        }}
+        onChangeText={(t) => setDraft(t.replace(/[^0-9]/g, ""))}
+        onBlur={commit}
+        onSubmitEditing={commit}
+        keyboardType="number-pad"
+        returnKeyType="done"
+        selectTextOnFocus
+        style={{
+          fontFamily: typography.family.display.bold,
+          fontSize,
+          color: scheme.fg,
+          paddingVertical: 0,
+          paddingHorizontal: 0,
+          minWidth: 72,
+          width: Math.max(72, text.length * fontSize * 0.62),
+          borderBottomWidth: 2,
+          borderBottomColor: bucketTokens.spend.ramp[400],
+        }}
+      />
+      <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>
+        / {cadence === "monthly" ? "month" : "week"}
+      </Text>
+    </View>
+  );
+}
+
 function OBBudgetSplit({
   data,
   patch,
@@ -814,6 +880,7 @@ function OBBudgetSplit({
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const country = COUNTRIES.find((c) => c.code === data.country);
   const symbol = country?.symbol ?? "$";
+  const groupSeparator = CURRENCIES[currencyForCountry(data.country)].groupSeparator;
   const { spend, give } = data.split;
   const save = 100 - spend - give;
   const isDefault = spend === 40 && give === 20;
@@ -892,21 +959,19 @@ function OBBudgetSplit({
           </View>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
-            <Text style={{ fontFamily: typography.family.display.bold, fontSize: 34, color: scheme.fg }}>
-              {symbol}
-              {data.budgetDollars}
-            </Text>
-            <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>
-              / {data.cadence === "monthly" ? "month" : "week"}
-            </Text>
-          </View>
+          <BudgetAmountField
+            symbol={symbol}
+            value={data.budgetDollars}
+            cadence={data.cadence}
+            groupSeparator={groupSeparator}
+            onChange={(next) => patch({ budgetDollars: next })}
+          />
           <View style={{ flexDirection: "row", gap: 8 }}>
             <OBStepButton
               symbol="−"
               label="Decrease budget"
               tone="spend"
-              onPress={() => patch({ budgetDollars: Math.max(5, data.budgetDollars - 5) })}
+              onPress={() => patch({ budgetDollars: Math.max(1, data.budgetDollars - 5) })}
             />
             <OBStepButton
               symbol="+"
@@ -991,9 +1056,13 @@ function OBChores({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography } = useChoreyTheme();
   const currency = currencyForCountry(data.country);
+  const symbol = CURRENCIES[currency].symbol;
   const allowance = bucketTokens.spend.ramp;
+
+  const [customName, setCustomName] = useState("");
+  const [customReward, setCustomReward] = useState("");
 
   const toggle = (name: string) => {
     const has = data.chores.find((c) => c.name === name);
@@ -1005,6 +1074,25 @@ function OBChores({
     }
   };
 
+  const removeChore = (name: string) =>
+    patch({ chores: data.chores.filter((c) => c.name !== name) });
+
+  const rewardUnits = parseInt(customReward, 10);
+  const canAddCustom =
+    customName.trim().length > 0 && Number.isFinite(rewardUnits) && rewardUnits > 0;
+
+  const addCustom = () => {
+    const name = customName.trim();
+    if (!canAddCustom || data.chores.some((c) => c.name === name)) return;
+    patch({ chores: [...data.chores, { name, valueCents: rewardUnits * 100 }] });
+    setCustomName("");
+    setCustomReward("");
+  };
+
+  // Chores the parent wrote themselves (not one of the suggested picks).
+  const customChores = data.chores.filter(
+    (c) => !CHORE_PICKS.some((p) => p.name === c.name),
+  );
   const totalCents = data.chores.reduce((s, c) => s + c.valueCents, 0);
 
   return (
@@ -1014,11 +1102,11 @@ function OBChores({
         <OBPrimary onPress={onNext} disabled={data.chores.length === 0}>
           {data.chores.length
             ? `Add ${data.chores.length} ${data.chores.length === 1 ? "chore" : "chores"}`
-            : "Pick at least one"}
+            : "Add at least one"}
         </OBPrimary>
       }
     >
-      <OBTitle title="First chores." subtitle="Tap to add a few. Edit the rewards anytime." />
+      <OBTitle title="First chores." subtitle="Tap a suggestion, or write your own." />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9 }}>
         {CHORE_PICKS.map((c) => {
           const on = !!data.chores.find((x) => x.name === c.name);
@@ -1057,10 +1145,130 @@ function OBChores({
         })}
       </View>
 
+      {/* Write your own chore + reward. */}
+      <View
+        style={{
+          marginTop: 18,
+          padding: 14,
+          borderRadius: 16,
+          backgroundColor: scheme.bgRaised,
+          borderColor: scheme.border,
+          borderWidth: 1,
+        }}
+      >
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 10 }]}>
+          Add your own
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TextInput
+            accessibilityLabel="Chore name"
+            value={customName}
+            onChangeText={setCustomName}
+            placeholder="e.g. Vacuum the hall"
+            placeholderTextColor={scheme.fgFaint}
+            returnKeyType="next"
+            style={{
+              ...typography.text.body,
+              flex: 1,
+              color: scheme.fg,
+              backgroundColor: scheme.bgSunken,
+              borderColor: scheme.border,
+              borderWidth: 1,
+              borderRadius: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+            }}
+          />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: scheme.bgSunken,
+              borderColor: scheme.border,
+              borderWidth: 1,
+              borderRadius: 12,
+              paddingHorizontal: 10,
+            }}
+          >
+            <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>{symbol}</Text>
+            <TextInput
+              accessibilityLabel="Chore reward"
+              value={customReward}
+              onChangeText={(t) => setCustomReward(t.replace(/[^0-9]/g, ""))}
+              onSubmitEditing={addCustom}
+              placeholder="0"
+              placeholderTextColor={scheme.fgFaint}
+              keyboardType="number-pad"
+              returnKeyType="done"
+              style={{
+                ...typography.text.body,
+                color: scheme.fg,
+                paddingVertical: 10,
+                paddingHorizontal: 4,
+                minWidth: 44,
+                textAlign: "center",
+              }}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add chore"
+            accessibilityState={{ disabled: !canAddCustom }}
+            onPress={addCustom}
+            disabled={!canAddCustom}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: canAddCustom ? allowance[400] : scheme.bgSunken,
+              opacity: canAddCustom ? 1 : 0.6,
+            }}
+          >
+            <Plus size={20} color={canAddCustom ? allowance[800] : scheme.fgFaint} strokeWidth={2.6} />
+          </Pressable>
+        </View>
+
+        {customChores.length > 0 ? (
+          <View style={{ marginTop: 12, gap: 8 }}>
+            {customChores.map((c) => (
+              <View
+                key={c.name}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  backgroundColor: allowance[200],
+                }}
+              >
+                <Text style={[typography.text.label, { flex: 1, color: allowance[800] }]}>
+                  {c.name}
+                </Text>
+                <Text style={[typography.text.caption, { color: allowance[800] }]}>
+                  {formatMoney(c.valueCents, currency)}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${c.name}`}
+                  onPress={() => removeChore(c.name)}
+                  hitSlop={8}
+                >
+                  <X size={16} color={allowance[800]} strokeWidth={2.6} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </View>
+
       {data.chores.length > 0 ? (
         <View
           style={{
-            marginTop: 22,
+            marginTop: 18,
             paddingHorizontal: 16,
             paddingVertical: 14,
             borderRadius: 14,
