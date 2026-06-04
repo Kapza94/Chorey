@@ -17,7 +17,10 @@ describe("OnboardingFlow", () => {
 
   it("completes the parent branch, creates an account, persists and reports the setup", async () => {
     const onComplete = jest.fn();
-    const persist = jest.fn().mockResolvedValue({ householdId: "h1", kids: [] });
+    const persist = jest.fn().mockResolvedValue({
+      householdId: "h1",
+      kids: [{ childProfileId: "c1", name: "Mia", accessCode: "482913" }],
+    });
     const auth = {
       sendEmailCode: jest.fn().mockResolvedValue(undefined),
       verifyEmailCode: jest.fn().mockResolvedValue(undefined),
@@ -73,6 +76,11 @@ describe("OnboardingFlow", () => {
       parentName: "Alex",
       kids: [expect.objectContaining({ name: "Mia" })],
     });
+
+    // The success screen shows the REAL generated access code from persistence,
+    // not a name-derived placeholder.
+    expect(screen.getByText("482913")).toBeOnTheScreen();
+    expect(screen.queryByText("CHRIVE")).not.toBeOnTheScreen();
 
     fireEvent.press(screen.getByText("Go to dashboard"));
 

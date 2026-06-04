@@ -148,6 +148,12 @@ export type OnboardingAuth = {
   verifyEmailCode: (email: string, code: string) => Promise<void>;
 };
 
+/** What persisting the parent setup hands back — the real generated codes. */
+export type OnboardingPersistResult = {
+  householdId: string;
+  kids: { childProfileId: string; name: string; accessCode: string }[];
+};
+
 type ParentResult = Extract<OnboardingResult, { role: "parent" }>;
 
 export function OnboardingFlow({
@@ -161,11 +167,12 @@ export function OnboardingFlow({
   /** Account creation actions; when omitted the account step just advances. */
   auth?: OnboardingAuth;
   /** Persist the finished parent setup (runs after the account is verified). */
-  persist?: (result: ParentResult) => Promise<unknown>;
+  persist?: (result: ParentResult) => Promise<OnboardingPersistResult | void>;
 }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
   const [code, setCode] = useState("");
+  const [persisted, setPersisted] = useState<OnboardingPersistResult | null>(null);
   const patch = (next: Partial<OnboardingData>) => setData((d) => ({ ...d, ...next }));
 
   const buildParentResult = (): ParentResult => ({
@@ -185,7 +192,13 @@ export function OnboardingFlow({
 
   const finishParent = () => onComplete?.(buildParentResult());
 
-  const persistParent = () => persist?.(buildParentResult());
+  const persistParent = async () => {
+    const result = await persist?.(buildParentResult());
+    if (result) {
+      setPersisted(result);
+    }
+    return result;
+  };
 
   const finishKid = () =>
     onComplete?.({ role: "kid", code, kidName: data.kidName.trim(), kidTone: data.kidTone });
@@ -258,7 +271,7 @@ export function OnboardingFlow({
         />
       );
     case "p_done":
-      return <OBParentDone data={data} onFinish={finishParent} />;
+      return <OBParentDone data={data} persisted={persisted} onFinish={finishParent} />;
     case "k_code":
       return (
         <OBKidCode
@@ -1549,12 +1562,22 @@ function OBParentAccount({
   );
 }
 
-function OBParentDone({ data, onFinish }: { data: OnboardingData; onFinish: () => void }) {
+function OBParentDone({
+  data,
+  persisted,
+  onFinish,
+}: {
+  data: OnboardingData;
+  persisted: OnboardingPersistResult | null;
+  onFinish: () => void;
+}) {
   const { scheme, typography, palette } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
   const currency = currencyForCountry(data.country);
   const totalCents = data.chores.reduce((s, c) => s + c.valueCents, 0);
-  const code = joinCodeFor(data.familyName);
+  // Prefer the real generated access code; fall back to a derived placeholder
+  // only when persistence didn't run (e.g. previews/tests without a backend).
+  const code = persisted?.kids[0]?.accessCode ?? joinCodeFor(data.familyName);
 
   return (
     <OBShell footer={<OBPrimary onPress={onFinish}>Go to dashboard</OBPrimary>}>
