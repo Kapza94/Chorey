@@ -1,8 +1,28 @@
 # Chorey Handover — resume point
 
 Last updated: Thursday, June 4, 2026. Written to hand this session off to the
-Claude Code **app** (the CLI session can't follow you there if the folder gets
-renamed — see the gotcha at the bottom).
+Claude Code **app** (this CLI session won't be listed under the renamed project,
+which is why this file exists).
+
+## ✅ The folder rename is DONE
+
+The trailing space is gone — the project is now
+`/Users/kapza/Documents/Projects/Chorey` (no space). Open **that** path in the
+Claude Code app; the workspace-trust prompt will appear normally — approve it.
+
+Metro and local Supabase were **stopped** for the rename. Bring them back up from
+the renamed folder before resuming the round-trip:
+
+```
+cd /Users/kapza/Documents/Projects/Chorey
+npx supabase start     # starts a fresh local stack (new container: supabase_db_Chorey)
+npm run db:reset       # apply all migrations to the empty local DB
+npx expo start -c      # then: xcrun simctl openurl booted "exp://127.0.0.1:8081"
+```
+
+Then continue at "How to finish the round-trip" below (step 3 onward). The DB
+container is now **`supabase_db_Chorey`** (no trailing underscore) — or just
+`docker ps --format '{{.Names}}' | grep supabase_db` to find it.
 
 ## TL;DR of where we are
 
