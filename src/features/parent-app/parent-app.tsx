@@ -28,6 +28,7 @@ import type { CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { Split } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
+import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 
 type Props = {
   subtitle?: string;
@@ -47,12 +48,14 @@ type Props = {
   due?: DuePayout[];
   payoutHistory?: PayoutHistoryRow[];
   paidThisMonthCents?: number;
+  settlementPeriod?: SettlementPeriod | null;
   onMarkPaid?: (
     kidId: string,
     amountCents: number,
     method: PayoutMethod,
     detail?: string,
   ) => void;
+  onMarkAllSettled?: () => void;
   // Chores
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];
@@ -85,7 +88,9 @@ export function ParentApp({
   due,
   payoutHistory,
   paidThisMonthCents,
+  settlementPeriod,
   onMarkPaid,
+  onMarkAllSettled,
   chores,
   assignees,
   onAddChore,
@@ -129,7 +134,9 @@ export function ParentApp({
           due={due}
           history={payoutHistory}
           thisMonthCents={paidThisMonthCents}
+          settlementPeriod={settlementPeriod}
           onMarkPaid={onMarkPaid}
+          onMarkAllSettled={onMarkAllSettled}
         />
       ) : (
         <ParentSettingsScreen

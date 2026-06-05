@@ -22,6 +22,11 @@ import {
 } from "@/features/giving/default-giving-actions";
 import type { GivingSuggestion } from "@/features/giving/giving-actions";
 import {
+  getActiveSettlementPeriod,
+  settleAllSettlementBuckets,
+} from "@/features/settlement/default-settlement-actions";
+import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
+import {
   approveChoreForHousehold,
   createChoreForHousehold,
   listChoresForHousehold,
@@ -57,21 +62,30 @@ export default function ParentHomeRoute() {
   const [chores, setChores] = useState<CreatedChore[]>([]);
   const [purchases, setPurchases] = useState<HouseholdPurchaseRequest[]>([]);
   const [suggestions, setSuggestions] = useState<GivingSuggestion[]>([]);
+  const [settlementPeriod, setSettlementPeriod] = useState<SettlementPeriod | null>(null);
 
   const reload = useCallback(async () => {
     if (!householdId) {
       return;
     }
 
-    const [nextKids, settings, nextPayouts, nextChores, nextPurchases, nextSuggestions] =
-      await Promise.all([
-        listHouseholdKids(householdId),
-        getHouseholdSettings(householdId),
-        listPayoutsForHousehold(householdId),
-        listChoresForHousehold(householdId),
-        listPurchaseRequestsForHousehold(householdId),
-        listGivingSuggestionsForHousehold(householdId),
-      ]);
+    const [
+      nextKids,
+      settings,
+      nextPayouts,
+      nextChores,
+      nextPurchases,
+      nextSuggestions,
+      nextPeriod,
+    ] = await Promise.all([
+      listHouseholdKids(householdId),
+      getHouseholdSettings(householdId),
+      listPayoutsForHousehold(householdId),
+      listChoresForHousehold(householdId),
+      listPurchaseRequestsForHousehold(householdId),
+      listGivingSuggestionsForHousehold(householdId),
+      getActiveSettlementPeriod(householdId),
+    ]);
 
     setKids(nextKids);
     setCurrency(settings.currency);
@@ -80,6 +94,7 @@ export default function ParentHomeRoute() {
     setChores(nextChores);
     setPurchases(nextPurchases);
     setSuggestions(nextSuggestions);
+    setSettlementPeriod(nextPeriod);
   }, [householdId]);
 
   useFocusEffect(
@@ -97,8 +112,17 @@ export default function ParentHomeRoute() {
         listChoresForHousehold(householdId),
         listPurchaseRequestsForHousehold(householdId),
         listGivingSuggestionsForHousehold(householdId),
+        getActiveSettlementPeriod(householdId),
       ]).then(
-        ([nextKids, settings, nextPayouts, nextChores, nextPurchases, nextSuggestions]) => {
+        ([
+          nextKids,
+          settings,
+          nextPayouts,
+          nextChores,
+          nextPurchases,
+          nextSuggestions,
+          nextPeriod,
+        ]) => {
           if (mounted) {
             setKids(nextKids);
             setCurrency(settings.currency);
@@ -107,6 +131,7 @@ export default function ParentHomeRoute() {
             setChores(nextChores);
             setPurchases(nextPurchases);
             setSuggestions(nextSuggestions);
+            setSettlementPeriod(nextPeriod);
           }
         },
       );
@@ -226,6 +251,18 @@ export default function ParentHomeRoute() {
       due={due}
       payoutHistory={toPayoutHistoryRows(payouts, kids)}
       paidThisMonthCents={payoutsThisMonthCents(payouts)}
+      settlementPeriod={settlementPeriod}
+      onMarkAllSettled={async () => {
+        if (!householdId || !settlementPeriod) {
+          return;
+        }
+
+        await settleAllSettlementBuckets({
+          householdId,
+          periodId: settlementPeriod.id,
+        });
+        await reload();
+      }}
       onMarkPaid={async (kidId, amountCents, method, detail) => {
         if (!householdId) {
           return;

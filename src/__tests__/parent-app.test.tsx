@@ -231,6 +231,46 @@ describe("ParentApp · Payments", () => {
     render(<ParentApp initialTab="pay" due={[]} payoutHistory={history} />);
     expect(screen.getByText("All paid up.")).toBeOnTheScreen();
   });
+
+  it("marks the settlement period settled", () => {
+    const onMarkAllSettled = jest.fn();
+    render(
+      <ParentApp
+        initialTab="pay"
+        due={due}
+        settlementPeriod={{
+          id: "sp1",
+          frequency: "weekly",
+          startsOn: "2026-05-30",
+          endsOn: "2026-06-05",
+          bucketStatuses: { spend: "pending", savings: "pending", giving: "pending" },
+        }}
+        onMarkAllSettled={onMarkAllSettled}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Mark all settled"));
+    expect(onMarkAllSettled).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a settled period without a settle button", () => {
+    render(
+      <ParentApp
+        initialTab="pay"
+        due={due}
+        settlementPeriod={{
+          id: "sp1",
+          frequency: "weekly",
+          startsOn: "2026-05-30",
+          endsOn: "2026-06-05",
+          bucketStatuses: { spend: "settled", savings: "settled", giving: "settled" },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Period settled")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Mark all settled")).toBeNull();
+  });
 });
 
 describe("ParentApp · Chores", () => {

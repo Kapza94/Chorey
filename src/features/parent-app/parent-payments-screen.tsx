@@ -11,6 +11,7 @@ import {
 } from "@/features/money/currency";
 import { formatReward, parseRewardCents } from "@/features/chores/money";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
+import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import { ParentHeader } from "@/features/parent-app/parent-primitives";
 
 export type DuePayout = {
@@ -58,12 +59,14 @@ type Props = {
   due?: DuePayout[];
   history?: PayoutHistoryRow[];
   thisMonthCents?: number;
+  settlementPeriod?: SettlementPeriod | null;
   onMarkPaid?: (
     kidId: string,
     amountCents: number,
     method: PayoutMethod,
     detail?: string,
   ) => void;
+  onMarkAllSettled?: () => void;
 };
 
 export function ParentPaymentsScreen({
@@ -71,7 +74,9 @@ export function ParentPaymentsScreen({
   due = [],
   history = [],
   thisMonthCents = 0,
+  settlementPeriod,
   onMarkPaid,
+  onMarkAllSettled,
 }: Props) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [sheetKid, setSheetKid] = useState<DuePayout | null>(null);
@@ -103,6 +108,13 @@ export function ParentPaymentsScreen({
             keeps the record.
           </Text>
         </View>
+
+        {settlementPeriod ? (
+          <SettlementCard
+            period={settlementPeriod}
+            onMarkAllSettled={onMarkAllSettled}
+          />
+        ) : null}
 
         <SectionLabel>Due this period</SectionLabel>
 
@@ -271,6 +283,113 @@ export function ParentPaymentsScreen({
       </Text>
     );
   }
+}
+
+const PERIOD_MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+function periodDay(iso: string): string {
+  const date = new Date(iso);
+  return `${PERIOD_MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}`;
+}
+
+function SettlementCard({
+  period,
+  onMarkAllSettled,
+}: {
+  period: SettlementPeriod;
+  onMarkAllSettled?: () => void;
+}) {
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const buckets: { key: "spend" | "savings" | "giving"; label: string }[] = [
+    { key: "spend", label: "Spend" },
+    { key: "savings", label: "Save" },
+    { key: "giving", label: "Give" },
+  ];
+  const allSettled = buckets.every(
+    (bucket) => period.bucketStatuses[bucket.key] === "settled",
+  );
+
+  return (
+    <View
+      style={{
+        marginHorizontal: 18,
+        marginBottom: 16,
+        padding: 16,
+        backgroundColor: scheme.bgRaised,
+        borderColor: scheme.border,
+        borderWidth: 1,
+        borderRadius: 16,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+        <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
+          {period.frequency === "monthly" ? "This month" : "This week"}
+        </Text>
+        <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+          {periodDay(period.startsOn)} – {periodDay(period.endsOn)}
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+        {buckets.map((bucket) => {
+          const settled = period.bucketStatuses[bucket.key] === "settled";
+          return (
+            <View
+              key={bucket.key}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 5,
+                paddingVertical: 8,
+                borderRadius: radius.sm,
+                backgroundColor: settled ? scheme.tint.giving : scheme.bgSunken,
+              }}
+            >
+              {settled ? (
+                <Check size={13} color={bucketInk("giving")} strokeWidth={3} />
+              ) : null}
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: settled ? bucketInk("giving") : scheme.fgMuted, fontSize: 12 },
+                ]}
+              >
+                {bucket.label}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      {allSettled ? (
+        <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 12 }]}>
+          Period settled
+        </Text>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Mark all settled"
+          onPress={onMarkAllSettled}
+          style={({ pressed }) => ({
+            marginTop: 12,
+            alignItems: "center",
+            paddingVertical: 11,
+            borderRadius: radius.pill,
+            backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+          })}
+        >
+          <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 14 }]}>
+            Mark all settled
+          </Text>
+        </Pressable>
+      )}
+    </View>
+  );
 }
 
 function DueCard({
