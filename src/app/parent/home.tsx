@@ -9,6 +9,7 @@ import { getHouseholdSettings } from "@/features/household/default-household-act
 import { toPayoutHistoryRows } from "@/features/parent-app/payout-history";
 import {
   approveChoreForHousehold,
+  createChoreForHousehold,
   listChoresForHousehold,
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
@@ -151,8 +152,34 @@ export default function ParentHomeRoute() {
         });
         setPayouts(await listPayoutsForHousehold(householdId));
       }}
-      chores={[]}
+      chores={chores.map((chore) => ({
+        id: chore.id,
+        name: chore.title,
+        valueCents: chore.rewardCents,
+        freq: "One-off",
+        assignedTo: kidsById.get(chore.childProfileId)?.name ?? "",
+      }))}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
+      onAddChore={async ({ name, rewardCents, assigneeId }) => {
+        if (!householdId || !name.trim()) {
+          return;
+        }
+
+        // "all" fans the chore out to every kid as a separate instance.
+        const targetIds =
+          assigneeId === "all" ? kids.map((kid) => kid.id) : [assigneeId];
+        await Promise.all(
+          targetIds.map((childProfileId) =>
+            createChoreForHousehold({
+              householdId,
+              childProfileId,
+              title: name.trim(),
+              rewardCents,
+            }),
+          ),
+        );
+        await reload();
+      }}
     />
   );
 }
