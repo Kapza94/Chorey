@@ -2,7 +2,10 @@ import { useState } from "react";
 import { View } from "react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
-import { ParentKidsScreen } from "@/features/parent-app/parent-kids-screen";
+import {
+  ParentKidsScreen,
+  type PendingApproval,
+} from "@/features/parent-app/parent-kids-screen";
 import {
   ParentPaymentsScreen,
   type DuePayout,
@@ -29,9 +32,11 @@ type Props = {
   currency?: CurrencyCode;
   split?: Split;
   kids?: ParentKid[];
+  pendingApprovals?: PendingApproval[];
   onSelectKid?: (id: string) => void;
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
+  onApproveChore?: (choreId: string) => void;
   // Payments
   due?: DuePayout[];
   payoutHistory?: PayoutHistoryRow[];
@@ -62,9 +67,11 @@ export function ParentApp({
   currency,
   split,
   kids,
+  pendingApprovals,
   onSelectKid,
   onAddKid,
   onReviewApprovals,
+  onApproveChore,
   due,
   payoutHistory,
   paidThisMonthCents,
@@ -87,9 +94,11 @@ export function ParentApp({
           subtitle={subtitle}
           currency={currency}
           kids={kids}
+          pendingApprovals={pendingApprovals}
           onSelectKid={onSelectKid}
           onAddKid={onAddKid}
           onReviewApprovals={onReviewApprovals}
+          onApproveChore={onApproveChore}
         />
       ) : tab === "chores" ? (
         <ParentChoresScreen

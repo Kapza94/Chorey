@@ -3,9 +3,15 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
+import type { PendingApproval } from "@/features/parent-app/parent-kids-screen";
 import { listHouseholdKids } from "@/features/parent-app/default-parent-kids-actions";
 import { getHouseholdSettings } from "@/features/household/default-household-actions";
 import { toPayoutHistoryRows } from "@/features/parent-app/payout-history";
+import {
+  approveChoreForHousehold,
+  listChoresForHousehold,
+} from "@/features/chores/default-chore-actions";
+import type { CreatedChore } from "@/features/chores/chore-actions";
 import {
   listPayoutsForHousehold,
   recordPayoutForHousehold,
@@ -32,6 +38,26 @@ export default function ParentHomeRoute() {
   const [currency, setCurrency] = useState<CurrencyCode>(DEFAULT_CURRENCY);
   const [split, setSplit] = useState<Split>(DEFAULT_SPLIT);
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [chores, setChores] = useState<CreatedChore[]>([]);
+
+  const reload = useCallback(async () => {
+    if (!householdId) {
+      return;
+    }
+
+    const [nextKids, settings, nextPayouts, nextChores] = await Promise.all([
+      listHouseholdKids(householdId),
+      getHouseholdSettings(householdId),
+      listPayoutsForHousehold(householdId),
+      listChoresForHousehold(householdId),
+    ]);
+
+    setKids(nextKids);
+    setCurrency(settings.currency);
+    setSplit(settings.split);
+    setPayouts(nextPayouts);
+    setChores(nextChores);
+  }, [householdId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -45,12 +71,14 @@ export default function ParentHomeRoute() {
         listHouseholdKids(householdId),
         getHouseholdSettings(householdId),
         listPayoutsForHousehold(householdId),
-      ]).then(([nextKids, settings, nextPayouts]) => {
+        listChoresForHousehold(householdId),
+      ]).then(([nextKids, settings, nextPayouts, nextChores]) => {
         if (mounted) {
           setKids(nextKids);
           setCurrency(settings.currency);
           setSplit(settings.split);
           setPayouts(nextPayouts);
+          setChores(nextChores);
         }
       });
 
@@ -59,6 +87,20 @@ export default function ParentHomeRoute() {
       };
     }, [householdId]),
   );
+
+  const kidsById = new Map(kids.map((kid) => [kid.id, kid]));
+  const pendingApprovals: PendingApproval[] = chores
+    .filter((chore) => chore.status === "submitted")
+    .map((chore) => {
+      const kid = kidsById.get(chore.childProfileId);
+      return {
+        id: chore.id,
+        childName: kid?.name ?? "",
+        title: chore.title,
+        rewardCents: chore.rewardCents,
+        tone: kid?.tone ?? "allowance",
+      };
+    });
 
   const due: DuePayout[] = kids.map((kid) => ({
     id: kid.id,
@@ -78,6 +120,15 @@ export default function ParentHomeRoute() {
       currency={currency}
       split={split}
       kids={kids}
+      pendingApprovals={pendingApprovals}
+      onApproveChore={async (choreId) => {
+        if (!householdId) {
+          return;
+        }
+
+        await approveChoreForHousehold({ householdId, choreId });
+        await reload();
+      }}
       onAddKid={() =>
         router.push({
           pathname: "/parent/children/new",

@@ -79,6 +79,32 @@ describe("ParentApp · Kids", () => {
     fireEvent.press(screen.getByLabelText("Add kid"));
     expect(onAddKid).toHaveBeenCalledTimes(1);
   });
+
+  it("reviews and approves a pending chore from the banner", () => {
+    const onApproveChore = jest.fn();
+    const pendingApprovals = [
+      {
+        id: "ci1",
+        childName: "Mia",
+        title: "Dishes",
+        rewardCents: 250,
+        tone: "allowance" as const,
+      },
+    ];
+    render(
+      <ParentApp
+        kids={[mia, eli]}
+        pendingApprovals={pendingApprovals}
+        onApproveChore={onApproveChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Review approvals"));
+    // the review sheet lists the submitted chore
+    expect(screen.getByText("Dishes")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Approve Dishes"));
+    expect(onApproveChore).toHaveBeenCalledWith("ci1");
+  });
 });
 
 describe("ParentApp · Payments", () => {
