@@ -92,6 +92,20 @@ export function createHouseholdActions(
 /** Read-only household settings (currency + split) for any household member. */
 export function createHouseholdReadActions(client: HouseholdClient) {
   return {
+    /** Household ids the signed-in parent belongs to (RLS-scoped), oldest first. */
+    async listHouseholdIds(): Promise<string[]> {
+      const result = await client
+        .from("households")
+        .select("id")
+        .order("created_at", { ascending: true });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return (result.data ?? []).map((row: { id: string }) => row.id);
+    },
+
     async getHouseholdSettings(householdId: string): Promise<HouseholdSettings> {
       const result = await client
         .from("households")

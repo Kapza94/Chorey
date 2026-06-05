@@ -17,3 +17,9 @@ export async function getHouseholdSettings(
   return createHouseholdReadActions(supabase).getHouseholdSettings(householdId);
 }
 
+/** The signed-in parent's primary household id, or null if they have none yet. */
+export async function getPrimaryHouseholdId(): Promise<string | null> {
+  const ids = await createHouseholdReadActions(supabase).listHouseholdIds();
+  return ids[0] ?? null;
+}
+

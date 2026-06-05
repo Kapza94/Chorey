@@ -30,19 +30,17 @@ export default function NewChildRoute() {
       householdId={householdId ?? ""}
       onBack={() => router.back()}
       onChildCreated={async (child) => {
-        const access = await createAccessCodeForChild({
+        // Generate the child's access code on creation.
+        await createAccessCodeForChild({
           childProfileId: child.id,
           householdId: child.householdId,
         });
 
+        // Always return to the redesigned parent app, which reloads its kid
+        // aggregates on focus and will show the new child.
         router.replace({
-          pathname: "/parent/dashboard",
-          params: {
-            childAccessCode: access.accessCode,
-            childName: child.displayName,
-            childProfileId: child.id,
-            householdId: child.householdId,
-          },
+          pathname: "/parent/home",
+          params: { householdId: child.householdId },
         });
       }}
       onCreateChild={createChildForHousehold}
