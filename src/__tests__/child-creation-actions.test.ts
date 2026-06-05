@@ -105,3 +105,33 @@ describe("child creation actions", () => {
     );
   });
 });
+
+describe("child settings updates", () => {
+  it("updates a child's budget and cadence scoped to the household", async () => {
+    const eqHousehold = jest.fn().mockResolvedValue({ error: null });
+    const eqId = jest.fn(() => ({ eq: eqHousehold }));
+    const update = jest.fn(() => ({ eq: eqId }));
+    const client = { from: jest.fn(() => ({ update })) };
+
+    await createChildActions(client as any, "household-1").updateChildSettings({
+      childProfileId: "child-1",
+      budgetCents: 3000,
+      cadence: "monthly",
+    });
+
+    expect(client.from).toHaveBeenCalledWith("child_profiles");
+    expect(update).toHaveBeenCalledWith({ budget_cents: 3000, cadence: "monthly" });
+    expect(eqId).toHaveBeenCalledWith("id", "child-1");
+    expect(eqHousehold).toHaveBeenCalledWith("household_id", "household-1");
+  });
+
+  it("no-ops when no settings are supplied", async () => {
+    const client = { from: jest.fn() };
+
+    await createChildActions(client as any, "household-1").updateChildSettings({
+      childProfileId: "child-1",
+    });
+
+    expect(client.from).not.toHaveBeenCalled();
+  });
+});

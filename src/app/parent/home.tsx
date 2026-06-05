@@ -13,6 +13,7 @@ import {
   listChoresForHousehold,
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
+import { updateChildSettingsForHousehold } from "@/features/children/default-child-actions";
 import {
   listPayoutsForHousehold,
   recordPayoutForHousehold,
@@ -128,6 +129,30 @@ export default function ParentHomeRoute() {
         }
 
         await approveChoreForHousehold({ householdId, choreId });
+        await reload();
+      }}
+      onChangeBudget={async (kidId, budgetCents) => {
+        if (!householdId) {
+          return;
+        }
+
+        await updateChildSettingsForHousehold({
+          householdId,
+          childProfileId: kidId,
+          budgetCents,
+        });
+        await reload();
+      }}
+      onChangeCadence={async (kidId, cadence) => {
+        if (!householdId) {
+          return;
+        }
+
+        await updateChildSettingsForHousehold({
+          householdId,
+          childProfileId: kidId,
+          cadence,
+        });
         await reload();
       }}
       onAddKid={() =>

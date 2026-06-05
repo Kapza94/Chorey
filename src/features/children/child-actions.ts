@@ -102,5 +102,34 @@ export function createChildActions(client: ChildClient, householdId: string) {
         householdId: result.data.household_id,
       };
     },
+
+    /** Update a kid's budget cap and/or cadence (parent-admin RLS). */
+    async updateChildSettings(input: {
+      childProfileId: string;
+      budgetCents?: number;
+      cadence?: SettlementFrequency;
+    }): Promise<void> {
+      const payload: Record<string, unknown> = {};
+      if (input.budgetCents != null) {
+        payload.budget_cents = input.budgetCents;
+      }
+      if (input.cadence) {
+        payload.cadence = input.cadence;
+      }
+
+      if (Object.keys(payload).length === 0) {
+        return;
+      }
+
+      const result = await client
+        .from("child_profiles")
+        .update(payload)
+        .eq("id", input.childProfileId)
+        .eq("household_id", householdId);
+
+      if (result.error) {
+        throw result.error;
+      }
+    },
   };
 }
