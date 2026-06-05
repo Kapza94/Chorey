@@ -46,6 +46,18 @@ describe("KidApp shell", () => {
     expect(screen.queryByLabelText("Request Skateboard")).toBeNull();
   });
 
+  it("adds a wish through the add-wish sheet", () => {
+    const onAddWish = jest.fn();
+    render(<KidApp {...baseProps} initialTab="wish" onAddWish={onAddWish} />);
+
+    fireEvent.press(screen.getByLabelText("Add a wish"));
+    fireEvent.changeText(screen.getByLabelText("Wish name"), "Lego set");
+    fireEvent.changeText(screen.getByLabelText("Wish cost"), "40.00");
+    fireEvent.press(screen.getByLabelText("Save wish"));
+
+    expect(onAddWish).toHaveBeenCalledWith({ name: "Lego set", targetCents: 4000 });
+  });
+
   it("shows locked savings and the chosen cause on You", () => {
     render(<KidApp {...baseProps} initialTab="you" />);
 
@@ -54,5 +66,16 @@ describe("KidApp shell", () => {
     expect(screen.getByText(/Saving up to give to/)).toBeOnTheScreen();
     expect(screen.getByText(/Animals/)).toBeOnTheScreen();
     expect(screen.getByLabelText("Mark as given")).toBeOnTheScreen();
+  });
+
+  it("suggests a giving cause through the sheet", () => {
+    const onSuggestCause = jest.fn();
+    render(<KidApp {...baseProps} initialTab="you" onSuggestCause={onSuggestCause} />);
+
+    fireEvent.press(screen.getByLabelText("Suggest a cause"));
+    fireEvent.changeText(screen.getByLabelText("Cause name"), "Animal shelter");
+    fireEvent.press(screen.getByLabelText("Send suggestion"));
+
+    expect(onSuggestCause).toHaveBeenCalledWith("Animal shelter");
   });
 });

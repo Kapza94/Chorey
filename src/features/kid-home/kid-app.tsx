@@ -22,14 +22,14 @@ type Props = {
   spendableCents?: number;
   wishes?: KidWish[];
   onRequestPurchase?: (wishId: string) => void;
-  onAddWish?: () => void;
+  onAddWish?: (input: { name: string; targetCents: number }) => void;
   // You
   savingsCents?: number;
   givingCents?: number;
   causeName?: string | null;
   givenCents?: number;
   onMarkGiven?: () => void;
-  onPickCause?: () => void;
+  onSuggestCause?: (name: string) => void;
   onSeeEarnings?: () => void;
   onTellParent?: () => void;
   /** override the starting tab (tests) */
@@ -57,7 +57,7 @@ export function KidApp({
   causeName,
   givenCents,
   onMarkGiven,
-  onPickCause,
+  onSuggestCause,
   onSeeEarnings,
   onTellParent,
   initialTab = "home",
@@ -94,7 +94,7 @@ export function KidApp({
           causeName={causeName}
           givenCents={givenCents}
           onMarkGiven={onMarkGiven}
-          onPickCause={onPickCause}
+          onSuggestCause={onSuggestCause}
           onSeeEarnings={onSeeEarnings}
           onTellParent={onTellParent}
         />

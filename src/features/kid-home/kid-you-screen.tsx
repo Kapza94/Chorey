@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChevronRight, Heart, Lock, Sparkles, Wallet } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -18,7 +19,7 @@ type Props = {
   causeName?: string | null;
   givenCents?: number;
   onMarkGiven?: () => void;
-  onPickCause?: () => void;
+  onSuggestCause?: (name: string) => void;
   onSeeEarnings?: () => void;
   onTellParent?: () => void;
 };
@@ -32,7 +33,7 @@ export function KidYouScreen({
   causeName,
   givenCents = 0,
   onMarkGiven,
-  onPickCause,
+  onSuggestCause,
   onSeeEarnings,
   onTellParent,
 }: Props) {
@@ -41,9 +42,10 @@ export function KidYouScreen({
   const giving = bucketTokens.giving.ramp;
   const allowance = bucketTokens.spend.ramp;
   const initial = name.trim().charAt(0).toUpperCase() || "?";
+  const [suggesting, setSuggesting] = useState(false);
 
   const quickActions = [
-    { label: "Pick a different cause", Icon: Heart, onPress: onPickCause },
+    { label: "Suggest a cause", Icon: Heart, onPress: () => setSuggesting(true) },
     { label: "See all earnings", Icon: Wallet, onPress: onSeeEarnings },
     { label: "Tell a parent something", Icon: Sparkles, onPress: onTellParent },
   ];
@@ -254,6 +256,126 @@ export function KidYouScreen({
           ))}
         </View>
       </ScrollView>
+
+      <SuggestCauseSheet
+        visible={suggesting}
+        onClose={() => setSuggesting(false)}
+        onConfirm={(causeName) => {
+          onSuggestCause?.(causeName);
+          setSuggesting(false);
+        }}
+      />
     </View>
+  );
+}
+
+function SuggestCauseSheet({
+  visible,
+  onClose,
+  onConfirm,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: (name: string) => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const giving = bucketTokens.giving.ramp;
+  const [name, setName] = useState("");
+  const canSave = name.trim().length > 0;
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable
+        accessibilityLabel="Dismiss"
+        onPress={() => {
+          setName("");
+          onClose();
+        }}
+        style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: scheme.bgModal,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingHorizontal: 22,
+          paddingTop: 14,
+          paddingBottom: 30,
+          ...scheme.shadow.lg,
+        }}
+      >
+        <View
+          style={{
+            width: 38,
+            height: 4,
+            borderRadius: radius.pill,
+            backgroundColor: palette.border.strong,
+            alignSelf: "center",
+            marginBottom: 16,
+          }}
+        />
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, marginBottom: 6 }]}>
+          Suggest a cause.
+        </Text>
+        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginBottom: 16 }]}>
+          A parent approves it before you can give to it.
+        </Text>
+
+        <TextInput
+          accessibilityLabel="Cause name"
+          value={name}
+          onChangeText={setName}
+          placeholder="e.g. Animal shelter"
+          placeholderTextColor={scheme.fgFaint}
+          style={{
+            backgroundColor: scheme.bgPage,
+            borderColor: palette.border.mid,
+            borderWidth: 1,
+            borderRadius: radius.sm,
+            paddingHorizontal: 14,
+            paddingVertical: 11,
+            fontFamily: typography.family.body.regular,
+            fontSize: 15,
+            color: scheme.fg,
+            marginBottom: 20,
+          }}
+        />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Send suggestion"
+          accessibilityState={{ disabled: !canSave }}
+          disabled={!canSave}
+          onPress={() => {
+            onConfirm(name.trim());
+            setName("");
+          }}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            paddingVertical: 14,
+            borderRadius: radius.pill,
+            backgroundColor: canSave
+              ? pressed
+                ? giving[400]
+                : giving[200]
+              : scheme.bgSunken,
+            opacity: canSave ? 1 : 0.6,
+          })}
+        >
+          <Text
+            style={[
+              typography.text.label,
+              { color: canSave ? giving[800] : scheme.fgFaint, fontSize: 15 },
+            ]}
+          >
+            Send to a parent
+          </Text>
+        </Pressable>
+      </View>
+    </Modal>
   );
 }

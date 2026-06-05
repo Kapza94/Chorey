@@ -12,11 +12,15 @@ import {
 } from "@/features/chores/default-child-chore-actions";
 import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
 import {
+  createWishlistItemForChild,
   listWishlistForChild,
   requestWishlistPurchase,
 } from "@/features/spend-wishlist/default-spend-wishlist-actions";
 import type { SpendWishlistItem } from "@/features/spend-wishlist/spend-wishlist-actions";
-import { listGivingOptionsForChild } from "@/features/giving/default-giving-actions";
+import {
+  listGivingOptionsForChild,
+  suggestGivingOptionForChild,
+} from "@/features/giving/default-giving-actions";
 import type { GivingOption } from "@/features/giving/giving-actions";
 
 const emptyBalances: BucketBalances = {
@@ -121,6 +125,14 @@ export default function ChildHomeRoute() {
       }}
       spendableCents={bucketBalances.spendCents}
       wishes={wishes}
+      onAddWish={async ({ name, targetCents }) => {
+        if (!accessCode) {
+          return;
+        }
+
+        await createWishlistItemForChild({ accessCode, name, targetCents });
+        setWishlistItems(await listWishlistForChild(accessCode));
+      }}
       onRequestPurchase={async (wishId) => {
         if (!accessCode) {
           return;
@@ -136,6 +148,14 @@ export default function ChildHomeRoute() {
       savingsCents={bucketBalances.savingsCents}
       givingCents={bucketBalances.givingCents}
       causeName={givingOptions[0]?.name ?? null}
+      onSuggestCause={async (causeName) => {
+        if (!accessCode) {
+          return;
+        }
+
+        await suggestGivingOptionForChild({ accessCode, name: causeName });
+        setGivingOptions(await listGivingOptionsForChild(accessCode));
+      }}
     />
   );
 }
