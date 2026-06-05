@@ -179,7 +179,10 @@ export function OnboardingFlow({
   auth,
   persist,
 }: {
-  onComplete?: (result: OnboardingResult) => void;
+  onComplete?: (
+    result: OnboardingResult,
+    persisted?: OnboardingPersistResult | null,
+  ) => void;
   initialStep?: Step;
   /** Account creation actions; when omitted the account step just advances. */
   auth?: OnboardingAuth;
@@ -207,7 +210,7 @@ export function OnboardingFlow({
     joinCode: joinCodeFor(data.familyName),
   });
 
-  const finishParent = () => onComplete?.(buildParentResult());
+  const finishParent = () => onComplete?.(buildParentResult(), persisted);
 
   const persistParent = async () => {
     const result = await persist?.(buildParentResult());

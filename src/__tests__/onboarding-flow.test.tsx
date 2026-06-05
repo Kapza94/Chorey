@@ -102,6 +102,9 @@ describe("OnboardingFlow", () => {
     expect(result.chores).toHaveLength(1);
     expect(result.causes).toEqual(["Animals"]);
     expect(result.joinCode).toBe("CHRIVE");
+
+    // onComplete also forwards the persisted IDs so the route can load real rows.
+    expect(onComplete.mock.calls[0][1]).toMatchObject({ householdId: "h1" });
   });
 
   it("commits a kid and offers adding another (no add-kid button)", () => {

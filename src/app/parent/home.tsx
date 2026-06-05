@@ -1,19 +1,54 @@
+import { useCallback, useState } from "react";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+
 import { ParentApp } from "@/features/parent-app/parent-app";
-import {
-  getOnboardingResult,
-  parentPreviewFromResult,
-} from "@/features/onboarding/onboarding-handoff";
-import { payoutsThisMonthCents } from "@/features/payments/payment-actions";
-import type { DuePayout, PayoutHistoryRow } from "@/features/parent-app/parent-payments-screen";
+import type { ParentKid } from "@/features/parent-app/parent-primitives";
+import { listHouseholdKids } from "@/features/parent-app/default-parent-kids-actions";
+import { getHouseholdSettings } from "@/features/household/default-household-actions";
+import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
+import { DEFAULT_CURRENCY, type CurrencyCode } from "@/features/money/currency";
+import type { DuePayout } from "@/features/parent-app/parent-payments-screen";
 
 /**
- * Preview route for the redesigned parent app, seeded from the onboarding the
- * user just completed. Real Supabase wiring (per-kid aggregates) is the next
- * step; this lets the whole redesign be walked in the simulator today.
+ * The redesigned parent app, fed from real Supabase rows for the household the
+ * parent just created. Per-kid aggregates come from the `list_household_kids`
+ * RPC; currency + split come from the household row. (Payout history is a
+ * follow-up — see the build plan.)
  */
 export default function ParentHomeRoute() {
-  const result = getOnboardingResult();
-  const { currency, split, kids } = parentPreviewFromResult(result);
+  const params = useLocalSearchParams<{ householdId?: string }>();
+  const householdId = Array.isArray(params.householdId)
+    ? params.householdId[0]
+    : params.householdId;
+
+  const [kids, setKids] = useState<ParentKid[]>([]);
+  const [currency, setCurrency] = useState<CurrencyCode>(DEFAULT_CURRENCY);
+  const [split, setSplit] = useState<Split>(DEFAULT_SPLIT);
+
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+
+      if (!householdId) {
+        return;
+      }
+
+      Promise.all([
+        listHouseholdKids(householdId),
+        getHouseholdSettings(householdId),
+      ]).then(([nextKids, settings]) => {
+        if (mounted) {
+          setKids(nextKids);
+          setCurrency(settings.currency);
+          setSplit(settings.split);
+        }
+      });
+
+      return () => {
+        mounted = false;
+      };
+    }, [householdId]),
+  );
 
   const due: DuePayout[] = kids.map((kid) => ({
     id: kid.id,
@@ -27,20 +62,6 @@ export default function ParentHomeRoute() {
     cadence: kid.cadence,
   }));
 
-  const history: PayoutHistoryRow[] =
-    kids.length > 0
-      ? [
-          {
-            id: "h1",
-            kidName: kids[0].name,
-            tone: kids[0].tone,
-            dateLabel: "May 25",
-            method: "cash",
-            amountCents: kids[0].budgetCents,
-          },
-        ]
-      : [];
-
   return (
     <ParentApp
       subtitle="This week"
@@ -48,17 +69,8 @@ export default function ParentHomeRoute() {
       split={split}
       kids={kids}
       due={due}
-      payoutHistory={history}
-      paidThisMonthCents={payoutsThisMonthCents(
-        history.map((row) => ({
-          id: row.id,
-          childProfileId: "",
-          childName: row.kidName,
-          amountCents: row.amountCents,
-          method: row.method,
-          paidAt: new Date().toISOString(),
-        })),
-      )}
+      payoutHistory={[]}
+      paidThisMonthCents={0}
       chores={[]}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
     />

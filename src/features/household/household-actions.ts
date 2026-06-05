@@ -1,10 +1,15 @@
 import { currencyForCountry, type CurrencyCode } from "@/features/money/currency";
-import type { Split } from "@/features/money/split";
+import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 
 export type SettlementFrequency = "weekly" | "monthly";
 
 type HouseholdClient = {
   from(table: string): any;
+};
+
+export type HouseholdSettings = {
+  currency: CurrencyCode;
+  split: Split;
 };
 
 export type CreateHouseholdInput = {
@@ -80,6 +85,34 @@ export function createHouseholdActions(
       }
 
       return result.data as CreatedHousehold;
+    },
+  };
+}
+
+/** Read-only household settings (currency + split) for any household member. */
+export function createHouseholdReadActions(client: HouseholdClient) {
+  return {
+    async getHouseholdSettings(householdId: string): Promise<HouseholdSettings> {
+      const result = await client
+        .from("households")
+        .select("currency, split_spend, split_save, split_give")
+        .eq("id", householdId)
+        .single();
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      const row = result.data;
+
+      return {
+        currency: (row?.currency ?? "USD") as CurrencyCode,
+        split: {
+          spend: row?.split_spend ?? DEFAULT_SPLIT.spend,
+          save: row?.split_save ?? DEFAULT_SPLIT.save,
+          give: row?.split_give ?? DEFAULT_SPLIT.give,
+        },
+      };
     },
   };
 }
