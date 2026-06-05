@@ -41,8 +41,44 @@ describe("payment actions", () => {
       childName: "Mina",
       amountCents: 1850,
       method: "cash",
+      note: null,
       paidAt: "2026-06-02T09:00:00.000Z",
     });
+  });
+
+  it("records an other payout with a note detail", async () => {
+    const single = jest.fn().mockResolvedValue({
+      data: {
+        id: "payout-3",
+        child_profile_id: "child-1",
+        amount_cents: 1850,
+        method: "other",
+        note: "Lego set",
+        paid_at: "2026-06-02T09:00:00.000Z",
+        child: { display_name: "Mina" },
+      },
+      error: null,
+    });
+    const select = jest.fn(() => ({ single }));
+    const insert = jest.fn(() => ({ select }));
+    const client = { from: jest.fn(() => ({ insert })) };
+
+    const actions = createPaymentActions(client as any, "household-1");
+    const payout = await actions.recordPayout({
+      childProfileId: "child-1",
+      amountCents: 1850,
+      method: "other",
+      note: "Lego set",
+    });
+
+    expect(insert).toHaveBeenCalledWith({
+      household_id: "household-1",
+      child_profile_id: "child-1",
+      amount_cents: 1850,
+      method: "other",
+      note: "Lego set",
+    });
+    expect(payout.note).toBe("Lego set");
   });
 
   it("rejects a non-positive payout amount", async () => {
@@ -92,6 +128,7 @@ describe("payoutsThisMonthCents", () => {
       childName: "Mina",
       amountCents: 1000,
       method: "cash",
+      note: null,
       paidAt: "2026-06-02T09:00:00.000Z",
     },
     {
@@ -100,6 +137,7 @@ describe("payoutsThisMonthCents", () => {
       childName: "Mina",
       amountCents: 500,
       method: "cash",
+      note: null,
       paidAt: "2026-06-20T09:00:00.000Z",
     },
     {
@@ -108,6 +146,7 @@ describe("payoutsThisMonthCents", () => {
       childName: "Mina",
       amountCents: 999,
       method: "cash",
+      note: null,
       paidAt: "2026-05-30T09:00:00.000Z",
     },
   ];

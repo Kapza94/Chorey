@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
@@ -16,6 +16,7 @@ import type { DuePayout } from "@/features/parent-app/parent-payments-screen";
  * follow-up — see the build plan.)
  */
 export default function ParentHomeRoute() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ householdId?: string }>();
   const householdId = Array.isArray(params.householdId)
     ? params.householdId[0]
@@ -68,6 +69,12 @@ export default function ParentHomeRoute() {
       currency={currency}
       split={split}
       kids={kids}
+      onAddKid={() =>
+        router.push({
+          pathname: "/parent/children/new",
+          params: { householdId: householdId ?? "" },
+        })
+      }
       due={due}
       payoutHistory={[]}
       paidThisMonthCents={0}

@@ -10,6 +10,8 @@ export type Payout = {
   childName: string;
   amountCents: number;
   method: PayoutMethod;
+  /** for `other` payouts: what the kid was given (e.g. "Gift"); null otherwise. */
+  note: string | null;
   /** ISO timestamp of when the off-app payment was recorded */
   paidAt: string;
 };
@@ -18,10 +20,12 @@ export type RecordPayoutInput = {
   childProfileId: string;
   amountCents: number;
   method: PayoutMethod;
+  /** optional detail for `other` payouts (a preset label or free text). */
+  note?: string;
 };
 
 const PAYOUT_COLUMNS =
-  "id, child_profile_id, amount_cents, method, paid_at, child:child_profiles(display_name)";
+  "id, child_profile_id, amount_cents, method, note, paid_at, child:child_profiles(display_name)";
 
 function mapPayout(row: any): Payout {
   return {
@@ -31,6 +35,7 @@ function mapPayout(row: any): Payout {
     childName: row.child?.display_name ?? row.child_name ?? "",
     amountCents: row.amount_cents,
     method: row.method,
+    note: row.note ?? null,
     paidAt: row.paid_at,
   };
 }
@@ -47,14 +52,21 @@ export function createPaymentActions(client: PaymentClient, householdId: string)
         throw new Error("Payout amount must be greater than zero.");
       }
 
+      const payload: Record<string, unknown> = {
+        household_id: householdId,
+        child_profile_id: input.childProfileId,
+        amount_cents: input.amountCents,
+        method: input.method,
+      };
+
+      // Only set the note column when supplied, so cash payouts stay clean.
+      if (input.note) {
+        payload.note = input.note;
+      }
+
       const result = await client
         .from("payouts")
-        .insert({
-          household_id: householdId,
-          child_profile_id: input.childProfileId,
-          amount_cents: input.amountCents,
-          method: input.method,
-        })
+        .insert(payload)
         .select(PAYOUT_COLUMNS)
         .single();
 

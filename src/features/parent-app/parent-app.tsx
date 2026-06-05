@@ -36,7 +36,12 @@ type Props = {
   due?: DuePayout[];
   payoutHistory?: PayoutHistoryRow[];
   paidThisMonthCents?: number;
-  onMarkPaid?: (kidId: string, amountCents: number, method: PayoutMethod) => void;
+  onMarkPaid?: (
+    kidId: string,
+    amountCents: number,
+    method: PayoutMethod,
+    detail?: string,
+  ) => void;
   // Chores
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];

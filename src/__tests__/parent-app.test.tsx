@@ -69,6 +69,16 @@ describe("ParentApp · Kids", () => {
     fireEvent.press(screen.getByLabelText("Pay tab"));
     expect(screen.queryByText("Kids.")).toBeNull();
   });
+
+  it("shows a labelled Add kid button that fires onAddKid", () => {
+    const onAddKid = jest.fn();
+    render(<ParentApp kids={[mia]} onAddKid={onAddKid} />);
+
+    // The affordance reads as text, not just a bare plus.
+    expect(screen.getByText("Add kid")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Add kid"));
+    expect(onAddKid).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("ParentApp · Payments", () => {
@@ -112,16 +122,49 @@ describe("ParentApp · Payments", () => {
     expect(screen.getByText("$22.00 this month")).toBeOnTheScreen();
   });
 
-  it("records a payout through the mark-as-paid sheet", () => {
+  it("records a cash payout through the mark-as-paid sheet", () => {
     const onMarkPaid = jest.fn();
     render(<ParentApp initialTab="pay" due={due} onMarkPaid={onMarkPaid} />);
 
     fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
-    // sheet opens, amount prefilled to 18.50
-    fireEvent.press(screen.getByLabelText("Bank transfer"));
+    // sheet opens, amount prefilled to 18.50, cash is the default method
     fireEvent.press(screen.getByLabelText("Confirm payout"));
 
-    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "bank_transfer");
+    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "cash", undefined);
+  });
+
+  it("no longer offers bank transfer as a method", () => {
+    render(<ParentApp initialTab="pay" due={due} onMarkPaid={jest.fn()} />);
+
+    fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
+    expect(screen.queryByLabelText("Bank transfer")).toBeNull();
+    expect(screen.getByLabelText("Cash")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Other")).toBeOnTheScreen();
+  });
+
+  it("captures a preset Other detail", () => {
+    const onMarkPaid = jest.fn();
+    render(<ParentApp initialTab="pay" due={due} onMarkPaid={onMarkPaid} />);
+
+    fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
+    fireEvent.press(screen.getByLabelText("Other"));
+    fireEvent.press(screen.getByLabelText("Gift"));
+    fireEvent.press(screen.getByLabelText("Confirm payout"));
+
+    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "other", "Gift");
+  });
+
+  it("captures a free-text Other detail via Something else", () => {
+    const onMarkPaid = jest.fn();
+    render(<ParentApp initialTab="pay" due={due} onMarkPaid={onMarkPaid} />);
+
+    fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
+    fireEvent.press(screen.getByLabelText("Other"));
+    fireEvent.press(screen.getByLabelText("Something else"));
+    fireEvent.changeText(screen.getByLabelText("What did you give?"), "Lego set");
+    fireEvent.press(screen.getByLabelText("Confirm payout"));
+
+    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "other", "Lego set");
   });
 
   it("shows the all-paid-up empty state", () => {
@@ -168,6 +211,53 @@ describe("ParentApp · Chores", () => {
       rewardCents: 250,
       assigneeId: "k1",
     });
+  });
+
+  it("hides Everyone when there is only one kid", () => {
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        assignees={[{ id: "k1", name: "Mia" }]}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("New chore"));
+    expect(screen.getByLabelText("Assign to Mia")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Assign to Everyone")).toBeNull();
+  });
+
+  it("offers Everyone once there is more than one kid", () => {
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia, eli]}
+        assignees={[
+          { id: "k1", name: "Mia" },
+          { id: "k2", name: "Eli" },
+        ]}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("New chore"));
+    expect(screen.getByLabelText("Assign to Everyone")).toBeOnTheScreen();
+  });
+
+  it("caps assignee names at three behind a More toggle", () => {
+    const four = [
+      { id: "k1", name: "Mia" },
+      { id: "k2", name: "Eli" },
+      { id: "k3", name: "Sam" },
+      { id: "k4", name: "Zoe" },
+    ];
+    render(<ParentApp initialTab="chores" kids={[mia, eli]} assignees={four} />);
+
+    fireEvent.press(screen.getByLabelText("New chore"));
+    expect(screen.getByLabelText("Assign to Mia")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Assign to Zoe")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Show more kids"));
+    expect(screen.getByLabelText("Assign to Zoe")).toBeOnTheScreen();
   });
 });
 

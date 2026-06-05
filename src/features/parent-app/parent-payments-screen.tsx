@@ -31,17 +31,26 @@ export type PayoutHistoryRow = {
   tone: "allowance" | "savings" | "giving";
   dateLabel: string;
   method: PayoutMethod;
+  /** for `other` payouts: what the kid was actually given (e.g. "Gift"). */
+  detail?: string | null;
   amountCents: number;
 };
 
+// No bank transfer for now — parents pay in cash or with something else.
 const METHODS: { id: PayoutMethod; label: string }[] = [
   { id: "cash", label: "Cash" },
-  { id: "bank_transfer", label: "Bank transfer" },
   { id: "other", label: "Other" },
 ];
 
-function methodLabel(method: PayoutMethod) {
-  return METHODS.find((m) => m.id === method)?.label ?? "Other";
+// Preset "other" payouts; the last option reveals a free-text field.
+const OTHER_PRESETS = ["Gift", "Treat", "Toy", "Voucher"];
+const OTHER_CUSTOM = "Something else";
+
+function methodLabel(row: Pick<PayoutHistoryRow, "method" | "detail">) {
+  if (row.method === "other") {
+    return row.detail ? `Other · ${row.detail}` : "Other";
+  }
+  return METHODS.find((m) => m.id === row.method)?.label ?? "Cash";
 }
 
 type Props = {
@@ -49,7 +58,12 @@ type Props = {
   due?: DuePayout[];
   history?: PayoutHistoryRow[];
   thisMonthCents?: number;
-  onMarkPaid?: (kidId: string, amountCents: number, method: PayoutMethod) => void;
+  onMarkPaid?: (
+    kidId: string,
+    amountCents: number,
+    method: PayoutMethod,
+    detail?: string,
+  ) => void;
 };
 
 export function ParentPaymentsScreen({
@@ -85,8 +99,8 @@ export function ParentPaymentsScreen({
         >
           <Sparkles size={16} color={palette.semantic.info[600]} strokeWidth={2.2} />
           <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}>
-            Pay your kids however you like — cash or bank transfer. Chorey just keeps the
-            record.
+            Pay your kids however you like — cash, a gift, or something else. Chorey just
+            keeps the record.
           </Text>
         </View>
 
@@ -219,7 +233,7 @@ export function ParentPaymentsScreen({
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[typography.text.label, { color: scheme.fg }]}>{row.kidName}</Text>
                   <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
-                    {row.dateLabel} · {methodLabel(row.method)}
+                    {row.dateLabel} · {methodLabel(row)}
                   </Text>
                 </View>
                 <Text style={[typography.text.money, { fontSize: 14, color: scheme.fg }]}>
@@ -235,9 +249,9 @@ export function ParentPaymentsScreen({
         kid={sheetKid}
         currency={currency}
         onClose={() => setSheetKid(null)}
-        onConfirm={(amountCents, method) => {
+        onConfirm={(amountCents, method, detail) => {
           if (sheetKid) {
-            onMarkPaid?.(sheetKid.id, amountCents, method);
+            onMarkPaid?.(sheetKid.id, amountCents, method, detail);
           }
           setSheetKid(null);
         }}
@@ -384,11 +398,13 @@ function MarkPaidSheet({
   kid: DuePayout | null;
   currency: CurrencyCode;
   onClose: () => void;
-  onConfirm: (amountCents: number, method: PayoutMethod) => void;
+  onConfirm: (amountCents: number, method: PayoutMethod, detail?: string) => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PayoutMethod>("cash");
+  const [otherChoice, setOtherChoice] = useState<string>(OTHER_PRESETS[0]);
+  const [otherText, setOtherText] = useState("");
 
   // Reset the form whenever a new kid opens the sheet.
   const visible = kid != null;
@@ -401,13 +417,28 @@ function MarkPaidSheet({
     amountCents = 0;
   }
 
+  // For an `other` payout, the detail is the preset label, or the free text the
+  // parent typed under "Something else".
+  const detail =
+    method === "other"
+      ? otherChoice === OTHER_CUSTOM
+        ? otherText.trim() || undefined
+        : otherChoice
+      : undefined;
+
+  const resetForm = () => {
+    setAmount("");
+    setMethod("cash");
+    setOtherChoice(OTHER_PRESETS[0]);
+    setOtherText("");
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable
         accessibilityLabel="Dismiss"
         onPress={() => {
-          setAmount("");
-          setMethod("cash");
+          resetForm();
           onClose();
         }}
         style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
@@ -471,7 +502,7 @@ function MarkPaidSheet({
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
           How you paid
         </Text>
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 22 }}>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: method === "other" ? 14 : 22 }}>
           {METHODS.map((option) => {
             const selected = option.id === method;
             return (
@@ -505,13 +536,75 @@ function MarkPaidSheet({
           })}
         </View>
 
+        {method === "other" ? (
+          <View style={{ marginBottom: 22 }}>
+            <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+              What did you give?
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {[...OTHER_PRESETS, OTHER_CUSTOM].map((preset) => {
+                const selected = preset === otherChoice;
+                return (
+                  <Pressable
+                    key={preset}
+                    accessibilityRole="button"
+                    accessibilityLabel={preset}
+                    accessibilityState={{ selected }}
+                    onPress={() => setOtherChoice(preset)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 9,
+                      borderRadius: radius.sm,
+                      backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
+                      borderWidth: 1.5,
+                      borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        typography.text.label,
+                        {
+                          color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted,
+                          fontSize: 13,
+                        },
+                      ]}
+                    >
+                      {preset}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {otherChoice === OTHER_CUSTOM ? (
+              <TextInput
+                accessibilityLabel="What did you give?"
+                value={otherText}
+                onChangeText={setOtherText}
+                placeholder="e.g. Lego set"
+                placeholderTextColor={scheme.fgFaint}
+                style={{
+                  marginTop: 10,
+                  backgroundColor: scheme.bgPage,
+                  borderColor: palette.border.mid,
+                  borderWidth: 1.5,
+                  borderRadius: radius.sm,
+                  paddingHorizontal: 14,
+                  paddingVertical: 11,
+                  fontFamily: typography.family.body.regular,
+                  fontSize: 15,
+                  color: scheme.fg,
+                }}
+              />
+            ) : null}
+          </View>
+        ) : null}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Confirm payout"
           onPress={() => {
-            onConfirm(amountCents, method);
-            setAmount("");
-            setMethod("cash");
+            onConfirm(amountCents, method, detail);
+            resetForm();
           }}
           style={({ pressed }) => ({
             flexDirection: "row",

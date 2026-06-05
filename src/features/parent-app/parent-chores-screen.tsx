@@ -40,7 +40,7 @@ export function ParentChoresScreen({
   assignees = [],
   onAddChore,
 }: Props) {
-  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const { scheme, typography, palette, radius } = useChoreyTheme();
   const [showAdd, setShowAdd] = useState(false);
 
   return (
@@ -215,8 +215,14 @@ function AddChoreSheet({
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [name, setName] = useState("");
   const [value, setValue] = useState("2.00");
-  const options: ChoreAssignee[] = [...assignees, { id: "all", name: "Everyone" }];
-  const [assigneeId, setAssigneeId] = useState(options[0]?.id ?? "all");
+  const [showAllAssignees, setShowAllAssignees] = useState(false);
+  const [assigneeId, setAssigneeId] = useState(assignees[0]?.id ?? "all");
+
+  // "Everyone" only makes sense with more than one kid. Names are capped at
+  // three behind a More toggle so the panel stays calm with a big family.
+  const showEveryone = assignees.length > 1;
+  const visibleKids = showAllAssignees ? assignees : assignees.slice(0, 3);
+  const hasMoreKids = assignees.length > 3 && !showAllAssignees;
 
   let rewardCents = 0;
   try {
@@ -229,7 +235,38 @@ function AddChoreSheet({
   const reset = () => {
     setName("");
     setValue("2.00");
-    setAssigneeId(options[0]?.id ?? "all");
+    setAssigneeId(assignees[0]?.id ?? "all");
+    setShowAllAssignees(false);
+  };
+
+  const renderChip = (option: ChoreAssignee) => {
+    const selected = option.id === assigneeId;
+    return (
+      <Pressable
+        key={option.id}
+        accessibilityRole="button"
+        accessibilityLabel={`Assign to ${option.name}`}
+        accessibilityState={{ selected }}
+        onPress={() => setAssigneeId(option.id)}
+        style={{
+          paddingHorizontal: 14,
+          paddingVertical: 9,
+          borderRadius: radius.sm,
+          backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
+          borderWidth: 1.5,
+          borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+        }}
+      >
+        <Text
+          style={[
+            typography.text.label,
+            { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
+          ]}
+        >
+          {option.name}
+        </Text>
+      </Pressable>
+    );
   };
 
   return (
@@ -320,35 +357,27 @@ function AddChoreSheet({
           Assign to
         </Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          {options.map((option) => {
-            const selected = option.id === assigneeId;
-            return (
-              <Pressable
-                key={option.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Assign to ${option.name}`}
-                accessibilityState={{ selected }}
-                onPress={() => setAssigneeId(option.id)}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 9,
-                  borderRadius: radius.sm,
-                  backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
-                  borderWidth: 1.5,
-                  borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
-                }}
-              >
-                <Text
-                  style={[
-                    typography.text.label,
-                    { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
-                  ]}
-                >
-                  {option.name}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {visibleKids.map(renderChip)}
+          {hasMoreKids ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Show more kids"
+              onPress={() => setShowAllAssignees(true)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: radius.sm,
+                backgroundColor: scheme.bgPage,
+                borderWidth: 1.5,
+                borderColor: palette.border.mid,
+              }}
+            >
+              <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 13 }]}>
+                More…
+              </Text>
+            </Pressable>
+          ) : null}
+          {showEveryone ? renderChip({ id: "all", name: "Everyone" }) : null}
         </View>
 
         {/* Live split preview */}

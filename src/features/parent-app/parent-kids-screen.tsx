@@ -44,17 +44,22 @@ export function ParentKidsScreen({
               accessibilityRole="button"
               accessibilityLabel="Add kid"
               onPress={onAddKid}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: radius.pill,
-                backgroundColor: scheme.bgRaised,
+              style={({ pressed }) => ({
+                flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: 6,
+                paddingLeft: 11,
+                paddingRight: 14,
+                paddingVertical: 8,
+                borderRadius: radius.pill,
+                backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
                 ...scheme.shadow.xs,
-              }}
+              })}
             >
-              <Plus size={18} color={scheme.fg} strokeWidth={2.2} />
+              <Plus size={15} color={scheme.fg} strokeWidth={2.4} />
+              <Text style={[typography.text.label, { color: scheme.fg, fontSize: 13 }]}>
+                Add kid
+              </Text>
             </Pressable>
           }
         />
