@@ -42,7 +42,7 @@ describe("ParentApp · Kids", () => {
     expect(screen.getByText("Mia")).toBeOnTheScreen();
     expect(screen.getByText("Eli")).toBeOnTheScreen();
     // 2 + 0 pending across kids
-    expect(screen.getByText("2 chores need your approval")).toBeOnTheScreen();
+    expect(screen.getByText("2 things need you")).toBeOnTheScreen();
     // household earned total = 18.50 + 9.00 = 27.50
     expect(screen.getByText("$27.50")).toBeOnTheScreen();
   });
@@ -104,6 +104,40 @@ describe("ParentApp · Kids", () => {
     expect(screen.getByText("Dishes")).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Approve Dishes"));
     expect(onApproveChore).toHaveBeenCalledWith("ci1");
+  });
+
+  it("approves a purchase request from the review sheet", () => {
+    const onApprovePurchase = jest.fn();
+    render(
+      <ParentApp
+        kids={[mia]}
+        purchaseRequests={[
+          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500 },
+        ]}
+        onApprovePurchase={onApprovePurchase}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Review approvals"));
+    expect(screen.getByText("Skateboard")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Approve purchase Skateboard"));
+    expect(onApprovePurchase).toHaveBeenCalledWith("pr1");
+  });
+
+  it("approves a giving suggestion from the review sheet", () => {
+    const onApproveGivingSuggestion = jest.fn();
+    render(
+      <ParentApp
+        kids={[mia]}
+        givingSuggestions={[{ id: "gs1", childName: "Mia", name: "Animal shelter" }]}
+        onApproveGivingSuggestion={onApproveGivingSuggestion}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Review approvals"));
+    expect(screen.getByText("Animal shelter")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Approve cause Animal shelter"));
+    expect(onApproveGivingSuggestion).toHaveBeenCalledWith("gs1");
   });
 });
 

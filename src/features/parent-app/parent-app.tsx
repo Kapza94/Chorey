@@ -5,6 +5,8 @@ import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import {
   ParentKidsScreen,
   type PendingApproval,
+  type PendingGivingSuggestion,
+  type PendingPurchase,
 } from "@/features/parent-app/parent-kids-screen";
 import {
   ParentPaymentsScreen,
@@ -33,10 +35,14 @@ type Props = {
   split?: Split;
   kids?: ParentKid[];
   pendingApprovals?: PendingApproval[];
+  purchaseRequests?: PendingPurchase[];
+  givingSuggestions?: PendingGivingSuggestion[];
   onSelectKid?: (id: string) => void;
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
   onApproveChore?: (choreId: string) => void;
+  onApprovePurchase?: (requestId: string) => void;
+  onApproveGivingSuggestion?: (suggestionId: string) => void;
   // Payments
   due?: DuePayout[];
   payoutHistory?: PayoutHistoryRow[];
@@ -68,10 +74,14 @@ export function ParentApp({
   split,
   kids,
   pendingApprovals,
+  purchaseRequests,
+  givingSuggestions,
   onSelectKid,
   onAddKid,
   onReviewApprovals,
   onApproveChore,
+  onApprovePurchase,
+  onApproveGivingSuggestion,
   due,
   payoutHistory,
   paidThisMonthCents,
@@ -95,10 +105,14 @@ export function ParentApp({
           currency={currency}
           kids={kids}
           pendingApprovals={pendingApprovals}
+          purchaseRequests={purchaseRequests}
+          givingSuggestions={givingSuggestions}
           onSelectKid={onSelectKid}
           onAddKid={onAddKid}
           onReviewApprovals={onReviewApprovals}
           onApproveChore={onApproveChore}
+          onApprovePurchase={onApprovePurchase}
+          onApproveGivingSuggestion={onApproveGivingSuggestion}
         />
       ) : tab === "chores" ? (
         <ParentChoresScreen

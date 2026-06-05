@@ -3,10 +3,24 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
-import type { PendingApproval } from "@/features/parent-app/parent-kids-screen";
+import type {
+  PendingApproval,
+  PendingGivingSuggestion,
+  PendingPurchase,
+} from "@/features/parent-app/parent-kids-screen";
 import { listHouseholdKids } from "@/features/parent-app/default-parent-kids-actions";
 import { getHouseholdSettings } from "@/features/household/default-household-actions";
 import { toPayoutHistoryRows } from "@/features/parent-app/payout-history";
+import {
+  approvePurchaseRequestForHousehold,
+  listPurchaseRequestsForHousehold,
+} from "@/features/spend-wishlist/default-spend-wishlist-actions";
+import type { HouseholdPurchaseRequest } from "@/features/spend-wishlist/spend-wishlist-actions";
+import {
+  approveGivingSuggestionForHousehold,
+  listGivingSuggestionsForHousehold,
+} from "@/features/giving/default-giving-actions";
+import type { GivingSuggestion } from "@/features/giving/giving-actions";
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
@@ -41,24 +55,31 @@ export default function ParentHomeRoute() {
   const [split, setSplit] = useState<Split>(DEFAULT_SPLIT);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [chores, setChores] = useState<CreatedChore[]>([]);
+  const [purchases, setPurchases] = useState<HouseholdPurchaseRequest[]>([]);
+  const [suggestions, setSuggestions] = useState<GivingSuggestion[]>([]);
 
   const reload = useCallback(async () => {
     if (!householdId) {
       return;
     }
 
-    const [nextKids, settings, nextPayouts, nextChores] = await Promise.all([
-      listHouseholdKids(householdId),
-      getHouseholdSettings(householdId),
-      listPayoutsForHousehold(householdId),
-      listChoresForHousehold(householdId),
-    ]);
+    const [nextKids, settings, nextPayouts, nextChores, nextPurchases, nextSuggestions] =
+      await Promise.all([
+        listHouseholdKids(householdId),
+        getHouseholdSettings(householdId),
+        listPayoutsForHousehold(householdId),
+        listChoresForHousehold(householdId),
+        listPurchaseRequestsForHousehold(householdId),
+        listGivingSuggestionsForHousehold(householdId),
+      ]);
 
     setKids(nextKids);
     setCurrency(settings.currency);
     setSplit(settings.split);
     setPayouts(nextPayouts);
     setChores(nextChores);
+    setPurchases(nextPurchases);
+    setSuggestions(nextSuggestions);
   }, [householdId]);
 
   useFocusEffect(
@@ -74,15 +95,21 @@ export default function ParentHomeRoute() {
         getHouseholdSettings(householdId),
         listPayoutsForHousehold(householdId),
         listChoresForHousehold(householdId),
-      ]).then(([nextKids, settings, nextPayouts, nextChores]) => {
-        if (mounted) {
-          setKids(nextKids);
-          setCurrency(settings.currency);
-          setSplit(settings.split);
-          setPayouts(nextPayouts);
-          setChores(nextChores);
-        }
-      });
+        listPurchaseRequestsForHousehold(householdId),
+        listGivingSuggestionsForHousehold(householdId),
+      ]).then(
+        ([nextKids, settings, nextPayouts, nextChores, nextPurchases, nextSuggestions]) => {
+          if (mounted) {
+            setKids(nextKids);
+            setCurrency(settings.currency);
+            setSplit(settings.split);
+            setPayouts(nextPayouts);
+            setChores(nextChores);
+            setPurchases(nextPurchases);
+            setSuggestions(nextSuggestions);
+          }
+        },
+      );
 
       return () => {
         mounted = false;
@@ -104,6 +131,23 @@ export default function ParentHomeRoute() {
       };
     });
 
+  const purchaseRequests: PendingPurchase[] = purchases
+    .filter((request) => request.status === "pending")
+    .map((request) => ({
+      id: request.id,
+      childName: request.childName,
+      itemName: request.itemName,
+      targetCents: request.targetCents,
+    }));
+
+  const givingSuggestions: PendingGivingSuggestion[] = suggestions
+    .filter((suggestion) => suggestion.status === "pending")
+    .map((suggestion) => ({
+      id: suggestion.id,
+      childName: suggestion.childName ?? "",
+      name: suggestion.name,
+    }));
+
   const due: DuePayout[] = kids.map((kid) => ({
     id: kid.id,
     name: kid.name,
@@ -123,12 +167,30 @@ export default function ParentHomeRoute() {
       split={split}
       kids={kids}
       pendingApprovals={pendingApprovals}
+      purchaseRequests={purchaseRequests}
+      givingSuggestions={givingSuggestions}
       onApproveChore={async (choreId) => {
         if (!householdId) {
           return;
         }
 
         await approveChoreForHousehold({ householdId, choreId });
+        await reload();
+      }}
+      onApprovePurchase={async (requestId) => {
+        if (!householdId) {
+          return;
+        }
+
+        await approvePurchaseRequestForHousehold({ householdId, requestId });
+        await reload();
+      }}
+      onApproveGivingSuggestion={async (suggestionId) => {
+        if (!householdId) {
+          return;
+        }
+
+        await approveGivingSuggestionForHousehold({ householdId, suggestionId });
         await reload();
       }}
       onChangeBudget={async (kidId, budgetCents) => {

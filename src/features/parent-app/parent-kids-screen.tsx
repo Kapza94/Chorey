@@ -21,15 +21,34 @@ export type PendingApproval = {
   tone: ParentKid["tone"];
 };
 
+/** A kid's request to spend their Spend balance on a wishlist item. */
+export type PendingPurchase = {
+  id: string;
+  childName: string;
+  itemName: string;
+  targetCents: number;
+};
+
+/** A kid's suggested giving cause awaiting parent approval. */
+export type PendingGivingSuggestion = {
+  id: string;
+  childName: string;
+  name: string;
+};
+
 type Props = {
   subtitle?: string;
   currency?: CurrencyCode;
   kids?: ParentKid[];
   pendingApprovals?: PendingApproval[];
+  purchaseRequests?: PendingPurchase[];
+  givingSuggestions?: PendingGivingSuggestion[];
   onSelectKid?: (id: string) => void;
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
   onApproveChore?: (choreId: string) => void;
+  onApprovePurchase?: (requestId: string) => void;
+  onApproveGivingSuggestion?: (suggestionId: string) => void;
 };
 
 export function ParentKidsScreen({
@@ -37,15 +56,21 @@ export function ParentKidsScreen({
   currency = DEFAULT_CURRENCY,
   kids = [],
   pendingApprovals = [],
+  purchaseRequests = [],
+  givingSuggestions = [],
   onSelectKid,
   onAddKid,
   onReviewApprovals,
   onApproveChore,
+  onApprovePurchase,
+  onApproveGivingSuggestion,
 }: Props) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [reviewOpen, setReviewOpen] = useState(false);
 
   const totalPending = kids.reduce((sum, kid) => sum + kid.pendingApprovals, 0);
+  const reviewCount =
+    totalPending + purchaseRequests.length + givingSuggestions.length;
   const sum = (pick: (kid: ParentKid) => number) =>
     kids.reduce((total, kid) => total + pick(kid), 0);
 
@@ -80,7 +105,7 @@ export function ParentKidsScreen({
           }
         />
 
-        {totalPending > 0 ? (
+        {reviewCount > 0 ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Review approvals"
@@ -103,7 +128,7 @@ export function ParentKidsScreen({
             <Sparkles size={20} color={palette.semantic.warning[600]} strokeWidth={2.2} />
             <View style={{ flex: 1 }}>
               <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 13 }]}>
-                {totalPending} {totalPending === 1 ? "chore" : "chores"} need your approval
+                {reviewCount} {reviewCount === 1 ? "thing needs" : "things need"} you
               </Text>
               <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
                 Tap to review.
@@ -163,8 +188,14 @@ export function ParentKidsScreen({
       <ApprovalsReviewSheet
         visible={reviewOpen}
         pending={pendingApprovals}
+        purchaseRequests={purchaseRequests}
+        givingSuggestions={givingSuggestions}
         currency={currency}
-        onApprove={(choreId) => onApproveChore?.(choreId)}
+        onApproveChore={(choreId) => onApproveChore?.(choreId)}
+        onApprovePurchase={(requestId) => onApprovePurchase?.(requestId)}
+        onApproveGivingSuggestion={(suggestionId) =>
+          onApproveGivingSuggestion?.(suggestionId)
+        }
         onClose={() => setReviewOpen(false)}
       />
     </View>
@@ -174,17 +205,86 @@ export function ParentKidsScreen({
 function ApprovalsReviewSheet({
   visible,
   pending,
+  purchaseRequests,
+  givingSuggestions,
   currency,
-  onApprove,
+  onApproveChore,
+  onApprovePurchase,
+  onApproveGivingSuggestion,
   onClose,
 }: {
   visible: boolean;
   pending: PendingApproval[];
+  purchaseRequests: PendingPurchase[];
+  givingSuggestions: PendingGivingSuggestion[];
   currency: CurrencyCode;
-  onApprove: (choreId: string) => void;
+  onApproveChore: (choreId: string) => void;
+  onApprovePurchase: (requestId: string) => void;
+  onApproveGivingSuggestion: (suggestionId: string) => void;
   onClose: () => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
+  const isEmpty =
+    pending.length + purchaseRequests.length + givingSuggestions.length === 0;
+
+  const sectionLabel = (text: string) => (
+    <Text
+      style={[
+        typography.text.overline,
+        { color: scheme.fgFaint, marginTop: 6, marginBottom: 8 },
+      ]}
+    >
+      {text}
+    </Text>
+  );
+
+  const reviewRow = (
+    key: string,
+    title: string,
+    subtitle: string,
+    approveLabel: string,
+    onApprove: () => void,
+    ramp: Record<number, string>,
+  ) => (
+    <View
+      key={key}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        backgroundColor: scheme.bgRaised,
+        borderColor: scheme.border,
+        borderWidth: 1,
+        borderRadius: radius.md,
+      }}
+    >
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>{title}</Text>
+        <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+          {subtitle}
+        </Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={approveLabel}
+        onPress={onApprove}
+        style={({ pressed }) => ({
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          paddingHorizontal: 14,
+          paddingVertical: 9,
+          borderRadius: radius.pill,
+          backgroundColor: pressed ? ramp[400] : ramp[200],
+        })}
+      >
+        <Check size={14} color={ramp[800]} strokeWidth={3} />
+        <Text style={[typography.text.label, { color: ramp[800], fontSize: 13 }]}>Approve</Text>
+      </Pressable>
+    </View>
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -220,67 +320,71 @@ function ApprovalsReviewSheet({
           }}
         />
         <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, marginBottom: 4 }]}>
-          Approve work.
+          Needs you.
         </Text>
-        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginBottom: 16 }]}>
-          Approving credits the reward to the kid&apos;s buckets.
+        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginBottom: 12 }]}>
+          Approve finished work, purchases, and giving causes.
         </Text>
 
-        {pending.length === 0 ? (
+        {isEmpty ? (
           <Text style={[typography.text.body, { color: scheme.fgFaint, paddingVertical: 16 }]}>
-            Nothing to approve right now.
+            Nothing to review right now.
           </Text>
         ) : (
           <ScrollView style={{ flexGrow: 0 }}>
-            <View style={{ gap: 10 }}>
-              {pending.map((item) => {
-                const tone = bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp;
-                return (
-                  <View
-                    key={item.id}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 12,
-                      paddingHorizontal: 14,
-                      paddingVertical: 12,
-                      backgroundColor: scheme.bgRaised,
-                      borderColor: scheme.border,
-                      borderWidth: 1,
-                      borderRadius: radius.md,
-                    }}
-                  >
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
-                        {item.title}
-                      </Text>
-                      <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
-                        {item.childName} · {formatMoney(item.rewardCents, currency)}
-                      </Text>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Approve ${item.title}`}
-                      onPress={() => onApprove(item.id)}
-                      style={({ pressed }) => ({
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                        paddingHorizontal: 14,
-                        paddingVertical: 9,
-                        borderRadius: radius.pill,
-                        backgroundColor: pressed ? tone[400] : tone[200],
-                      })}
-                    >
-                      <Check size={14} color={tone[800]} strokeWidth={3} />
-                      <Text style={[typography.text.label, { color: tone[800], fontSize: 13 }]}>
-                        Approve
-                      </Text>
-                    </Pressable>
-                  </View>
-                );
-              })}
-            </View>
+            {pending.length > 0 ? (
+              <>
+                {sectionLabel("Chores to approve")}
+                <View style={{ gap: 10 }}>
+                  {pending.map((item) =>
+                    reviewRow(
+                      item.id,
+                      item.title,
+                      `${item.childName} · ${formatMoney(item.rewardCents, currency)}`,
+                      `Approve ${item.title}`,
+                      () => onApproveChore(item.id),
+                      bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp,
+                    ),
+                  )}
+                </View>
+              </>
+            ) : null}
+
+            {purchaseRequests.length > 0 ? (
+              <>
+                {sectionLabel("Purchase requests")}
+                <View style={{ gap: 10 }}>
+                  {purchaseRequests.map((item) =>
+                    reviewRow(
+                      item.id,
+                      item.itemName,
+                      `${item.childName} · ${formatMoney(item.targetCents, currency)}`,
+                      `Approve purchase ${item.itemName}`,
+                      () => onApprovePurchase(item.id),
+                      bucketTokens.spend.ramp,
+                    ),
+                  )}
+                </View>
+              </>
+            ) : null}
+
+            {givingSuggestions.length > 0 ? (
+              <>
+                {sectionLabel("Giving causes")}
+                <View style={{ gap: 10 }}>
+                  {givingSuggestions.map((item) =>
+                    reviewRow(
+                      item.id,
+                      item.name,
+                      `${item.childName} suggested`,
+                      `Approve cause ${item.name}`,
+                      () => onApproveGivingSuggestion(item.id),
+                      bucketTokens.giving.ramp,
+                    ),
+                  )}
+                </View>
+              </>
+            ) : null}
           </ScrollView>
         )}
       </View>
