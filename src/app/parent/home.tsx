@@ -5,6 +5,12 @@ import { ParentApp } from "@/features/parent-app/parent-app";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
 import { listHouseholdKids } from "@/features/parent-app/default-parent-kids-actions";
 import { getHouseholdSettings } from "@/features/household/default-household-actions";
+import { toPayoutHistoryRows } from "@/features/parent-app/payout-history";
+import {
+  listPayoutsForHousehold,
+  recordPayoutForHousehold,
+} from "@/features/payments/default-payment-actions";
+import { payoutsThisMonthCents, type Payout } from "@/features/payments/payment-actions";
 import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 import { DEFAULT_CURRENCY, type CurrencyCode } from "@/features/money/currency";
 import type { DuePayout } from "@/features/parent-app/parent-payments-screen";
@@ -12,8 +18,8 @@ import type { DuePayout } from "@/features/parent-app/parent-payments-screen";
 /**
  * The redesigned parent app, fed from real Supabase rows for the household the
  * parent just created. Per-kid aggregates come from the `list_household_kids`
- * RPC; currency + split come from the household row. (Payout history is a
- * follow-up — see the build plan.)
+ * RPC; currency + split come from the household row; payouts from the `payouts`
+ * table.
  */
 export default function ParentHomeRoute() {
   const router = useRouter();
@@ -25,6 +31,7 @@ export default function ParentHomeRoute() {
   const [kids, setKids] = useState<ParentKid[]>([]);
   const [currency, setCurrency] = useState<CurrencyCode>(DEFAULT_CURRENCY);
   const [split, setSplit] = useState<Split>(DEFAULT_SPLIT);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -37,11 +44,13 @@ export default function ParentHomeRoute() {
       Promise.all([
         listHouseholdKids(householdId),
         getHouseholdSettings(householdId),
-      ]).then(([nextKids, settings]) => {
+        listPayoutsForHousehold(householdId),
+      ]).then(([nextKids, settings, nextPayouts]) => {
         if (mounted) {
           setKids(nextKids);
           setCurrency(settings.currency);
           setSplit(settings.split);
+          setPayouts(nextPayouts);
         }
       });
 
@@ -76,8 +85,21 @@ export default function ParentHomeRoute() {
         })
       }
       due={due}
-      payoutHistory={[]}
-      paidThisMonthCents={0}
+      payoutHistory={toPayoutHistoryRows(payouts, kids)}
+      paidThisMonthCents={payoutsThisMonthCents(payouts)}
+      onMarkPaid={async (kidId, amountCents, method, detail) => {
+        if (!householdId) {
+          return;
+        }
+
+        await recordPayoutForHousehold(householdId, {
+          childProfileId: kidId,
+          amountCents,
+          method,
+          note: detail,
+        });
+        setPayouts(await listPayoutsForHousehold(householdId));
+      }}
       chores={[]}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
     />
