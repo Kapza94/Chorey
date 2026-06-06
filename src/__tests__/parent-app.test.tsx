@@ -358,6 +358,36 @@ describe("ParentApp · Chores", () => {
     });
   });
 
+  it("locks recurring options for a free household (no navigation)", () => {
+    const onAddChore = jest.fn();
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        chores={chores}
+        assignees={[{ id: "k1", name: "Mia" }]}
+        recurringLocked
+        onAddChore={onAddChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("New chore"));
+    fireEvent.changeText(screen.getByLabelText("Chore name"), "Feed cat");
+    // Tapping a locked recurrence shows an inline upsell, doesn't select it.
+    fireEvent.press(screen.getByLabelText("Repeat Daily"));
+    expect(
+      screen.getByText("Recurring chores are a Premium feature — coming soon."),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Add chore"));
+
+    // The chore is still created — as a one-off, with no recurrence.
+    expect(onAddChore).toHaveBeenCalledWith({
+      name: "Feed cat",
+      rewardCents: 200,
+      assigneeId: "k1",
+    });
+  });
+
   it("hides Everyone when there is only one kid", () => {
     render(
       <ParentApp

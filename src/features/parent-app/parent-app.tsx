@@ -61,6 +61,7 @@ type Props = {
   // Chores
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];
+  recurringLocked?: boolean;
   onAddChore?: (input: {
     name: string;
     rewardCents: number;
@@ -101,6 +102,7 @@ export function ParentApp({
   onMarkAllSettled,
   chores,
   assignees,
+  recurringLocked,
   onAddChore,
   onChangeBudget,
   onChangeCadence,
@@ -135,6 +137,7 @@ export function ParentApp({
           kids={kids}
           chores={chores}
           assignees={assignees}
+          recurringLocked={recurringLocked}
           onAddChore={onAddChore}
         />
       ) : tab === "pay" ? (

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, Plus } from "lucide-react-native";
+import { ChevronRight, Lock, Plus } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -30,6 +30,8 @@ type Props = {
   kids?: ParentKid[];
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];
+  /** when true, recurring options are Premium-locked (free/lapsed household). */
+  recurringLocked?: boolean;
   onAddChore?: (input: {
     name: string;
     rewardCents: number;
@@ -44,6 +46,7 @@ export function ParentChoresScreen({
   kids = [],
   chores = [],
   assignees = [],
+  recurringLocked = false,
   onAddChore,
 }: Props) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
@@ -133,6 +136,7 @@ export function ParentChoresScreen({
         currency={currency}
         split={split}
         assignees={assignees}
+        recurringLocked={recurringLocked}
         onClose={() => setShowAdd(false)}
         onConfirm={(input) => {
           onAddChore?.(input);
@@ -208,6 +212,7 @@ function AddChoreSheet({
   currency,
   split,
   assignees,
+  recurringLocked,
   onClose,
   onConfirm,
 }: {
@@ -215,6 +220,7 @@ function AddChoreSheet({
   currency: CurrencyCode;
   split: Split;
   assignees: ChoreAssignee[];
+  recurringLocked: boolean;
   onClose: () => void;
   onConfirm: (input: {
     name: string;
@@ -229,6 +235,7 @@ function AddChoreSheet({
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [assigneeId, setAssigneeId] = useState(assignees[0]?.id ?? "all");
   const [repeat, setRepeat] = useState<"one-off" | Recurrence>("one-off");
+  const [showRecurUpsell, setShowRecurUpsell] = useState(false);
 
   // "Everyone" only makes sense with more than one kid. Names are capped at
   // three behind a More toggle so the panel stays calm with a big family.
@@ -250,6 +257,7 @@ function AddChoreSheet({
     setAssigneeId(assignees[0]?.id ?? "all");
     setShowAllAssignees(false);
     setRepeat("one-off");
+    setShowRecurUpsell(false);
   };
 
   const REPEAT_OPTIONS: { id: "one-off" | Recurrence; label: string }[] = [
@@ -403,25 +411,39 @@ function AddChoreSheet({
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
           Repeat
         </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: showRecurUpsell ? 8 : 16 }}>
           {REPEAT_OPTIONS.map((option) => {
             const selected = option.id === repeat;
+            // Recurring options are Premium; lock them for free/lapsed homes.
+            const locked = recurringLocked && option.id !== "one-off";
             return (
               <Pressable
                 key={option.id}
                 accessibilityRole="button"
                 accessibilityLabel={`Repeat ${option.label}`}
-                accessibilityState={{ selected }}
-                onPress={() => setRepeat(option.id)}
+                accessibilityState={{ selected, disabled: locked }}
+                onPress={() => {
+                  if (locked) {
+                    setShowRecurUpsell(true);
+                    return;
+                  }
+                  setShowRecurUpsell(false);
+                  setRepeat(option.id);
+                }}
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
                   paddingHorizontal: 14,
                   paddingVertical: 9,
                   borderRadius: radius.sm,
                   backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
                   borderWidth: 1.5,
                   borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+                  opacity: locked ? 0.6 : 1,
                 }}
               >
+                {locked ? <Lock size={11} color={scheme.fgFaint} strokeWidth={2.4} /> : null}
                 <Text
                   style={[
                     typography.text.label,
@@ -434,6 +456,12 @@ function AddChoreSheet({
             );
           })}
         </View>
+
+        {showRecurUpsell ? (
+          <Text style={[typography.text.caption, { color: scheme.fgMuted, marginBottom: 16 }]}>
+            Recurring chores are a Premium feature — coming soon.
+          </Text>
+        ) : null}
 
         {/* Live split preview */}
         <View

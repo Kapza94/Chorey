@@ -26,6 +26,8 @@ import {
   settleAllSettlementBuckets,
 } from "@/features/settlement/default-settlement-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
+import { getHouseholdAccess } from "@/features/entitlements/default-entitlement-actions";
+import type { HouseholdAccess } from "@/features/entitlements/entitlements";
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
@@ -68,6 +70,7 @@ export default function ParentHomeRoute() {
   const [purchases, setPurchases] = useState<HouseholdPurchaseRequest[]>([]);
   const [suggestions, setSuggestions] = useState<GivingSuggestion[]>([]);
   const [settlementPeriod, setSettlementPeriod] = useState<SettlementPeriod | null>(null);
+  const [access, setAccess] = useState<HouseholdAccess>("free");
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -85,6 +88,7 @@ export default function ParentHomeRoute() {
       nextPurchases,
       nextSuggestions,
       nextPeriod,
+      nextAccess,
     ] = await Promise.all([
       listHouseholdKids(householdId),
       getHouseholdSettings(householdId),
@@ -93,6 +97,7 @@ export default function ParentHomeRoute() {
       listPurchaseRequestsForHousehold(householdId),
       listGivingSuggestionsForHousehold(householdId),
       getActiveSettlementPeriod(householdId),
+      getHouseholdAccess(householdId),
     ]);
 
     setKids(nextKids);
@@ -103,6 +108,7 @@ export default function ParentHomeRoute() {
     setPurchases(nextPurchases);
     setSuggestions(nextSuggestions);
     setSettlementPeriod(nextPeriod);
+    setAccess(nextAccess);
   }, [householdId]);
 
   useFocusEffect(
@@ -261,6 +267,7 @@ export default function ParentHomeRoute() {
         assignedTo: kidsById.get(chore.childProfileId)?.name ?? "",
       }))}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
+      recurringLocked={access !== "paid"}
       onAddChore={async ({ name, rewardCents, assigneeId, recurrence }) => {
         if (!householdId || !name.trim()) {
           return;
@@ -272,7 +279,8 @@ export default function ParentHomeRoute() {
         const title = name.trim();
 
         if (recurrence) {
-          // Recurring chores are paid-only; the action throws for free/lapsed.
+          // Recurring chores are paid-only. The sheet already locks the option
+          // for free homes, so this only runs for paid; guard quietly anyway.
           try {
             await Promise.all(
               targetIds.map((childProfileId) =>
@@ -287,7 +295,6 @@ export default function ParentHomeRoute() {
             );
             await ensureRecurringInstancesForHousehold(householdId);
           } catch {
-            router.push({ pathname: "/parent/upgrade", params: { householdId } });
             return;
           }
         } else {
