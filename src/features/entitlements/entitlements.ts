@@ -33,3 +33,8 @@ export function canAddChild(input: {
 
   return input.currentChildCount < 1;
 }
+
+/** Recurring chores are a paid-only feature. */
+export function canUseRecurringChores(access: HouseholdAccess): boolean {
+  return access === "paid";
+}
