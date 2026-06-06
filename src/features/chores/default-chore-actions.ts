@@ -28,3 +28,14 @@ export async function approveChoreForHousehold(input: {
     input.choreId,
   );
 }
+
+export async function sendBackChoreForHousehold(input: {
+  householdId: string;
+  choreId: string;
+  reason: string;
+}): Promise<CreatedChore> {
+  return createChoreActions(supabase, input.householdId).sendBackChore({
+    choreId: input.choreId,
+    reason: input.reason,
+  });
+}

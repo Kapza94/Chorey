@@ -12,6 +12,8 @@ export type ChildChore = {
   title: string;
   rewardCents: number;
   status: ChoreStatus;
+  /** why a parent sent it back (when status is sent_back); null otherwise. */
+  sentBackReason: string | null;
 };
 
 function mapChore(row: any): ChildChore {
@@ -20,6 +22,7 @@ function mapChore(row: any): ChildChore {
     title: row.title,
     rewardCents: row.reward_cents,
     status: row.status,
+    sentBackReason: row.sent_back_reason ?? null,
   };
 }
 

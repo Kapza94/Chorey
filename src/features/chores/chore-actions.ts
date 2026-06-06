@@ -66,6 +66,35 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
       return mapChore(result.data);
     },
 
+    async sendBackChore(input: {
+      choreId: string;
+      reason: string;
+    }): Promise<CreatedChore> {
+      const reason = input.reason.trim();
+
+      if (!reason) {
+        throw new Error("A reason is required to send a chore back.");
+      }
+
+      const result = await client
+        .from("chore_instances")
+        .update({ status: "sent_back", sent_back_reason: reason })
+        .eq("id", input.choreId)
+        .eq("status", "submitted")
+        .select("id, household_id, child_profile_id, title, reward_cents, status")
+        .single();
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (!result.data) {
+        throw new Error("Chore was not sent back.");
+      }
+
+      return mapChore(result.data);
+    },
+
     async createChore(input: CreateChoreInput): Promise<CreatedChore> {
       const title = input.title.trim();
 

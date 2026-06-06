@@ -179,7 +179,7 @@ select ok(
     from pg_policies
     where schemaname = 'public'
       and tablename = 'chore_instances'
-      and policyname = 'parent admins can approve submitted chores'
+      and policyname = 'parent admins can resolve submitted chores'
   ),
   'parent admin chore update policy exists'
 );

@@ -42,6 +42,7 @@ describe("child chore actions", () => {
       title: "Load dishwasher",
       rewardCents: 250,
       status: "assigned",
+      sentBackReason: null,
     });
     const actions = createChildChoreActions(client);
 
@@ -53,6 +54,7 @@ describe("child chore actions", () => {
         title: "Load dishwasher",
         rewardCents: 250,
         status: "assigned",
+        sentBackReason: null,
       },
     ]);
     expect(client.rpc).toHaveBeenCalledWith("list_child_chores", {
@@ -66,6 +68,7 @@ describe("child chore actions", () => {
       title: "Load dishwasher",
       rewardCents: 250,
       status: "assigned",
+      sentBackReason: null,
     });
     const actions = createChildChoreActions(client);
 
@@ -79,5 +82,29 @@ describe("child chore actions", () => {
       input_access_code: "123456",
       input_chore_id: "chore-1",
     });
+  });
+
+  it("maps a sent-back reason from the chore row", async () => {
+    const client = {
+      rpc: jest.fn(() =>
+        Promise.resolve({
+          data: [
+            {
+              id: "chore-1",
+              title: "Load dishwasher",
+              reward_cents: 250,
+              status: "sent_back",
+              sent_back_reason: "Please redo it",
+            },
+          ],
+          error: null,
+        }),
+      ),
+    };
+
+    const [chore] = await createChildChoreActions(client as any).listChores("123456");
+
+    expect(chore.status).toBe("sent_back");
+    expect(chore.sentBackReason).toBe("Please redo it");
   });
 });
