@@ -30,6 +30,7 @@ import {
   approveChoreForHousehold,
   createChoreForHousehold,
   listChoresForHousehold,
+  sendBackChoreForHousehold,
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
 import { updateChildSettingsForHousehold } from "@/features/children/default-child-actions";
@@ -200,6 +201,14 @@ export default function ParentHomeRoute() {
         }
 
         await approveChoreForHousehold({ householdId, choreId });
+        await reload();
+      }}
+      onSendBackChore={async (choreId, reason) => {
+        if (!householdId) {
+          return;
+        }
+
+        await sendBackChoreForHousehold({ householdId, choreId, reason });
         await reload();
       }}
       onApprovePurchase={async (requestId) => {

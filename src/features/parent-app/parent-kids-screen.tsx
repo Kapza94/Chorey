@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
-import { Check, ChevronRight, Plus, Sparkles } from "lucide-react-native";
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Check, ChevronRight, Plus, Sparkles, Undo2 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -47,6 +47,7 @@ type Props = {
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
   onApproveChore?: (choreId: string) => void;
+  onSendBackChore?: (choreId: string, reason: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
 };
@@ -62,6 +63,7 @@ export function ParentKidsScreen({
   onAddKid,
   onReviewApprovals,
   onApproveChore,
+  onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
 }: Props) {
@@ -192,6 +194,7 @@ export function ParentKidsScreen({
         givingSuggestions={givingSuggestions}
         currency={currency}
         onApproveChore={(choreId) => onApproveChore?.(choreId)}
+        onSendBackChore={(choreId, reason) => onSendBackChore?.(choreId, reason)}
         onApprovePurchase={(requestId) => onApprovePurchase?.(requestId)}
         onApproveGivingSuggestion={(suggestionId) =>
           onApproveGivingSuggestion?.(suggestionId)
@@ -209,6 +212,7 @@ function ApprovalsReviewSheet({
   givingSuggestions,
   currency,
   onApproveChore,
+  onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
   onClose,
@@ -219,6 +223,7 @@ function ApprovalsReviewSheet({
   givingSuggestions: PendingGivingSuggestion[];
   currency: CurrencyCode;
   onApproveChore: (choreId: string) => void;
+  onSendBackChore: (choreId: string, reason: string) => void;
   onApprovePurchase: (requestId: string) => void;
   onApproveGivingSuggestion: (suggestionId: string) => void;
   onClose: () => void;
@@ -336,16 +341,15 @@ function ApprovalsReviewSheet({
               <>
                 {sectionLabel("Chores to approve")}
                 <View style={{ gap: 10 }}>
-                  {pending.map((item) =>
-                    reviewRow(
-                      item.id,
-                      item.title,
-                      `${item.childName} · ${formatMoney(item.rewardCents, currency)}`,
-                      `Approve ${item.title}`,
-                      () => onApproveChore(item.id),
-                      bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp,
-                    ),
-                  )}
+                  {pending.map((item) => (
+                    <ChoreReviewRow
+                      key={item.id}
+                      item={item}
+                      currency={currency}
+                      onApprove={() => onApproveChore(item.id)}
+                      onSendBack={(reason) => onSendBackChore(item.id, reason)}
+                    />
+                  ))}
                 </View>
               </>
             ) : null}
@@ -389,6 +393,151 @@ function ApprovalsReviewSheet({
         )}
       </View>
     </Modal>
+  );
+}
+
+function ChoreReviewRow({
+  item,
+  currency,
+  onApprove,
+  onSendBack,
+}: {
+  item: PendingApproval;
+  currency: CurrencyCode;
+  onApprove: () => void;
+  onSendBack: (reason: string) => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const ramp = bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp;
+  const [back, setBack] = useState(false);
+  const [reason, setReason] = useState("");
+  const canSend = reason.trim().length > 0;
+
+  return (
+    <View
+      style={{
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        backgroundColor: scheme.bgRaised,
+        borderColor: scheme.border,
+        borderWidth: 1,
+        borderRadius: radius.md,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>{item.title}</Text>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+            {item.childName} · {formatMoney(item.rewardCents, currency)}
+          </Text>
+        </View>
+        {!back ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Send back ${item.title}`}
+              onPress={() => setBack(true)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: radius.pill,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: scheme.bgSunken,
+              }}
+            >
+              <Undo2 size={15} color={scheme.fgMuted} strokeWidth={2.2} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Approve ${item.title}`}
+              onPress={onApprove}
+              style={({ pressed }) => ({
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: radius.pill,
+                backgroundColor: pressed ? ramp[400] : ramp[200],
+              })}
+            >
+              <Check size={14} color={ramp[800]} strokeWidth={3} />
+              <Text style={[typography.text.label, { color: ramp[800], fontSize: 13 }]}>Approve</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+
+      {back ? (
+        <View style={{ marginTop: 10 }}>
+          <TextInput
+            accessibilityLabel="Send-back reason"
+            value={reason}
+            onChangeText={setReason}
+            placeholder="What needs fixing?"
+            placeholderTextColor={scheme.fgFaint}
+            autoFocus
+            style={{
+              backgroundColor: scheme.bgPage,
+              borderColor: palette.border.mid,
+              borderWidth: 1,
+              borderRadius: radius.sm,
+              paddingHorizontal: 12,
+              paddingVertical: 9,
+              fontFamily: typography.family.body.regular,
+              fontSize: 14,
+              color: scheme.fg,
+            }}
+          />
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancel send back"
+              onPress={() => {
+                setBack(false);
+                setReason("");
+              }}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: radius.pill,
+                backgroundColor: scheme.bgSunken,
+              }}
+            >
+              <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 13 }]}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Confirm send back"
+              accessibilityState={{ disabled: !canSend }}
+              disabled={!canSend}
+              onPress={() => onSendBack(reason.trim())}
+              style={({ pressed }) => ({
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: radius.pill,
+                backgroundColor: canSend
+                  ? pressed
+                    ? palette.semantic.warning[600]
+                    : scheme.tint.warning
+                  : scheme.bgSunken,
+                opacity: canSend ? 1 : 0.6,
+              })}
+            >
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: canSend ? palette.semantic.warning[600] : scheme.fgFaint, fontSize: 13 },
+                ]}
+              >
+                Send back
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }
 

@@ -42,6 +42,7 @@ type Props = {
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
   onApproveChore?: (choreId: string) => void;
+  onSendBackChore?: (choreId: string, reason: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
   // Payments
@@ -83,6 +84,7 @@ export function ParentApp({
   onAddKid,
   onReviewApprovals,
   onApproveChore,
+  onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
   due,
@@ -116,6 +118,7 @@ export function ParentApp({
           onAddKid={onAddKid}
           onReviewApprovals={onReviewApprovals}
           onApproveChore={onApproveChore}
+          onSendBackChore={onSendBackChore}
           onApprovePurchase={onApprovePurchase}
           onApproveGivingSuggestion={onApproveGivingSuggestion}
         />

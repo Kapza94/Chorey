@@ -106,6 +106,26 @@ describe("ParentApp · Kids", () => {
     expect(onApproveChore).toHaveBeenCalledWith("ci1");
   });
 
+  it("sends a chore back with a reason from the review sheet", () => {
+    const onSendBackChore = jest.fn();
+    render(
+      <ParentApp
+        kids={[mia]}
+        pendingApprovals={[
+          { id: "ci1", childName: "Mia", title: "Dishes", rewardCents: 250, tone: "allowance" },
+        ]}
+        onSendBackChore={onSendBackChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Review approvals"));
+    fireEvent.press(screen.getByLabelText("Send back Dishes"));
+    fireEvent.changeText(screen.getByLabelText("Send-back reason"), "Redo it");
+    fireEvent.press(screen.getByLabelText("Confirm send back"));
+
+    expect(onSendBackChore).toHaveBeenCalledWith("ci1", "Redo it");
+  });
+
   it("approves a purchase request from the review sheet", () => {
     const onApprovePurchase = jest.fn();
     render(

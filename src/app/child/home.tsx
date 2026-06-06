@@ -88,6 +88,10 @@ export default function ChildHomeRoute() {
         name: chore.title,
         valueCents: chore.rewardCents,
         done: isDone(chore.status),
+        note:
+          chore.status === "sent_back" && chore.sentBackReason
+            ? `Sent back: ${chore.sentBackReason}`
+            : undefined,
       })),
     [chores],
   );
