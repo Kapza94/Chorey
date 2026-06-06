@@ -33,6 +33,10 @@ import {
   sendBackChoreForHousehold,
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
+import {
+  createChoreTemplateForHousehold,
+  ensureRecurringInstancesForHousehold,
+} from "@/features/chores/default-chore-template-actions";
 import { updateChildSettingsForHousehold } from "@/features/children/default-child-actions";
 import {
   listPayoutsForHousehold,
@@ -70,6 +74,9 @@ export default function ParentHomeRoute() {
       return;
     }
 
+    // Materialize any recurring chores due this period before reading chores.
+    await ensureRecurringInstancesForHousehold(householdId);
+
     const [
       nextKids,
       settings,
@@ -100,47 +107,8 @@ export default function ParentHomeRoute() {
 
   useFocusEffect(
     useCallback(() => {
-      let mounted = true;
-
-      if (!householdId) {
-        return;
-      }
-
-      Promise.all([
-        listHouseholdKids(householdId),
-        getHouseholdSettings(householdId),
-        listPayoutsForHousehold(householdId),
-        listChoresForHousehold(householdId),
-        listPurchaseRequestsForHousehold(householdId),
-        listGivingSuggestionsForHousehold(householdId),
-        getActiveSettlementPeriod(householdId),
-      ]).then(
-        ([
-          nextKids,
-          settings,
-          nextPayouts,
-          nextChores,
-          nextPurchases,
-          nextSuggestions,
-          nextPeriod,
-        ]) => {
-          if (mounted) {
-            setKids(nextKids);
-            setCurrency(settings.currency);
-            setSplit(settings.split);
-            setPayouts(nextPayouts);
-            setChores(nextChores);
-            setPurchases(nextPurchases);
-            setSuggestions(nextSuggestions);
-            setSettlementPeriod(nextPeriod);
-          }
-        },
-      );
-
-      return () => {
-        mounted = false;
-      };
-    }, [householdId]),
+      void reload();
+    }, [reload]),
   );
 
   const kidsById = new Map(kids.map((kid) => [kid.id, kid]));
@@ -293,24 +261,48 @@ export default function ParentHomeRoute() {
         assignedTo: kidsById.get(chore.childProfileId)?.name ?? "",
       }))}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
-      onAddChore={async ({ name, rewardCents, assigneeId }) => {
+      onAddChore={async ({ name, rewardCents, assigneeId, recurrence }) => {
         if (!householdId || !name.trim()) {
           return;
         }
 
-        // "all" fans the chore out to every kid as a separate instance.
+        // "all" fans the chore out to every kid (one instance / template each).
         const targetIds =
           assigneeId === "all" ? kids.map((kid) => kid.id) : [assigneeId];
-        await Promise.all(
-          targetIds.map((childProfileId) =>
-            createChoreForHousehold({
-              householdId,
-              childProfileId,
-              title: name.trim(),
-              rewardCents,
-            }),
-          ),
-        );
+        const title = name.trim();
+
+        if (recurrence) {
+          // Recurring chores are paid-only; the action throws for free/lapsed.
+          try {
+            await Promise.all(
+              targetIds.map((childProfileId) =>
+                createChoreTemplateForHousehold({
+                  householdId,
+                  childProfileId,
+                  title,
+                  rewardCents,
+                  recurrence,
+                }),
+              ),
+            );
+            await ensureRecurringInstancesForHousehold(householdId);
+          } catch {
+            router.push({ pathname: "/parent/upgrade", params: { householdId } });
+            return;
+          }
+        } else {
+          await Promise.all(
+            targetIds.map((childProfileId) =>
+              createChoreForHousehold({
+                householdId,
+                childProfileId,
+                title,
+                rewardCents,
+              }),
+            ),
+          );
+        }
+
         await reload();
       }}
     />

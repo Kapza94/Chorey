@@ -29,6 +29,7 @@ import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { Split } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
+import type { Recurrence } from "@/features/chores/recurrence";
 
 type Props = {
   subtitle?: string;
@@ -60,7 +61,12 @@ type Props = {
   // Chores
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];
-  onAddChore?: (input: { name: string; rewardCents: number; assigneeId: string }) => void;
+  onAddChore?: (input: {
+    name: string;
+    rewardCents: number;
+    assigneeId: string;
+    recurrence?: Recurrence;
+  }) => void;
   // Settings
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;

@@ -10,6 +10,7 @@ import {
   type CurrencyCode,
 } from "@/features/money/currency";
 import { parseRewardCents } from "@/features/chores/money";
+import type { Recurrence } from "@/features/chores/recurrence";
 import { DEFAULT_SPLIT, splitCents, type Split } from "@/features/money/split";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
 
@@ -29,7 +30,12 @@ type Props = {
   kids?: ParentKid[];
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];
-  onAddChore?: (input: { name: string; rewardCents: number; assigneeId: string }) => void;
+  onAddChore?: (input: {
+    name: string;
+    rewardCents: number;
+    assigneeId: string;
+    recurrence?: Recurrence;
+  }) => void;
 };
 
 export function ParentChoresScreen({
@@ -210,13 +216,19 @@ function AddChoreSheet({
   split: Split;
   assignees: ChoreAssignee[];
   onClose: () => void;
-  onConfirm: (input: { name: string; rewardCents: number; assigneeId: string }) => void;
+  onConfirm: (input: {
+    name: string;
+    rewardCents: number;
+    assigneeId: string;
+    recurrence?: Recurrence;
+  }) => void;
 }) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [name, setName] = useState("");
   const [value, setValue] = useState("2.00");
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [assigneeId, setAssigneeId] = useState(assignees[0]?.id ?? "all");
+  const [repeat, setRepeat] = useState<"one-off" | Recurrence>("one-off");
 
   // "Everyone" only makes sense with more than one kid. Names are capped at
   // three behind a More toggle so the panel stays calm with a big family.
@@ -237,7 +249,15 @@ function AddChoreSheet({
     setValue("2.00");
     setAssigneeId(assignees[0]?.id ?? "all");
     setShowAllAssignees(false);
+    setRepeat("one-off");
   };
+
+  const REPEAT_OPTIONS: { id: "one-off" | Recurrence; label: string }[] = [
+    { id: "one-off", label: "One-off" },
+    { id: "daily", label: "Daily" },
+    { id: "weekly", label: "Weekly" },
+    { id: "monthly", label: "Monthly" },
+  ];
 
   const renderChip = (option: ChoreAssignee) => {
     const selected = option.id === assigneeId;
@@ -380,6 +400,41 @@ function AddChoreSheet({
           {showEveryone ? renderChip({ id: "all", name: "Everyone" }) : null}
         </View>
 
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
+          Repeat
+        </Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {REPEAT_OPTIONS.map((option) => {
+            const selected = option.id === repeat;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Repeat ${option.label}`}
+                accessibilityState={{ selected }}
+                onPress={() => setRepeat(option.id)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 9,
+                  borderRadius: radius.sm,
+                  backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
+                  borderWidth: 1.5,
+                  borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.text.label,
+                    { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* Live split preview */}
         <View
           style={{
@@ -424,7 +479,12 @@ function AddChoreSheet({
           accessibilityRole="button"
           accessibilityLabel="Add chore"
           onPress={() => {
-            onConfirm({ name: name.trim(), rewardCents, assigneeId });
+            onConfirm({
+              name: name.trim(),
+              rewardCents,
+              assigneeId,
+              recurrence: repeat === "one-off" ? undefined : repeat,
+            });
             reset();
           }}
           style={({ pressed }) => ({

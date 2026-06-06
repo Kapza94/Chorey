@@ -333,6 +333,31 @@ describe("ParentApp · Chores", () => {
     });
   });
 
+  it("creates a recurring chore via the Repeat option", () => {
+    const onAddChore = jest.fn();
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        chores={chores}
+        assignees={[{ id: "k1", name: "Mia" }]}
+        onAddChore={onAddChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("New chore"));
+    fireEvent.changeText(screen.getByLabelText("Chore name"), "Feed cat");
+    fireEvent.press(screen.getByLabelText("Repeat Daily"));
+    fireEvent.press(screen.getByLabelText("Add chore"));
+
+    expect(onAddChore).toHaveBeenCalledWith({
+      name: "Feed cat",
+      rewardCents: 200,
+      assigneeId: "k1",
+      recurrence: "daily",
+    });
+  });
+
   it("hides Everyone when there is only one kid", () => {
     render(
       <ParentApp
