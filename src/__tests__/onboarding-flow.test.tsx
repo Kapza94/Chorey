@@ -150,4 +150,47 @@ describe("OnboardingFlow", () => {
       expect.objectContaining({ role: "kid", code: "CHRVR1", kidName: "Mia" }),
     );
   });
+
+  it("suggests more preset chores and unlocks a custom field after five", () => {
+    render(<OnboardingFlow initialStep="p_chores" />);
+
+    // A 4th preset and the custom field are hidden initially.
+    expect(screen.queryByLabelText("Take out the trash")).toBeNull();
+    expect(screen.queryByLabelText("Chore name")).toBeNull();
+
+    for (let i = 0; i < 5; i += 1) {
+      fireEvent.press(screen.getByLabelText("Suggest a chore"));
+    }
+
+    // A suggested preset now shows, the suggest button is gone, and the
+    // write-your-own field is unlocked.
+    expect(screen.getByLabelText("Take out the trash")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Suggest a chore")).toBeNull();
+    expect(screen.getByLabelText("Chore name")).toBeOnTheScreen();
+  });
+
+  it("gates a second kid behind Premium and lets you remove one to continue", () => {
+    render(<OnboardingFlow initialStep="p_addkid" />);
+
+    // Add two kids.
+    fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
+    fireEvent.press(screen.getByText("+ Add another kid"));
+    fireEvent.changeText(screen.getByLabelText("Name"), "Eli");
+    fireEvent.press(screen.getByText("Continue")); // commits Eli → split
+
+    fireEvent.press(screen.getByText("Use the 40/40/20 split")); // → chores
+    fireEvent.press(screen.getByLabelText("Make the bed"));
+    fireEvent.press(screen.getByText("Add 1 chore")); // → causes
+    fireEvent.press(screen.getByLabelText("Animals"));
+    fireEvent.press(screen.getByText("Continue")); // → premium gate (2 kids)
+
+    expect(screen.getByText("Add the whole family with Premium.")).toBeOnTheScreen();
+    // Can't proceed with two kids on free.
+    expect(screen.getByText("Remove a kid to continue")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Remove Eli"));
+    // Down to one kid → continue to the account step.
+    fireEvent.press(screen.getByText("Continue"));
+    expect(screen.getByText("Save your family.")).toBeOnTheScreen();
+  });
 });

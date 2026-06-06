@@ -59,11 +59,25 @@ const KID_TONES: { tone: KidTone; label: string }[] = [
 ];
 
 // A couple of ready-made suggestions to tap; parents add their own below.
-const CHORE_PICKS = [
+// A small library of preset chores. The first three show by default; the rest
+// are surfaced one at a time via "Suggest a chore".
+const CHORE_LIBRARY = [
   { name: "Make the bed", valueCents: 100 },
   { name: "Dishes", valueCents: 250 },
   { name: "Walk the dog", valueCents: 300 },
+  { name: "Take out the trash", valueCents: 150 },
+  { name: "Tidy your room", valueCents: 200 },
+  { name: "Set the table", valueCents: 100 },
+  { name: "Vacuum the floor", valueCents: 250 },
+  { name: "Water the plants", valueCents: 100 },
+  { name: "Feed the pet", valueCents: 100 },
+  { name: "Fold the laundry", valueCents: 200 },
+  { name: "Wipe the counters", valueCents: 150 },
+  { name: "Help with groceries", valueCents: 300 },
 ];
+
+const CHORE_DEFAULT_COUNT = 3;
+const CHORE_MAX_SUGGESTIONS = 5;
 
 // Broad causes a kid can care about — ideas the family gives toward in real
 // life, NOT real charities wired to any payment. Parents hand over the giving
@@ -133,6 +147,7 @@ type Step =
   | "p_split"
   | "p_chores"
   | "p_causes"
+  | "p_premium"
   | "p_account"
   | "p_done"
   | "k_code"
@@ -277,8 +292,19 @@ export function OnboardingFlow({
         <OBCauses
           data={data}
           patch={patch}
-          onNext={() => setStep("p_account")}
+          // Free households get one kid. With more than one, gate on Premium
+          // before the account step so persistence never half-fails.
+          onNext={() => setStep(data.kids.length > 1 ? "p_premium" : "p_account")}
           onBack={() => setStep("p_chores")}
+        />
+      );
+    case "p_premium":
+      return (
+        <OBPremiumGate
+          data={data}
+          patch={patch}
+          onContinue={() => setStep("p_account")}
+          onBack={() => setStep("p_causes")}
         />
       );
     case "p_account":
@@ -780,7 +806,7 @@ function OBAddKid({
   );
 }
 
-function KidRow({ kid }: { kid: Kid }) {
+function KidRow({ kid, onRemove }: { kid: Kid; onRemove?: () => void }) {
   const { scheme, typography } = useChoreyTheme();
   const toneStyle = useToneStyle(kid.tone);
   return (
@@ -817,8 +843,120 @@ function KidRow({ kid }: { kid: Kid }) {
           {kid.age ? `${kid.age} years` : "Age not set"}
         </Text>
       </View>
-      <Check size={18} color={bucketTokens.giving.ramp[600]} strokeWidth={2.6} />
+      {onRemove ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${kid.name}`}
+          onPress={onRemove}
+          hitSlop={8}
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 999,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: scheme.bgSunken,
+          }}
+        >
+          <X size={15} color={scheme.fgMuted} strokeWidth={2.4} />
+        </Pressable>
+      ) : (
+        <Check size={18} color={bucketTokens.giving.ramp[600]} strokeWidth={2.6} />
+      )}
     </View>
+  );
+}
+
+/* ---------- Premium gate (more than one kid) ---------- */
+
+function OBPremiumGate({
+  data,
+  patch,
+  onContinue,
+  onBack,
+}: {
+  data: OnboardingData;
+  patch: (p: Partial<OnboardingData>) => void;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
+  const { scheme, typography, palette } = useChoreyTheme();
+  const giving = bucketTokens.giving.ramp;
+  const [showSoon, setShowSoon] = useState(false);
+
+  const oneKid = data.kids.length === 1;
+  const removeKid = (index: number) =>
+    patch({ kids: data.kids.filter((_, i) => i !== index) });
+
+  return (
+    <OBShell
+      onBack={onBack}
+      footer={
+        <OBPrimary onPress={onContinue} disabled={!oneKid}>
+          {oneKid ? "Continue" : "Remove a kid to continue"}
+        </OBPrimary>
+      }
+    >
+      <OBTitle
+        title="Add the whole family with Premium."
+        subtitle="Chorey Free includes one kid. Keep everyone with Premium, or remove a kid to continue free."
+      />
+
+      {/* Premium upsell (the hard paywall). */}
+      <View
+        style={{
+          padding: 18,
+          borderRadius: 18,
+          backgroundColor: scheme.tint.giving,
+          borderColor: giving[400],
+          borderWidth: 1.5,
+          marginBottom: 18,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <Sparkles size={18} color={giving[800]} strokeWidth={2.2} />
+          <Text style={[typography.text.h3, { color: giving[800], fontSize: 16 }]}>
+            Chorey Premium
+          </Text>
+        </View>
+        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginBottom: 12 }]}>
+          Add multiple kids, recurring chores, reminders, and more.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Unlock Premium"
+          onPress={() => setShowSoon(true)}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            paddingVertical: 13,
+            borderRadius: 999,
+            backgroundColor: pressed ? giving[400] : giving[600],
+          })}
+        >
+          <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 15 }]}>
+            Unlock Premium
+          </Text>
+        </Pressable>
+        {showSoon ? (
+          <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 10, textAlign: "center" }]}>
+            In-app purchases are coming soon — for now, keep one kid to continue.
+          </Text>
+        ) : null}
+      </View>
+
+      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>
+        Your kids ({data.kids.length})
+      </Text>
+      <View style={{ gap: 8 }}>
+        {data.kids.map((kid, index) => (
+          <KidRow
+            key={`${kid.name}-${index}`}
+            kid={kid}
+            onRemove={() => removeKid(index)}
+          />
+        ))}
+      </View>
+    </OBShell>
   );
 }
 
@@ -1121,13 +1259,22 @@ function OBChores({
 
   const [customName, setCustomName] = useState("");
   const [customReward, setCustomReward] = useState("");
+  // How many extra presets (beyond the default 3) have been suggested so far.
+  const [suggestCount, setSuggestCount] = useState(0);
+
+  const visiblePicks = CHORE_LIBRARY.slice(0, CHORE_DEFAULT_COUNT + suggestCount);
+  const canSuggest =
+    suggestCount < CHORE_MAX_SUGGESTIONS &&
+    CHORE_DEFAULT_COUNT + suggestCount < CHORE_LIBRARY.length;
+  // After they've used up their suggestions, let them write their own.
+  const showCustom = suggestCount >= CHORE_MAX_SUGGESTIONS;
 
   const toggle = (name: string) => {
     const has = data.chores.find((c) => c.name === name);
     if (has) {
       patch({ chores: data.chores.filter((c) => c.name !== name) });
     } else {
-      const pick = CHORE_PICKS.find((c) => c.name === name);
+      const pick = CHORE_LIBRARY.find((c) => c.name === name);
       if (pick) patch({ chores: [...data.chores, pick] });
     }
   };
@@ -1147,9 +1294,9 @@ function OBChores({
     setCustomReward("");
   };
 
-  // Chores the parent wrote themselves (not one of the suggested picks).
+  // Chores the parent wrote themselves (not one of the preset picks).
   const customChores = data.chores.filter(
-    (c) => !CHORE_PICKS.some((p) => p.name === c.name),
+    (c) => !CHORE_LIBRARY.some((p) => p.name === c.name),
   );
   const totalCents = data.chores.reduce((s, c) => s + c.valueCents, 0);
 
@@ -1164,9 +1311,9 @@ function OBChores({
         </OBPrimary>
       }
     >
-      <OBTitle title="First chores." subtitle="Tap a suggestion, or write your own." />
+      <OBTitle title="First chores." subtitle="Tap a chore, or get a suggestion." />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9 }}>
-        {CHORE_PICKS.map((c) => {
+        {visiblePicks.map((c) => {
           const on = !!data.chores.find((x) => x.name === c.name);
           return (
             <Pressable
@@ -1203,7 +1350,34 @@ function OBChores({
         })}
       </View>
 
-      {/* Write your own chore + reward. */}
+      {canSuggest ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Suggest a chore"
+          onPress={() => setSuggestCount((n) => n + 1)}
+          style={({ pressed }) => ({
+            marginTop: 14,
+            paddingVertical: 13,
+            borderRadius: 999,
+            borderWidth: 1.5,
+            borderStyle: "dashed",
+            borderColor: allowance[400],
+            backgroundColor: pressed ? allowance[200] : "transparent",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+          })}
+        >
+          <Sparkles size={16} color={allowance[800]} strokeWidth={2.2} />
+          <Text style={[typography.text.label, { color: allowance[800] }]}>
+            Suggest a chore
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {/* Write your own chore + reward (unlocked after the suggestions). */}
+      {showCustom ? (
       <View
         style={{
           marginTop: 18,
@@ -1322,6 +1496,7 @@ function OBChores({
           </View>
         ) : null}
       </View>
+      ) : null}
 
       {data.chores.length > 0 ? (
         <View
