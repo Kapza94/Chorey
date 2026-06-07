@@ -151,22 +151,21 @@ describe("OnboardingFlow", () => {
     );
   });
 
-  it("suggests more preset chores and unlocks a custom field after five", () => {
+  it("suggests more preset chores; custom field is always available", () => {
     render(<OnboardingFlow initialStep="p_chores" />);
 
-    // A 4th preset and the custom field are hidden initially.
+    // The write-your-own field shows from the start, alongside suggestions.
+    expect(screen.getByLabelText("Chore name")).toBeOnTheScreen();
+    // A 4th preset is hidden until suggested.
     expect(screen.queryByLabelText("Take out the trash")).toBeNull();
-    expect(screen.queryByLabelText("Chore name")).toBeNull();
 
     for (let i = 0; i < 5; i += 1) {
       fireEvent.press(screen.getByLabelText("Suggest a chore"));
     }
 
-    // A suggested preset now shows, the suggest button is gone, and the
-    // write-your-own field is unlocked.
+    // A suggested preset now shows and the suggest button is exhausted.
     expect(screen.getByLabelText("Take out the trash")).toBeOnTheScreen();
     expect(screen.queryByLabelText("Suggest a chore")).toBeNull();
-    expect(screen.getByLabelText("Chore name")).toBeOnTheScreen();
   });
 
   it("gates a second kid behind Premium and lets you remove one to continue", () => {

@@ -1266,8 +1266,6 @@ function OBChores({
   const canSuggest =
     suggestCount < CHORE_MAX_SUGGESTIONS &&
     CHORE_DEFAULT_COUNT + suggestCount < CHORE_LIBRARY.length;
-  // After they've used up their suggestions, let them write their own.
-  const showCustom = suggestCount >= CHORE_MAX_SUGGESTIONS;
 
   const toggle = (name: string) => {
     const has = data.chores.find((c) => c.name === name);
@@ -1376,8 +1374,7 @@ function OBChores({
         </Pressable>
       ) : null}
 
-      {/* Write your own chore + reward (unlocked after the suggestions). */}
-      {showCustom ? (
+      {/* Write your own chore + reward — always available. */}
       <View
         style={{
           marginTop: 18,
@@ -1400,15 +1397,16 @@ function OBChores({
             placeholderTextColor={scheme.fgFaint}
             returnKeyType="next"
             style={{
-              ...typography.text.body,
               flex: 1,
+              fontFamily: typography.family.body.regular,
+              fontSize: 15,
               color: scheme.fg,
               backgroundColor: scheme.bgSunken,
               borderColor: scheme.border,
               borderWidth: 1,
               borderRadius: 12,
               paddingHorizontal: 12,
-              paddingVertical: 10,
+              paddingVertical: 11,
             }}
           />
           <View
@@ -1433,9 +1431,10 @@ function OBChores({
               keyboardType="number-pad"
               returnKeyType="done"
               style={{
-                ...typography.text.body,
+                fontFamily: typography.family.body.regular,
+                fontSize: 15,
                 color: scheme.fg,
-                paddingVertical: 10,
+                paddingVertical: 11,
                 paddingHorizontal: 4,
                 minWidth: 44,
                 textAlign: "center",
@@ -1496,7 +1495,6 @@ function OBChores({
           </View>
         ) : null}
       </View>
-      ) : null}
 
       {data.chores.length > 0 ? (
         <View

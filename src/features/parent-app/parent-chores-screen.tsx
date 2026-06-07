@@ -231,7 +231,7 @@ function AddChoreSheet({
 }) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [name, setName] = useState("");
-  const [value, setValue] = useState("2.00");
+  const [value, setValue] = useState("");
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [assigneeId, setAssigneeId] = useState(assignees[0]?.id ?? "all");
   const [repeat, setRepeat] = useState<"one-off" | Recurrence>("one-off");
@@ -253,7 +253,7 @@ function AddChoreSheet({
 
   const reset = () => {
     setName("");
-    setValue("2.00");
+    setValue("");
     setAssigneeId(assignees[0]?.id ?? "all");
     setShowAllAssignees(false);
     setRepeat("one-off");
@@ -367,6 +367,8 @@ function AddChoreSheet({
           keyboardType="decimal-pad"
           value={value}
           onChangeText={setValue}
+          placeholder="2.00"
+          placeholderTextColor={scheme.fgFaint}
           style={{
             backgroundColor: scheme.bgPage,
             borderColor: palette.border.mid,

@@ -347,6 +347,7 @@ describe("ParentApp · Chores", () => {
 
     fireEvent.press(screen.getByLabelText("New chore"));
     fireEvent.changeText(screen.getByLabelText("Chore name"), "Feed cat");
+    fireEvent.changeText(screen.getByLabelText("Chore reward"), "2.00");
     fireEvent.press(screen.getByLabelText("Repeat Daily"));
     fireEvent.press(screen.getByLabelText("Add chore"));
 
@@ -373,6 +374,7 @@ describe("ParentApp · Chores", () => {
 
     fireEvent.press(screen.getByLabelText("New chore"));
     fireEvent.changeText(screen.getByLabelText("Chore name"), "Feed cat");
+    fireEvent.changeText(screen.getByLabelText("Chore reward"), "2.00");
     // Tapping a locked recurrence shows an inline upsell, doesn't select it.
     fireEvent.press(screen.getByLabelText("Repeat Daily"));
     expect(
