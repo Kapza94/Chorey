@@ -4,13 +4,17 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { ParentApp } from "@/features/parent-app/parent-app";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
 import type {
+  KidPaymentSummary,
   PendingApproval,
   PendingGivingSuggestion,
   PendingPurchase,
 } from "@/features/parent-app/parent-kids-screen";
 import { listHouseholdKids } from "@/features/parent-app/default-parent-kids-actions";
 import { getHouseholdSettings } from "@/features/household/default-household-actions";
-import { toPayoutHistoryRows } from "@/features/parent-app/payout-history";
+import {
+  formatPayoutDate,
+  toPayoutHistoryRows,
+} from "@/features/parent-app/payout-history";
 import {
   approvePurchaseRequestForHousehold,
   listPurchaseRequestsForHousehold,
@@ -148,16 +152,42 @@ export default function ParentHomeRoute() {
       name: suggestion.name,
     }));
 
+  // Total already paid out per kid (all time), used for owed = earned − paid.
+  const paidByKid = new Map<string, number>();
+  for (const payout of payouts) {
+    paidByKid.set(
+      payout.childProfileId,
+      (paidByKid.get(payout.childProfileId) ?? 0) + payout.amountCents,
+    );
+  }
+
   const due: DuePayout[] = kids.map((kid) => ({
     id: kid.id,
     name: kid.name,
     tone: kid.tone,
     earnedCents: kid.earnedCents,
+    paidCents: paidByKid.get(kid.id) ?? 0,
     allowanceCents: kid.allowanceCents,
     savingsCents: kid.savingsCents,
     givingCents: kid.givingCents,
     choresDone: kid.choresDone,
     cadence: kid.cadence,
+  }));
+
+  // Per-kid payment summaries for the Kids-tab detail sheet.
+  const kidPayments: KidPaymentSummary[] = kids.map((kid) => ({
+    kidId: kid.id,
+    earnedCents: kid.earnedCents,
+    paidCents: paidByKid.get(kid.id) ?? 0,
+    history: payouts
+      .filter((payout) => payout.childProfileId === kid.id)
+      .map((payout) => ({
+        id: payout.id,
+        dateLabel: formatPayoutDate(payout.paidAt),
+        method: payout.method,
+        detail: payout.note,
+        amountCents: payout.amountCents,
+      })),
   }));
 
   return (
@@ -169,6 +199,7 @@ export default function ParentHomeRoute() {
       pendingApprovals={pendingApprovals}
       purchaseRequests={purchaseRequests}
       givingSuggestions={givingSuggestions}
+      payments={kidPayments}
       onApproveChore={async (choreId) => {
         if (!householdId) {
           return;

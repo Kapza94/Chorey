@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { Check, ChevronRight, Plus, Sparkles, Undo2 } from "lucide-react-native";
+import { Check, ChevronRight, Plus, Sparkles, Undo2, Wallet } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -9,8 +9,26 @@ import {
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
+import type { PayoutMethod } from "@/features/payments/payment-actions";
 import { KidCard } from "@/features/parent-app/kid-card";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
+
+/** One off-app payout to a kid, for the per-kid payments sheet. */
+export type KidPaymentRow = {
+  id: string;
+  dateLabel: string;
+  method: PayoutMethod;
+  detail?: string | null;
+  amountCents: number;
+};
+
+/** A kid's all-time earned / paid totals plus their payout history. */
+export type KidPaymentSummary = {
+  kidId: string;
+  earnedCents: number;
+  paidCents: number;
+  history: KidPaymentRow[];
+};
 
 /** A submitted chore awaiting parent approval. */
 export type PendingApproval = {
@@ -43,6 +61,7 @@ type Props = {
   pendingApprovals?: PendingApproval[];
   purchaseRequests?: PendingPurchase[];
   givingSuggestions?: PendingGivingSuggestion[];
+  payments?: KidPaymentSummary[];
   onSelectKid?: (id: string) => void;
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
@@ -59,6 +78,7 @@ export function ParentKidsScreen({
   pendingApprovals = [],
   purchaseRequests = [],
   givingSuggestions = [],
+  payments = [],
   onSelectKid,
   onAddKid,
   onReviewApprovals,
@@ -69,6 +89,7 @@ export function ParentKidsScreen({
 }: Props) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [paymentsKid, setPaymentsKid] = useState<ParentKid | null>(null);
 
   const totalPending = kids.reduce((sum, kid) => sum + kid.pendingApprovals, 0);
   const reviewCount =
@@ -146,7 +167,10 @@ export function ParentKidsScreen({
               key={kid.id}
               kid={kid}
               currency={currency}
-              onTap={() => onSelectKid?.(kid.id)}
+              onTap={() => {
+                onSelectKid?.(kid.id);
+                setPaymentsKid(kid);
+              }}
             />
           ))}
         </View>
@@ -200,6 +224,13 @@ export function ParentKidsScreen({
           onApproveGivingSuggestion?.(suggestionId)
         }
         onClose={() => setReviewOpen(false)}
+      />
+
+      <KidPaymentsSheet
+        kid={paymentsKid}
+        summary={payments.find((p) => p.kidId === paymentsKid?.id) ?? null}
+        currency={currency}
+        onClose={() => setPaymentsKid(null)}
       />
     </View>
   );
@@ -538,6 +569,187 @@ function ChoreReviewRow({
         </View>
       ) : null}
     </View>
+  );
+}
+
+function paymentMethodLabel(row: { method: PayoutMethod; detail?: string | null }) {
+  if (row.method === "other") {
+    return row.detail ? `Other · ${row.detail}` : "Other";
+  }
+  return "Cash";
+}
+
+function KidPaymentsSheet({
+  kid,
+  summary,
+  currency,
+  onClose,
+}: {
+  kid: ParentKid | null;
+  summary: KidPaymentSummary | null;
+  currency: CurrencyCode;
+  onClose: () => void;
+}) {
+  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+
+  const earned = summary?.earnedCents ?? 0;
+  const paid = summary?.paidCents ?? 0;
+  const owed = Math.max(0, earned - paid);
+  const history = summary?.history ?? [];
+  const tone = kid
+    ? bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp
+    : bucketTokens.spend.ramp;
+
+  const cell = (label: string, cents: number, color: string) => (
+    <View style={{ flex: 1 }}>
+      <Text style={[typography.text.overline, { color: scheme.fgFaint, fontSize: 10 }]}>
+        {label}
+      </Text>
+      <Text style={[typography.text.money, { color, fontSize: 17, marginTop: 2 }]}>
+        {formatMoney(cents, currency)}
+      </Text>
+    </View>
+  );
+
+  return (
+    <Modal visible={kid != null} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable
+        accessibilityLabel="Dismiss"
+        onPress={onClose}
+        style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          maxHeight: "80%",
+          backgroundColor: scheme.bgModal,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingHorizontal: 22,
+          paddingTop: 14,
+          paddingBottom: 30,
+          ...scheme.shadow.lg,
+        }}
+      >
+        <View
+          style={{
+            width: 38,
+            height: 4,
+            borderRadius: radius.pill,
+            backgroundColor: palette.border.strong,
+            alignSelf: "center",
+            marginBottom: 14,
+          }}
+        />
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: radius.pill,
+              backgroundColor: tone[200],
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontFamily: typography.family.display.bold, fontSize: 19, color: tone[800] }}>
+              {kid?.name.trim().charAt(0).toUpperCase() || "?"}
+            </Text>
+          </View>
+          <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 22 }]}>
+            {kid?.name}
+          </Text>
+        </View>
+
+        {/* Earned / Paid / Owed */}
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            backgroundColor: scheme.bgRaised,
+            borderColor: scheme.border,
+            borderWidth: 1,
+            borderRadius: 16,
+          }}
+        >
+          {cell("Earned", earned, scheme.fg)}
+          {cell("Paid", paid, bucketInk("savings"))}
+          {cell("Owed", owed, owed > 0 ? bucketInk("spend") : scheme.fgFaint)}
+        </View>
+
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginTop: 18, marginBottom: 8 },
+          ]}
+        >
+          Paid out · {formatMoney(paid, currency)} all-time
+        </Text>
+
+        {history.length === 0 ? (
+          <Text style={[typography.text.body, { color: scheme.fgFaint, paddingVertical: 12 }]}>
+            No payments yet.
+          </Text>
+        ) : (
+          <ScrollView style={{ flexGrow: 0 }}>
+            <View
+              style={{
+                backgroundColor: scheme.bgRaised,
+                borderColor: scheme.border,
+                borderWidth: 1,
+                borderRadius: 16,
+                overflow: "hidden",
+              }}
+            >
+              {history.map((row, index) => (
+                <View
+                  key={row.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 13,
+                    borderBottomWidth: index < history.length - 1 ? 1 : 0,
+                    borderBottomColor: scheme.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: radius.pill,
+                      backgroundColor: scheme.bgSunken,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Wallet size={15} color={scheme.fgMuted} strokeWidth={2} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[typography.text.label, { color: scheme.fg }]}>
+                      {paymentMethodLabel(row)}
+                    </Text>
+                    <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+                      {row.dateLabel}
+                    </Text>
+                  </View>
+                  <Text style={[typography.text.money, { fontSize: 14, color: scheme.fg }]}>
+                    {formatMoney(row.amountCents, currency)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+    </Modal>
   );
 }
 

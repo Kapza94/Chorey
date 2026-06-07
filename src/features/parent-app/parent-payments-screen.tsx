@@ -19,12 +19,19 @@ export type DuePayout = {
   name: string;
   tone: "allowance" | "savings" | "giving";
   earnedCents: number;
+  /** total already paid out to this kid (all time). */
+  paidCents: number;
   allowanceCents: number;
   savingsCents: number;
   givingCents: number;
   choresDone: number;
   cadence: "weekly" | "monthly";
 };
+
+/** What's still owed to a kid: earned minus already paid (never negative). */
+export function owedCents(kid: { earnedCents: number; paidCents: number }) {
+  return Math.max(0, kid.earnedCents - kid.paidCents);
+}
 
 export type PayoutHistoryRow = {
   id: string;
@@ -81,7 +88,9 @@ export function ParentPaymentsScreen({
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const [sheetKid, setSheetKid] = useState<DuePayout | null>(null);
 
-  const dueTotal = due.reduce((sum, kid) => sum + kid.earnedCents, 0);
+  // Only kids who are still owed money show in "due"; the rest are paid up.
+  const owing = due.filter((kid) => owedCents(kid) > 0);
+  const dueTotal = owing.reduce((sum, kid) => sum + owedCents(kid), 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -118,7 +127,7 @@ export function ParentPaymentsScreen({
 
         <SectionLabel>Due this period</SectionLabel>
 
-        {due.length === 0 ? (
+        {owing.length === 0 ? (
           <View
             style={{
               marginHorizontal: 18,
@@ -151,7 +160,7 @@ export function ParentPaymentsScreen({
           </View>
         ) : (
           <View style={{ gap: 10, paddingHorizontal: 18 }}>
-            {due.map((kid) => (
+            {owing.map((kid) => (
               <DueCard
                 key={kid.id}
                 kid={kid}
@@ -162,7 +171,7 @@ export function ParentPaymentsScreen({
           </View>
         )}
 
-        {due.length > 0 ? (
+        {owing.length > 0 ? (
           <View
             style={{
               marginHorizontal: 18,
@@ -442,13 +451,13 @@ function DueCard({
         <View style={{ flex: 1 }}>
           <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>{kid.name}</Text>
           <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
-            {kid.cadence === "monthly" ? "This month" : "This week"} · {kid.choresDone} chores
-            done
+            {formatMoney(kid.earnedCents, currency)} earned
+            {kid.paidCents > 0 ? ` · ${formatMoney(kid.paidCents, currency)} paid` : ""}
           </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26 }]}>
-            {formatMoney(kid.earnedCents, currency)}
+            {formatMoney(owedCents(kid), currency)}
           </Text>
           <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
             to pay out
@@ -525,9 +534,9 @@ function MarkPaidSheet({
   const [otherChoice, setOtherChoice] = useState<string>(OTHER_PRESETS[0]);
   const [otherText, setOtherText] = useState("");
 
-  // Reset the form whenever a new kid opens the sheet.
+  // Reset the form whenever a new kid opens the sheet. Default to what's owed.
   const visible = kid != null;
-  const amountValue = amount || (kid ? formatReward(kid.earnedCents) : "");
+  const amountValue = amount || (kid ? formatReward(owedCents(kid)) : "");
 
   let amountCents = 0;
   try {

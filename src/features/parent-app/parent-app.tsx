@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import {
   ParentKidsScreen,
+  type KidPaymentSummary,
   type PendingApproval,
   type PendingGivingSuggestion,
   type PendingPurchase,
@@ -39,6 +40,7 @@ type Props = {
   pendingApprovals?: PendingApproval[];
   purchaseRequests?: PendingPurchase[];
   givingSuggestions?: PendingGivingSuggestion[];
+  payments?: KidPaymentSummary[];
   onSelectKid?: (id: string) => void;
   onAddKid?: () => void;
   onReviewApprovals?: () => void;
@@ -87,6 +89,7 @@ export function ParentApp({
   pendingApprovals,
   purchaseRequests,
   givingSuggestions,
+  payments,
   onSelectKid,
   onAddKid,
   onReviewApprovals,
@@ -122,6 +125,7 @@ export function ParentApp({
           pendingApprovals={pendingApprovals}
           purchaseRequests={purchaseRequests}
           givingSuggestions={givingSuggestions}
+          payments={payments}
           onSelectKid={onSelectKid}
           onAddKid={onAddKid}
           onReviewApprovals={onReviewApprovals}

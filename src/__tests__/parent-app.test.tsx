@@ -106,6 +106,35 @@ describe("ParentApp · Kids", () => {
     expect(onApproveChore).toHaveBeenCalledWith("ci1");
   });
 
+  it("opens a kid's payments sheet (earned/paid/owed + history) on card tap", () => {
+    render(
+      <ParentApp
+        kids={[mia]}
+        payments={[
+          {
+            kidId: "k1",
+            earnedCents: 650,
+            paidCents: 500,
+            history: [
+              {
+                id: "p1",
+                dateLabel: "May 25",
+                method: "other",
+                detail: "Gift",
+                amountCents: 500,
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Mia details"));
+    expect(screen.getByText("Earned")).toBeOnTheScreen();
+    expect(screen.getByText("$1.50")).toBeOnTheScreen(); // owed = 650 − 500
+    expect(screen.getByText("Other · Gift")).toBeOnTheScreen(); // history row
+  });
+
   it("sends a chore back with a reason from the review sheet", () => {
     const onSendBackChore = jest.fn();
     render(
@@ -168,6 +197,7 @@ describe("ParentApp · Payments", () => {
       name: "Mia",
       tone: "allowance" as const,
       earnedCents: 1850,
+      paidCents: 0,
       allowanceCents: 740,
       savingsCents: 740,
       givingCents: 370,
@@ -249,6 +279,30 @@ describe("ParentApp · Payments", () => {
 
   it("shows the all-paid-up empty state", () => {
     render(<ParentApp initialTab="pay" due={[]} payoutHistory={history} />);
+    expect(screen.getByText("All paid up.")).toBeOnTheScreen();
+  });
+
+  it("shows owed = earned minus paid", () => {
+    render(
+      <ParentApp
+        initialTab="pay"
+        due={[{ ...due[0], earnedCents: 650, paidCents: 500 }]}
+      />,
+    );
+
+    // owed shows in the card and the total
+    expect(screen.getAllByText("$1.50").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("$6.50 earned · $5.00 paid")).toBeOnTheScreen();
+  });
+
+  it("drops a fully-paid kid to all-paid-up", () => {
+    render(
+      <ParentApp
+        initialTab="pay"
+        due={[{ ...due[0], earnedCents: 500, paidCents: 500 }]}
+      />,
+    );
+
     expect(screen.getByText("All paid up.")).toBeOnTheScreen();
   });
 
