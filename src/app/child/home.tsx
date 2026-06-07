@@ -87,7 +87,12 @@ export default function ChildHomeRoute() {
         id: chore.id,
         name: chore.title,
         valueCents: chore.rewardCents,
-        done: isDone(chore.status),
+        state:
+          chore.status === "approved"
+            ? ("approved" as const)
+            : chore.status === "submitted"
+              ? ("waiting" as const)
+              : ("todo" as const),
         note:
           chore.status === "sent_back" && chore.sentBackReason
             ? `Sent back: ${chore.sentBackReason}`

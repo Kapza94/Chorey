@@ -6,7 +6,9 @@ const baseProps = {
   name: "Mia",
   streakDays: 4,
   currency: "USD" as const,
-  chores: [{ id: "c1", name: "Make the bed", valueCents: 100, done: false }],
+  chores: [
+    { id: "c1", name: "Make the bed", valueCents: 100, state: "todo" as const },
+  ],
   spendableCents: 2850,
   wishes: [
     { id: "w1", name: "Skateboard", targetCents: 6500, status: "active" as const },

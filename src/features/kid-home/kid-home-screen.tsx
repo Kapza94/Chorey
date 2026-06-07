@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
-import { Check, Flame, Lock, Sparkles } from "lucide-react-native";
+import { Check, Clock, Flame, Lock, Sparkles } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -11,13 +11,21 @@ import {
   formatMoneyParts,
   type CurrencyCode,
 } from "@/features/money/currency";
-import { DEFAULT_SPLIT, splitCents, type Split } from "@/features/money/split";
+import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
+
+/**
+ * A chore's state from the kid's point of view:
+ * - todo: not started (or sent back) — tap to mark done
+ * - waiting: marked done, waiting for a parent to approve (no money yet)
+ * - approved: approved — counted in the kid's real balances
+ */
+export type KidChoreState = "todo" | "waiting" | "approved";
 
 export type KidChore = {
   id: string;
   name: string;
   valueCents: number;
-  done: boolean;
+  state: KidChoreState;
   note?: string;
 };
 
@@ -29,6 +37,10 @@ type Props = {
   split?: Split;
   currency?: CurrencyCode;
   chores?: KidChore[];
+  /** real, approved balances from the ledger (what "this week so far" shows). */
+  spendCents?: number;
+  savingsCents?: number;
+  givingCents?: number;
   onToggleChore?: (id: string) => void;
 };
 
@@ -49,18 +61,22 @@ export function KidHomeScreen({
   split = DEFAULT_SPLIT,
   currency = DEFAULT_CURRENCY,
   chores = [],
+  spendCents = 0,
+  savingsCents = 0,
+  givingCents = 0,
   onToggleChore,
 }: Props) {
   const theme = useChoreyTheme();
   const { scheme, typography, space, radius } = theme;
 
-  const earnedCents = chores.reduce(
-    (total, chore) => (chore.done ? total + chore.valueCents : total),
-    0,
-  );
-  const earned = splitCents(earnedCents, split);
-  const remaining = chores.filter((chore) => !chore.done).length;
+  // "This week so far" is real, approved money (matches You + Wishlist).
+  const earnedCents = spendCents + savingsCents + givingCents;
   const balance = formatMoneyParts(earnedCents, currency);
+
+  // Chores marked done but not yet approved — money is "waiting", not earned.
+  const waiting = chores.filter((chore) => chore.state === "waiting");
+  const pendingCents = waiting.reduce((total, chore) => total + chore.valueCents, 0);
+  const remaining = chores.filter((chore) => chore.state === "todo").length;
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -160,12 +176,40 @@ export function KidHomeScreen({
           </View>
 
           <BucketTriple
-            spendCents={earned.spendCents}
-            savingsCents={earned.savingsCents}
-            givingCents={earned.givingCents}
+            spendCents={spendCents}
+            savingsCents={savingsCents}
+            givingCents={givingCents}
             currency={currency}
           />
         </View>
+
+        {/* Waiting for a parent to approve */}
+        {pendingCents > 0 ? (
+          <View
+            style={{
+              marginHorizontal: 18,
+              marginTop: 14,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              backgroundColor: scheme.tint.warning,
+              borderRadius: radius.md,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <Clock size={20} color={theme.palette.semantic.warning[600]} strokeWidth={2.2} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 13 }]}>
+                {formatMoney(pendingCents, currency)} waiting to be approved
+              </Text>
+              <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+                {waiting.length} {waiting.length === 1 ? "chore is" : "chores are"} done — a parent
+                approves before it counts.
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         {/* Today */}
         <View style={{ paddingHorizontal: 22, paddingTop: space[6], paddingBottom: space[2] }}>
@@ -328,15 +372,20 @@ function ChoreRow({
   isLast: boolean;
   onToggle?: (id: string) => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, palette } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
+
+  const approved = chore.state === "approved";
+  const waiting = chore.state === "waiting";
+  // Only to-do chores are actionable; waiting/approved can't be re-submitted.
+  const actionable = chore.state === "todo";
 
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: chore.done }}
+      accessibilityState={{ checked: !actionable, disabled: !actionable }}
       accessibilityLabel={chore.name}
-      onPress={() => onToggle?.(chore.id)}
+      onPress={() => (actionable ? onToggle?.(chore.id) : undefined)}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -347,21 +396,40 @@ function ChoreRow({
         borderBottomColor: scheme.border,
       }}
     >
-      <SpringCheckbox done={chore.done} />
+      {waiting ? (
+        <View
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 999,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: scheme.tint.warning,
+          }}
+        >
+          <Clock size={15} color={palette.semantic.warning[600]} strokeWidth={2.4} />
+        </View>
+      ) : (
+        <SpringCheckbox done={approved} />
+      )}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text
           style={[
             typography.text.label,
             {
               fontSize: 15,
-              color: chore.done ? scheme.fgFaint : scheme.fg,
-              textDecorationLine: chore.done ? "line-through" : "none",
+              color: approved ? scheme.fgFaint : scheme.fg,
+              textDecorationLine: approved ? "line-through" : "none",
             },
           ]}
         >
           {chore.name}
         </Text>
-        {chore.note ? (
+        {waiting ? (
+          <Text style={[typography.text.caption, { color: palette.semantic.warning[600], marginTop: 1 }]}>
+            Waiting for a parent
+          </Text>
+        ) : chore.note ? (
           <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
             {chore.note}
           </Text>
@@ -370,10 +438,12 @@ function ChoreRow({
       <Text
         style={[
           typography.text.money,
-          { fontSize: 15, color: chore.done ? giving[600] : scheme.fg },
+          { fontSize: 15, color: approved ? giving[600] : scheme.fgMuted },
         ]}
       >
-        {chore.done ? formatMoneyDelta(chore.valueCents, currency) : formatMoney(chore.valueCents, currency)}
+        {approved
+          ? formatMoneyDelta(chore.valueCents, currency)
+          : formatMoney(chore.valueCents, currency)}
       </Text>
     </Pressable>
   );
@@ -383,7 +453,8 @@ function ChoreRow({
 function SpringCheckbox({ done }: { done: boolean }) {
   const { scheme, palette } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
-  const scale = useRef(new Animated.Value(done ? 1 : 0.9)).current;
+  // Lazy-init the Animated.Value once (no ref read during render).
+  const [scale] = useState(() => new Animated.Value(done ? 1 : 0.9));
 
   useEffect(() => {
     Animated.spring(scale, {

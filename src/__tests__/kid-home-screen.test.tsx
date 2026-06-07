@@ -11,9 +11,13 @@ function renderHome(overrides = {}) {
       streakDays={4}
       today={saturday}
       chores={[
-        { id: "c1", name: "Make the bed", valueCents: 100, done: false },
-        { id: "c2", name: "Walk the dog", valueCents: 300, done: true },
+        { id: "c1", name: "Make the bed", valueCents: 100, state: "todo" },
+        { id: "c2", name: "Walk the dog", valueCents: 300, state: "waiting" },
       ]}
+      // real, approved balances from the ledger
+      spendCents={0}
+      savingsCents={0}
+      givingCents={0}
       {...overrides}
     />,
   );
@@ -28,40 +32,46 @@ describe("KidHomeScreen", () => {
     expect(screen.getByText("4-day streak")).toBeOnTheScreen();
   });
 
-  it("shows the 40/40/20 split of what has been earned so far", () => {
-    // Only the $3.00 chore is done → earned 300 → 120 / 120 / 60
-    renderHome();
+  it("shows only real, approved money in 'this week so far'", () => {
+    // Approved ledger: 80 spend / 80 save / 40 give = $2.00 total.
+    renderHome({ spendCents: 80, savingsCents: 80, givingCents: 40 });
 
-    expect(screen.getByText("$3")).toBeOnTheScreen(); // hero lead
-    expect(screen.getByText(".00")).toBeOnTheScreen(); // hero cents
-    expect(screen.getAllByText("$1.20")).toHaveLength(2); // Spend + Save buckets
-    expect(screen.getByText("$0.60")).toBeOnTheScreen(); // Give bucket
+    expect(screen.getByText("$2")).toBeOnTheScreen(); // hero lead
+    expect(screen.getAllByText("$0.80")).toHaveLength(2); // Spend + Save buckets
+    expect(screen.getByText("$0.40")).toBeOnTheScreen(); // Give bucket
   });
 
-  it("counts the chores left to do", () => {
+  it("shows done-but-unapproved chores as waiting, not as money", () => {
+    // Nothing approved (balances 0), one chore waiting ($3.00).
     renderHome();
-    expect(screen.getByText(/1\s*chore/)).toBeOnTheScreen();
+
+    // Hero is $0.00 — the waiting chore is not counted as earned.
+    expect(screen.getByText("$0")).toBeOnTheScreen();
+    // A waiting banner explains the pending amount.
+    expect(screen.getByText("$3.00 waiting to be approved")).toBeOnTheScreen();
+    expect(screen.getByText("Waiting for a parent")).toBeOnTheScreen();
   });
 
-  it("renders done chores with a + earnings amount", () => {
+  it("still shows a to-do chore in the 'to go' heading", () => {
+    // c1 is todo → there's work left to do.
     renderHome();
-    expect(screen.getByText("+$3.00")).toBeOnTheScreen();
-    expect(screen.getByText("$1.00")).toBeOnTheScreen(); // undone chore value
+    expect(screen.getByText("to go")).toBeOnTheScreen();
+    expect(screen.queryByText("Done for today.")).toBeNull();
   });
 
-  it("toggles a chore when its row is pressed", () => {
+  it("submits a to-do chore when its row is pressed", () => {
     const onToggleChore = jest.fn();
     renderHome({ onToggleChore });
 
     fireEvent.press(screen.getByLabelText("Make the bed"));
-
     expect(onToggleChore).toHaveBeenCalledWith("c1");
   });
 
-  it("formats money in the family currency", () => {
-    renderHome({ currency: "RSD" });
-    // 300 cents → 3 дин earned; buckets 120/120/60 → 1 дин each
-    expect(screen.getByText("3")).toBeOnTheScreen(); // hero lead
-    expect(screen.getAllByText(/дин/).length).toBeGreaterThan(0);
+  it("does not re-submit a waiting chore", () => {
+    const onToggleChore = jest.fn();
+    renderHome({ onToggleChore });
+
+    fireEvent.press(screen.getByLabelText("Walk the dog")); // waiting
+    expect(onToggleChore).not.toHaveBeenCalled();
   });
 });

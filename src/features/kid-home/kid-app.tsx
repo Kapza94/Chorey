@@ -74,6 +74,9 @@ export function KidApp({
           split={split}
           currency={currency}
           chores={chores}
+          spendCents={spendableCents}
+          savingsCents={savingsCents}
+          givingCents={givingCents}
           onToggleChore={onToggleChore}
         />
       ) : tab === "wish" ? (
