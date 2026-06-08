@@ -80,4 +80,12 @@ describe("KidApp shell", () => {
 
     expect(onSuggestCause).toHaveBeenCalledWith("Animal shelter");
   });
+
+  it("logs out from the You tab", () => {
+    const onLogOut = jest.fn();
+    render(<KidApp {...baseProps} initialTab="you" onLogOut={onLogOut} />);
+
+    fireEvent.press(screen.getByLabelText("Log out"));
+    expect(onLogOut).toHaveBeenCalledTimes(1);
+  });
 });

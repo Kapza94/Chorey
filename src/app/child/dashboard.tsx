@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { KidApp } from "@/features/kid-home/kid-app";
 import type { KidChore } from "@/features/kid-home/kid-home-screen";
@@ -28,6 +28,7 @@ function isDone(status: ChildChore["status"]) {
 }
 
 export default function ChildDashboardRoute() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ accessCode?: string; childName?: string }>();
   const accessCode = Array.isArray(params.accessCode)
     ? params.accessCode[0]
@@ -128,6 +129,7 @@ export default function ChildDashboardRoute() {
       }}
       savingsCents={bucketBalances.savingsCents}
       givingCents={bucketBalances.givingCents}
+      onLogOut={() => router.replace("/")}
     />
   );
 }

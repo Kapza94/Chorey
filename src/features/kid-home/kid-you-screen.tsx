@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, Heart, Lock, Sparkles, Wallet } from "lucide-react-native";
+import { ChevronRight, Heart, Lock, LogOut, Sparkles, Wallet } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -22,6 +22,7 @@ type Props = {
   onSuggestCause?: (name: string) => void;
   onSeeEarnings?: () => void;
   onTellParent?: () => void;
+  onLogOut?: () => void;
 };
 
 export function KidYouScreen({
@@ -36,6 +37,7 @@ export function KidYouScreen({
   onSuggestCause,
   onSeeEarnings,
   onTellParent,
+  onLogOut,
 }: Props) {
   const { scheme, typography, radius, bucketInk } = useChoreyTheme();
   const savings = bucketTokens.savings.ramp;
@@ -255,6 +257,30 @@ export function KidYouScreen({
             </Pressable>
           ))}
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
+          onPress={onLogOut}
+          style={({ pressed }) => ({
+            marginHorizontal: 18,
+            marginTop: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            paddingVertical: 14,
+            borderRadius: radius.md,
+            backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
+            borderColor: scheme.border,
+            borderWidth: 1,
+          })}
+        >
+          <LogOut size={17} color={scheme.fgMuted} strokeWidth={2.2} />
+          <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 15 }]}>
+            Log out
+          </Text>
+        </Pressable>
       </ScrollView>
 
       <SuggestCauseSheet

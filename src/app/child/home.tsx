@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { KidApp } from "@/features/kid-home/kid-app";
 import type { KidChore } from "@/features/kid-home/kid-home-screen";
@@ -39,6 +39,7 @@ function isDone(status: ChildChore["status"]) {
  * cause. (Giving "given so far" tracking is a follow-up — see the build plan.)
  */
 export default function ChildHomeRoute() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ accessCode?: string; childName?: string }>();
   const accessCode = Array.isArray(params.accessCode)
     ? params.accessCode[0]
@@ -157,6 +158,7 @@ export default function ChildHomeRoute() {
       savingsCents={bucketBalances.savingsCents}
       givingCents={bucketBalances.givingCents}
       causeName={givingOptions[0]?.name ?? null}
+      onLogOut={() => router.replace("/")}
       onSuggestCause={async (causeName) => {
         if (!accessCode) {
           return;

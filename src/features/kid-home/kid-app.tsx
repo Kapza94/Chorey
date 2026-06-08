@@ -32,6 +32,7 @@ type Props = {
   onSuggestCause?: (name: string) => void;
   onSeeEarnings?: () => void;
   onTellParent?: () => void;
+  onLogOut?: () => void;
   /** override the starting tab (tests) */
   initialTab?: KidTab;
 };
@@ -60,6 +61,7 @@ export function KidApp({
   onSuggestCause,
   onSeeEarnings,
   onTellParent,
+  onLogOut,
   initialTab = "home",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -100,6 +102,7 @@ export function KidApp({
           onSuggestCause={onSuggestCause}
           onSeeEarnings={onSeeEarnings}
           onTellParent={onTellParent}
+          onLogOut={onLogOut}
         />
       )}
 
