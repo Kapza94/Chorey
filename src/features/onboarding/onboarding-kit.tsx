@@ -248,12 +248,16 @@ export function OBField({
             borderColor: palette.border.mid,
             borderWidth: 1.5,
             borderRadius: radius.sm,
-            paddingVertical: 14,
+            // Fixed single-line height (not vertical padding) so the caret and
+            // text center together on iOS — padding makes the caret float up.
+            height: 52,
+            paddingVertical: 0,
             paddingLeft: prefix ? 28 : 16,
             paddingRight: 16,
             fontFamily: typography.family.body.regular,
             fontSize: 16,
             color: scheme.fg,
+            textAlignVertical: "center",
           }}
         />
       </View>
