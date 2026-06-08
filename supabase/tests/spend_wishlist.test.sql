@@ -75,7 +75,14 @@ select is(
 );
 
 select throws_ok(
-  $$ select * from public.request_wishlist_purchase('123456', (select id from public.wishlist_items limit 1)) $$,
+  $$ select * from public.request_wishlist_purchase(
+    '123456',
+    (
+      select id
+      from public.wishlist_items
+      where child_profile_id = '00000000-0000-0000-0000-000000000703'
+    )
+  ) $$,
   'P0001',
   'Spend balance is too low.',
   'purchase request requires enough spend balance'
@@ -107,7 +114,14 @@ where id = '00000000-0000-0000-0000-000000000704';
 select is(
   (
     select status::text
-    from public.request_wishlist_purchase('123456', (select id from public.wishlist_items limit 1))
+    from public.request_wishlist_purchase(
+      '123456',
+      (
+        select id
+        from public.wishlist_items
+        where child_profile_id = '00000000-0000-0000-0000-000000000703'
+      )
+    )
   ),
   'pending',
   'child can request purchase when spend balance covers target'
@@ -117,14 +131,18 @@ select is(
   (
     select status::text
     from public.wishlist_items
-    limit 1
+    where child_profile_id = '00000000-0000-0000-0000-000000000703'
   ),
   'requested',
   'purchase request marks wishlist item requested'
 );
 
 select is(
-  (select count(*)::integer from public.purchase_requests),
+  (
+    select count(*)::integer
+    from public.purchase_requests
+    where child_profile_id = '00000000-0000-0000-0000-000000000703'
+  ),
   1,
   'purchase request is recorded'
 );
@@ -145,7 +163,11 @@ select is(
     select status::text
     from public.approve_purchase_request(
       '00000000-0000-0000-0000-000000000702',
-      (select id from public.purchase_requests limit 1)
+      (
+        select id
+        from public.purchase_requests
+        where child_profile_id = '00000000-0000-0000-0000-000000000703'
+      )
     )
   ),
   'approved',
@@ -156,7 +178,7 @@ select is(
   (
     select status::text
     from public.wishlist_items
-    limit 1
+    where child_profile_id = '00000000-0000-0000-0000-000000000703'
   ),
   'purchased',
   'approved purchase marks wishlist item purchased'
