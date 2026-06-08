@@ -6,6 +6,7 @@ function createAuthClient() {
       signInWithOAuth: jest.fn().mockResolvedValue({ data: {}, error: null }),
       signInWithOtp: jest.fn().mockResolvedValue({ data: {}, error: null }),
       verifyOtp: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      signOut: jest.fn().mockResolvedValue({ error: null }),
     },
   };
 }
@@ -76,5 +77,14 @@ describe("parent auth actions", () => {
       token: "231761",
       type: "email",
     });
+  });
+
+  it("signs the parent out", async () => {
+    const client = createAuthClient();
+    const actions = createParentAuthActions(client, "chorey://auth/callback");
+
+    await actions.signOut();
+
+    expect(client.auth.signOut).toHaveBeenCalledTimes(1);
   });
 });

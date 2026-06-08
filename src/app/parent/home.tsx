@@ -32,6 +32,7 @@ import {
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import { getHouseholdAccess } from "@/features/entitlements/default-entitlement-actions";
 import type { HouseholdAccess } from "@/features/entitlements/entitlements";
+import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
@@ -262,6 +263,10 @@ export default function ParentHomeRoute() {
           params: { householdId: householdId ?? "" },
         })
       }
+      onLogOut={async () => {
+        await createDefaultParentAuthActions().signOut();
+        router.replace("/");
+      }}
       due={due}
       payoutHistory={toPayoutHistoryRows(payouts, kids)}
       paidThisMonthCents={payoutsThisMonthCents(payouts)}

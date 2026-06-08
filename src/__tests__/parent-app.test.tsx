@@ -522,4 +522,12 @@ describe("ParentApp · Settings", () => {
     fireEvent.press(screen.getByLabelText("Mia monthly"));
     expect(onChangeCadence).toHaveBeenCalledWith("k1", "monthly");
   });
+
+  it("logs out from the settings tab", () => {
+    const onLogOut = jest.fn();
+    render(<ParentApp initialTab="settings" kids={[mia]} onLogOut={onLogOut} />);
+
+    fireEvent.press(screen.getByLabelText("Log out"));
+    expect(onLogOut).toHaveBeenCalledTimes(1);
+  });
 });

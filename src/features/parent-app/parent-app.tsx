@@ -74,6 +74,7 @@ type Props = {
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onEditSplits?: () => void;
+  onLogOut?: () => void;
   initialTab?: ParentTab;
 };
 
@@ -110,6 +111,7 @@ export function ParentApp({
   onChangeBudget,
   onChangeCadence,
   onEditSplits,
+  onLogOut,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -162,6 +164,7 @@ export function ParentApp({
           onChangeBudget={onChangeBudget}
           onChangeCadence={onChangeCadence}
           onEditSplits={onEditSplits}
+          onLogOut={onLogOut}
         />
       )}
 

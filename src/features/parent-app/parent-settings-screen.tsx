@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, LogOut } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -26,6 +26,7 @@ type Props = {
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onEditSplits?: () => void;
+  onLogOut?: () => void;
 };
 
 const DEFAULT_GENERAL: GeneralRow[] = [
@@ -43,6 +44,7 @@ export function ParentSettingsScreen({
   onChangeBudget,
   onChangeCadence,
   onEditSplits,
+  onLogOut,
 }: Props) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
 
@@ -187,10 +189,38 @@ export function ParentSettingsScreen({
             ))}
           </View>
 
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Log out"
+            onPress={onLogOut}
+            style={({ pressed }) => ({
+              marginTop: 22,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              paddingVertical: 14,
+              borderRadius: radius.md,
+              backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
+              borderColor: scheme.border,
+              borderWidth: 1,
+            })}
+          >
+            <LogOut size={17} color={palette.semantic.danger[600]} strokeWidth={2.2} />
+            <Text
+              style={[
+                typography.text.label,
+                { color: palette.semantic.danger[600], fontSize: 15 },
+              ]}
+            >
+              Log out
+            </Text>
+          </Pressable>
+
           <Text
             style={{
               textAlign: "center",
-              marginTop: 24,
+              marginTop: 20,
               fontFamily: typography.family.display.medium,
               fontSize: 14,
               color: scheme.fgFaint,
@@ -215,7 +245,7 @@ function BudgetCard({
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
 }) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, radius } = useChoreyTheme();
   const tone = bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp;
   const [budgetCents, setBudgetCents] = useState(kid.budgetCents);
   const [cadence, setCadence] = useState<SettlementFrequency>(kid.cadence);

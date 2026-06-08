@@ -20,6 +20,7 @@ type ParentAuthClient = {
       token: string;
       type: "email";
     }): Promise<{ error: Error | null }>;
+    signOut(): Promise<{ error: Error | null }>;
   };
 };
 
@@ -71,6 +72,13 @@ export function createParentAuthActions(
         token: token.trim(),
         type: "email",
       });
+
+      if (error) {
+        throw error;
+      }
+    },
+    async signOut() {
+      const { error } = await client.auth.signOut();
 
       if (error) {
         throw error;
