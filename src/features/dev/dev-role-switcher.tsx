@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { supabase } from "@/lib/supabase";
@@ -14,6 +14,10 @@ export function DevRoleSwitcher() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
+  const showMissingHousehold = () => {
+    Alert.alert("No household", "Log in as a parent first.");
+  };
+
   const goParent = async () => {
     if (busy) return;
     setBusy(true);
@@ -21,6 +25,8 @@ export function DevRoleSwitcher() {
       const householdId = await getPrimaryHouseholdId();
       if (householdId) {
         router.replace({ pathname: "/parent/home", params: { householdId } });
+      } else {
+        showMissingHousehold();
       }
     } finally {
       setBusy(false);
@@ -32,7 +38,10 @@ export function DevRoleSwitcher() {
     setBusy(true);
     try {
       const householdId = await getPrimaryHouseholdId();
-      if (!householdId) return;
+      if (!householdId) {
+        showMissingHousehold();
+        return;
+      }
 
       const result = await supabase
         .from("child_access_codes")
