@@ -706,13 +706,14 @@ function OBAddKid({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, palette } = useChoreyTheme();
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [tone, setTone] = useState<KidTone>("allowance");
 
   const hasDraft = !!name.trim();
-  const canContinue = hasDraft || data.kids.length > 0;
+  const hasIncompleteDraft = !hasDraft && !!age;
+  const canContinue = hasDraft || (data.kids.length > 0 && !hasIncompleteDraft);
 
   // Commit the in-progress kid into the list. Returns the updated count.
   const commitDraft = (): boolean => {
@@ -730,6 +731,7 @@ function OBAddKid({
   };
 
   const handleContinue = () => {
+    if (!canContinue) return;
     commitDraft(); // keep the filled-in kid; no-op if the form is empty
     onNext();
   };
@@ -789,6 +791,16 @@ function OBAddKid({
             />
           </View>
         </View>
+        {hasIncompleteDraft ? (
+          <Text
+            style={[
+              typography.text.caption,
+              { color: palette.semantic.danger[600], marginBottom: 12 },
+            ]}
+          >
+            Enter a name for this child.
+          </Text>
+        ) : null}
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>Color</Text>
         <View style={{ flexDirection: "row", gap: 10 }}>
           {KID_TONES.map((t) => (

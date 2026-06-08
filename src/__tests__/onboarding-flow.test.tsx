@@ -122,6 +122,19 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText("Mia")).toBeOnTheScreen();
   });
 
+  it("does not continue with an age-only second kid draft", () => {
+    render(<OnboardingFlow initialStep="p_addkid" />);
+
+    fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
+    fireEvent.press(screen.getByText("+ Add another kid"));
+    fireEvent.changeText(screen.getByLabelText("Age"), "8");
+    fireEvent.press(screen.getByText("Continue"));
+
+    expect(screen.getByText("Add another kid.")).toBeOnTheScreen();
+    expect(screen.getByText("Enter a name for this child.")).toBeOnTheScreen();
+    expect(screen.queryByText("Budget & split.")).toBeNull();
+  });
+
   it("auto-balances Save when Spend changes in the split editor", () => {
     render(<OnboardingFlow initialStep="p_split" />);
 

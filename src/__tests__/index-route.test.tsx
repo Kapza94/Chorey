@@ -1,5 +1,5 @@
 import { Text } from "react-native";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import IndexRoute from "@/app/index";
 
@@ -7,16 +7,17 @@ const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockGetSession = jest.fn();
 const mockGetPrimaryHouseholdId = jest.fn();
+const mockRouter = {
+  push: mockPush,
+  replace: mockReplace,
+};
 
 function MockOnboardingFlow() {
   return <Text>Onboarding flow</Text>;
 }
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({
-    push: mockPush,
-    replace: mockReplace,
-  }),
+  useRouter: () => mockRouter,
 }));
 
 jest.mock("@/lib/supabase", () => ({
@@ -50,6 +51,8 @@ jest.mock("@/features/onboarding/onboarding-flow", () => ({
 describe("IndexRoute", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetSession.mockReset();
+    mockGetPrimaryHouseholdId.mockReset();
   });
 
   it("routes a signed-in parent with a household to parent home", async () => {
@@ -98,6 +101,50 @@ describe("IndexRoute", () => {
     });
 
     expect(mockGetPrimaryHouseholdId).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("shows a retry action when the session check fails", async () => {
+    mockGetSession
+      .mockResolvedValueOnce({
+        data: { session: null },
+        error: new Error("Network request failed"),
+      })
+      .mockResolvedValueOnce({
+        data: { session: null },
+        error: null,
+      });
+
+    render(<IndexRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't start Chorey")).toBeOnTheScreen();
+    });
+
+    fireEvent.press(screen.getByLabelText("Retry launch"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Onboarding flow")).toBeOnTheScreen();
+    });
+
+    expect(mockGetSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a retry action when household resolution fails", async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: "parent-1" } } },
+      error: null,
+    });
+    mockGetPrimaryHouseholdId.mockRejectedValue(
+      new Error("Network request failed"),
+    );
+
+    render(<IndexRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't start Chorey")).toBeOnTheScreen();
+    });
+
     expect(mockReplace).not.toHaveBeenCalled();
   });
 });
