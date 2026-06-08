@@ -897,8 +897,10 @@ function OBPremiumGate({
   const [showSoon, setShowSoon] = useState(false);
 
   const oneKid = data.kids.length === 1;
-  const removeKid = (index: number) =>
+  const removeKid = (index: number) => {
+    if (data.kids.length <= 1) return;
     patch({ kids: data.kids.filter((_, i) => i !== index) });
+  };
 
   return (
     <OBShell
@@ -964,7 +966,9 @@ function OBPremiumGate({
           <KidRow
             key={`${kid.name}-${index}`}
             kid={kid}
-            onRemove={() => removeKid(index)}
+            onRemove={
+              data.kids.length > 1 ? () => removeKid(index) : undefined
+            }
           />
         ))}
       </View>

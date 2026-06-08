@@ -201,6 +201,7 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText("Remove a kid to continue")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("Remove Eli"));
+    expect(screen.queryByLabelText("Remove Mia")).toBeNull();
     // Down to one kid → continue to the account step.
     fireEvent.press(screen.getByText("Continue"));
     expect(screen.getByText("Save your family.")).toBeOnTheScreen();
