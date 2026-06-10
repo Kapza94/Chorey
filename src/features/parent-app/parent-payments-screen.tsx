@@ -18,19 +18,22 @@ export type DuePayout = {
   id: string;
   name: string;
   tone: "allowance" | "savings" | "giving";
+  /** gross all-time earnings (positive ledger events only). */
   earnedCents: number;
-  /** total already paid out to this kid (all time). */
-  paidCents: number;
-  allowanceCents: number;
+  /** net Spend balance — the only money a parent hands over. */
+  spendCents: number;
   savingsCents: number;
   givingCents: number;
   choresDone: number;
   cadence: "weekly" | "monthly";
 };
 
-/** What's still owed to a kid: earned minus already paid (never negative). */
-export function owedCents(kid: { earnedCents: number; paidCents: number }) {
-  return Math.max(0, kid.earnedCents - kid.paidCents);
+/**
+ * What a parent hands over: the kid's net Spend balance. Savings stays saved
+ * and Giving goes to their cause — neither is ever paid out in cash.
+ */
+export function owedCents(kid: { spendCents: number }) {
+  return Math.max(0, kid.spendCents);
 }
 
 export type PayoutHistoryRow = {
@@ -113,8 +116,8 @@ export function ParentPaymentsScreen({
         >
           <Sparkles size={16} color={palette.semantic.info[600]} strokeWidth={2.2} />
           <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}>
-            Pay your kids however you like — cash, a gift, or something else. Chorey just
-            keeps the record.
+            Only Spend leaves the app — Savings stays saved and Giving goes to their
+            cause. Pay it out however you like; Chorey keeps the record.
           </Text>
         </View>
 
@@ -125,7 +128,7 @@ export function ParentPaymentsScreen({
           />
         ) : null}
 
-        <SectionLabel>Due this period</SectionLabel>
+        <SectionLabel>Ready to pay out</SectionLabel>
 
         {owing.length === 0 ? (
           <View
@@ -451,8 +454,7 @@ function DueCard({
         <View style={{ flex: 1 }}>
           <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>{kid.name}</Text>
           <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
-            {formatMoney(kid.earnedCents, currency)} earned
-            {kid.paidCents > 0 ? ` · ${formatMoney(kid.paidCents, currency)} paid` : ""}
+            {formatMoney(kid.earnedCents, currency)} earned all-time
           </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
@@ -460,7 +462,7 @@ function DueCard({
             {formatMoney(owedCents(kid), currency)}
           </Text>
           <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
-            to pay out
+            Spend to hand over
           </Text>
         </View>
       </View>
@@ -476,7 +478,7 @@ function DueCard({
           borderBottomColor: scheme.border,
         }}
       >
-        <SplitDot color={allowance[400]} label="spend" value={formatMoney(kid.allowanceCents, currency)} />
+        <SplitDot color={allowance[400]} label="spend" value={formatMoney(kid.spendCents, currency)} />
         <SplitDot color={savings[400]} label="save" value={formatMoney(kid.savingsCents, currency)} />
         <SplitDot color={giving[400]} label="give" value={formatMoney(kid.givingCents, currency)} />
       </View>
@@ -544,6 +546,11 @@ function MarkPaidSheet({
   } catch {
     amountCents = 0;
   }
+
+  // A payout comes out of the kid's Spend bucket, so it can't exceed it.
+  const capCents = kid ? owedCents(kid) : 0;
+  const overCap = amountCents > capCents;
+  const canConfirm = amountCents > 0 && !overCap;
 
   // For an `other` payout, the detail is the preset label, or the free text the
   // parent typed under "Something else".
@@ -626,6 +633,17 @@ function MarkPaidSheet({
             }}
           />
         </View>
+        {overCap && kid ? (
+          <Text
+            style={[
+              typography.text.caption,
+              { color: palette.semantic.danger[600], marginTop: -10, marginBottom: 14 },
+            ]}
+          >
+            That&apos;s more than {kid.name}&apos;s {formatMoney(capCents, currency)} Spend
+            balance.
+          </Text>
+        ) : null}
 
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
           How you paid
@@ -730,7 +748,11 @@ function MarkPaidSheet({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Confirm payout"
+          accessibilityState={{ disabled: !canConfirm }}
           onPress={() => {
+            if (!canConfirm) {
+              return;
+            }
             onConfirm(amountCents, method, detail);
             resetForm();
           }}
@@ -741,7 +763,8 @@ function MarkPaidSheet({
             gap: 8,
             paddingVertical: 15,
             borderRadius: radius.pill,
-            backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+            backgroundColor: pressed && canConfirm ? palette.accent[800] : palette.accent[600],
+            opacity: canConfirm ? 1 : 0.5,
           })}
         >
           <Check size={17} color={palette.cream[4]} strokeWidth={3} />

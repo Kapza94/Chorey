@@ -63,7 +63,32 @@ select results_eq(
   'child defaults to weekly cadence and a budget cap'
 );
 
--- A valid off-app payout records.
+-- Payouts come out of the Spend bucket, so the child needs earnings first:
+-- a $50.00 approved chore credits 2000 cents of Spend.
+insert into public.chore_instances (
+  id,
+  household_id,
+  child_profile_id,
+  title,
+  reward_cents,
+  status,
+  created_by_user_id
+)
+values (
+  '00000000-0000-0000-0000-000000000804',
+  '00000000-0000-0000-0000-000000000802',
+  '00000000-0000-0000-0000-000000000803',
+  'Garage clean',
+  5000,
+  'submitted',
+  '00000000-0000-0000-0000-000000000801'
+);
+
+update public.chore_instances
+set status = 'approved'
+where id = '00000000-0000-0000-0000-000000000804';
+
+-- A valid off-app payout (within the Spend balance) records.
 select lives_ok(
   $$ insert into public.payouts (household_id, child_profile_id, amount_cents, method)
      values (

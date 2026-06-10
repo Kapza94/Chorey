@@ -153,7 +153,7 @@ export default function ParentHomeRoute() {
       name: suggestion.name,
     }));
 
-  // Total already paid out per kid (all time), used for owed = earned − paid.
+  // Total already paid out per kid (all time), shown in the payments sheet.
   const paidByKid = new Map<string, number>();
   for (const payout of payouts) {
     paidByKid.set(
@@ -162,13 +162,14 @@ export default function ParentHomeRoute() {
     );
   }
 
+  // Owed = the kid's net Spend balance (payouts and purchases are already
+  // deducted in the ledger). Savings and Giving never leave the app as cash.
   const due: DuePayout[] = kids.map((kid) => ({
     id: kid.id,
     name: kid.name,
     tone: kid.tone,
     earnedCents: kid.earnedCents,
-    paidCents: paidByKid.get(kid.id) ?? 0,
-    allowanceCents: kid.allowanceCents,
+    spendCents: kid.allowanceCents,
     savingsCents: kid.savingsCents,
     givingCents: kid.givingCents,
     choresDone: kid.choresDone,
@@ -180,6 +181,7 @@ export default function ParentHomeRoute() {
     kidId: kid.id,
     earnedCents: kid.earnedCents,
     paidCents: paidByKid.get(kid.id) ?? 0,
+    spendCents: kid.allowanceCents,
     history: payouts
       .filter((payout) => payout.childProfileId === kid.id)
       .map((payout) => ({

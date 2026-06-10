@@ -115,6 +115,7 @@ describe("ParentApp · Kids", () => {
             kidId: "k1",
             earnedCents: 650,
             paidCents: 500,
+            spendCents: 150,
             history: [
               {
                 id: "p1",
@@ -131,7 +132,7 @@ describe("ParentApp · Kids", () => {
 
     fireEvent.press(screen.getByLabelText("Mia details"));
     expect(screen.getByText("Earned")).toBeOnTheScreen();
-    expect(screen.getByText("$1.50")).toBeOnTheScreen(); // owed = 650 − 500
+    expect(screen.getByText("$1.50")).toBeOnTheScreen(); // owed = Spend balance
     expect(screen.getByText("Other · Gift")).toBeOnTheScreen(); // history row
   });
 
@@ -197,8 +198,7 @@ describe("ParentApp · Payments", () => {
       name: "Mia",
       tone: "allowance" as const,
       earnedCents: 1850,
-      paidCents: 0,
-      allowanceCents: 740,
+      spendCents: 740,
       savingsCents: 740,
       givingCents: 370,
       choresDone: 4,
@@ -227,7 +227,7 @@ describe("ParentApp · Payments", () => {
     );
 
     expect(screen.getByText("Payments.")).toBeOnTheScreen();
-    expect(screen.getByText("to pay out")).toBeOnTheScreen();
+    expect(screen.getByText("Spend to hand over")).toBeOnTheScreen();
     expect(screen.getByText("Total to pay out")).toBeOnTheScreen();
     expect(screen.getByText("$22.00 this month")).toBeOnTheScreen();
   });
@@ -237,10 +237,10 @@ describe("ParentApp · Payments", () => {
     render(<ParentApp initialTab="pay" due={due} onMarkPaid={onMarkPaid} />);
 
     fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
-    // sheet opens, amount prefilled to 18.50, cash is the default method
+    // sheet opens, amount prefilled to the Spend balance (7.40), cash default
     fireEvent.press(screen.getByLabelText("Confirm payout"));
 
-    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "cash", undefined);
+    expect(onMarkPaid).toHaveBeenCalledWith("k1", 740, "cash", undefined);
   });
 
   it("no longer offers bank transfer as a method", () => {
@@ -261,7 +261,7 @@ describe("ParentApp · Payments", () => {
     fireEvent.press(screen.getByLabelText("Gift"));
     fireEvent.press(screen.getByLabelText("Confirm payout"));
 
-    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "other", "Gift");
+    expect(onMarkPaid).toHaveBeenCalledWith("k1", 740, "other", "Gift");
   });
 
   it("captures a free-text Other detail via Something else", () => {
@@ -274,7 +274,7 @@ describe("ParentApp · Payments", () => {
     fireEvent.changeText(screen.getByLabelText("What did you give?"), "Lego set");
     fireEvent.press(screen.getByLabelText("Confirm payout"));
 
-    expect(onMarkPaid).toHaveBeenCalledWith("k1", 1850, "other", "Lego set");
+    expect(onMarkPaid).toHaveBeenCalledWith("k1", 740, "other", "Lego set");
   });
 
   it("shows the all-paid-up empty state", () => {
@@ -282,28 +282,39 @@ describe("ParentApp · Payments", () => {
     expect(screen.getByText("All paid up.")).toBeOnTheScreen();
   });
 
-  it("shows owed = earned minus paid", () => {
+  it("shows owed as the kid's Spend balance — never Savings or Giving", () => {
     render(
       <ParentApp
         initialTab="pay"
-        due={[{ ...due[0], earnedCents: 650, paidCents: 500 }]}
+        due={[{ ...due[0], earnedCents: 650, spendCents: 150 }]}
       />,
     );
 
     // owed shows in the card and the total
     expect(screen.getAllByText("$1.50").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("$6.50 earned · $5.00 paid")).toBeOnTheScreen();
+    expect(screen.getByText("$6.50 earned all-time")).toBeOnTheScreen();
   });
 
-  it("drops a fully-paid kid to all-paid-up", () => {
+  it("drops a kid with no Spend balance to all-paid-up", () => {
     render(
-      <ParentApp
-        initialTab="pay"
-        due={[{ ...due[0], earnedCents: 500, paidCents: 500 }]}
-      />,
+      <ParentApp initialTab="pay" due={[{ ...due[0], spendCents: 0 }]} />,
     );
 
     expect(screen.getByText("All paid up.")).toBeOnTheScreen();
+  });
+
+  it("caps a payout at the kid's Spend balance", () => {
+    const onMarkPaid = jest.fn();
+    render(<ParentApp initialTab="pay" due={due} onMarkPaid={onMarkPaid} />);
+
+    fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
+    fireEvent.changeText(screen.getByLabelText("Payout amount"), "100.00");
+    expect(
+      screen.getByText("That's more than Mia's $7.40 Spend balance."),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Confirm payout"));
+
+    expect(onMarkPaid).not.toHaveBeenCalled();
   });
 
   it("marks the settlement period settled", () => {

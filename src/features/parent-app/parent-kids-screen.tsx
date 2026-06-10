@@ -25,8 +25,11 @@ export type KidPaymentRow = {
 /** A kid's all-time earned / paid totals plus their payout history. */
 export type KidPaymentSummary = {
   kidId: string;
+  /** gross all-time earnings (positive ledger events only). */
   earnedCents: number;
   paidCents: number;
+  /** net Spend balance — the only money owed to the kid in cash. */
+  spendCents: number;
   history: KidPaymentRow[];
 };
 
@@ -594,7 +597,8 @@ function KidPaymentsSheet({
 
   const earned = summary?.earnedCents ?? 0;
   const paid = summary?.paidCents ?? 0;
-  const owed = Math.max(0, earned - paid);
+  // Owed = the kid's net Spend balance; Savings and Giving are never cash.
+  const owed = Math.max(0, summary?.spendCents ?? 0);
   const history = summary?.history ?? [];
   const tone = kid
     ? bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp
