@@ -17,7 +17,6 @@ type Props = {
   // Home
   name?: string;
   age?: number | null;
-  streakDays?: number;
   split?: Split;
   currency?: CurrencyCode;
   chores?: KidChore[];
@@ -32,11 +31,7 @@ type Props = {
   savingsCents?: number;
   givingCents?: number;
   causeName?: string | null;
-  givenCents?: number;
-  onMarkGiven?: () => void;
   onSuggestCause?: (name: string) => void;
-  onSeeEarnings?: () => void;
-  onTellParent?: () => void;
   onLogOut?: () => void;
   /** override the starting tab (tests) */
   initialTab?: KidTab;
@@ -49,7 +44,6 @@ type Props = {
 export function KidApp({
   name,
   age,
-  streakDays,
   split,
   currency,
   chores,
@@ -62,11 +56,7 @@ export function KidApp({
   savingsCents,
   givingCents,
   causeName,
-  givenCents,
-  onMarkGiven,
   onSuggestCause,
-  onSeeEarnings,
-  onTellParent,
   onLogOut,
   initialTab = "home",
 }: Props) {
@@ -81,7 +71,6 @@ export function KidApp({
       {tab === "home" ? (
         <KidHomeScreen
           name={name}
-          streakDays={streakDays}
           split={split}
           currency={currency}
           chores={chores}
@@ -106,11 +95,7 @@ export function KidApp({
           savingsCents={savingsCents}
           givingCents={givingCents}
           causeName={causeName}
-          givenCents={givenCents}
-          onMarkGiven={onMarkGiven}
           onSuggestCause={onSuggestCause}
-          onSeeEarnings={onSeeEarnings}
-          onTellParent={onTellParent}
           onLogOut={onLogOut}
         />
       )}

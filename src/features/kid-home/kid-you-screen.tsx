@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, Heart, Lock, LogOut, Sparkles, Wallet } from "lucide-react-native";
+import { ChevronRight, Heart, Lock, LogOut } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -17,11 +17,7 @@ type Props = {
   savingsCents?: number;
   givingCents?: number;
   causeName?: string | null;
-  givenCents?: number;
-  onMarkGiven?: () => void;
   onSuggestCause?: (name: string) => void;
-  onSeeEarnings?: () => void;
-  onTellParent?: () => void;
   onLogOut?: () => void;
 };
 
@@ -32,11 +28,7 @@ export function KidYouScreen({
   savingsCents = 0,
   givingCents = 0,
   causeName,
-  givenCents = 0,
-  onMarkGiven,
   onSuggestCause,
-  onSeeEarnings,
-  onTellParent,
   onLogOut,
 }: Props) {
   const { scheme, typography, radius, bucketInk } = useChoreyTheme();
@@ -46,10 +38,9 @@ export function KidYouScreen({
   const initial = name.trim().charAt(0).toUpperCase() || "?";
   const [suggesting, setSuggesting] = useState(false);
 
+  // Only wired actions ship on the kid surface — no dead buttons.
   const quickActions = [
     { label: "Suggest a cause", Icon: Heart, onPress: () => setSuggesting(true) },
-    { label: "See all earnings", Icon: Wallet, onPress: onSeeEarnings },
-    { label: "Tell a parent something", Icon: Sparkles, onPress: onTellParent },
   ];
 
   return (
@@ -162,7 +153,7 @@ export function KidYouScreen({
             </View>
           </View>
 
-          {/* Giving */}
+          {/* Giving — a parent confirms the handoff at settlement, not the kid. */}
           <View style={{ paddingHorizontal: 18, paddingVertical: 16 }}>
             <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>Giving</Text>
             <View
@@ -176,25 +167,22 @@ export function KidYouScreen({
               <Text style={[typography.text.moneyHero, { color: bucketInk("giving"), fontSize: 36 }]}>
                 {formatMoney(givingCents, currency)}
               </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Mark as given"
-                onPress={onMarkGiven}
-                style={({ pressed }) => ({
+              <View
+                style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 6,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
+                  gap: 4,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
                   borderRadius: radius.pill,
-                  backgroundColor: pressed ? giving[200] : giving[400],
-                })}
+                  backgroundColor: scheme.tint.giving,
+                }}
               >
-                <Heart size={13} color={giving[800]} strokeWidth={2.6} />
-                <Text style={[typography.text.label, { color: giving[800], fontSize: 13 }]}>
-                  Mark as given
+                <Heart size={11} color={giving[600]} strokeWidth={2.4} />
+                <Text style={[typography.text.caption, { color: giving[600], fontWeight: "700" }]}>
+                  for your cause
                 </Text>
-              </Pressable>
+              </View>
             </View>
             {causeName ? (
               <View
@@ -206,8 +194,8 @@ export function KidYouScreen({
                 }}
               >
                 <Text style={[typography.text.caption, { color: scheme.fg }]}>
-                  <Text style={{ fontWeight: "700" }}>Saving up to give to:</Text> {causeName} —{" "}
-                  {formatMoney(givenCents, currency)} given so far.
+                  <Text style={{ fontWeight: "700" }}>Giving goes to:</Text> {causeName}. You
+                  hand it over together with a parent.
                 </Text>
               </View>
             ) : null}

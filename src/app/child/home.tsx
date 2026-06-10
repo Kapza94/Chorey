@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { KidApp } from "@/features/kid-home/kid-app";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import type { KidChore } from "@/features/kid-home/kid-home-screen";
 import type { KidWish } from "@/features/kid-home/kid-wishlist-screen";
 import type { ChildChore } from "@/features/chores/child-chore-actions";
@@ -56,8 +58,11 @@ export default function ChildHomeRoute() {
     ? params.childName[0]
     : params.childName;
 
+  const { scheme, typography, radius } = useChoreyTheme();
   const [session, setSession] = useState<ChildSession | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const [chores, setChores] = useState<ChildChore[]>([]);
   const [wishlistItems, setWishlistItems] = useState<SpendWishlistItem[]>([]);
@@ -126,19 +131,27 @@ export default function ChildHomeRoute() {
         getBucketBalancesForChild(accessCode),
         listWishlistForChild(accessCode),
         listGivingOptionsForChild(accessCode),
-      ]).then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions]) => {
-        if (mounted) {
-          setChores(nextChores);
-          setBucketBalances(nextBalances);
-          setWishlistItems(nextWishlistItems);
-          setGivingOptions(nextGivingOptions);
-        }
-      });
+      ])
+        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions]) => {
+          if (mounted) {
+            setLoadFailed(false);
+            setChores(nextChores);
+            setBucketBalances(nextBalances);
+            setWishlistItems(nextWishlistItems);
+            setGivingOptions(nextGivingOptions);
+          }
+        })
+        .catch(() => {
+          // A network blip must not look like "all my chores are gone".
+          if (mounted) {
+            setLoadFailed(true);
+          }
+        });
 
       return () => {
         mounted = false;
       };
-    }, [accessCode]),
+    }, [accessCode, loadAttempt]),
   );
 
   const kidChores = useMemo<KidChore[]>(
@@ -178,6 +191,47 @@ export default function ChildHomeRoute() {
 
   if (!session) {
     return null;
+  }
+
+  if (loadFailed) {
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: scheme.bgPage,
+          flex: 1,
+          gap: 8,
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, textAlign: "center" }]}>
+          Hmm, that didn&apos;t load.
+        </Text>
+        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, textAlign: "center" }]}>
+          Your chores and money are safe. Check the internet and try again.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
+          onPress={() => setLoadAttempt((attempt) => attempt + 1)}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
+            borderColor: scheme.border,
+            borderRadius: radius.pill,
+            borderWidth: 1,
+            marginTop: 8,
+            paddingHorizontal: 28,
+            paddingVertical: 13,
+          })}
+        >
+          <Text style={[typography.text.label, { color: scheme.fg, fontSize: 15 }]}>
+            Try again
+          </Text>
+        </Pressable>
+      </View>
+    );
   }
 
   return (

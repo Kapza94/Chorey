@@ -9,7 +9,6 @@ import { KidApp } from "@/features/kid-home/kid-app";
 
 const baseProps = {
   name: "Mia",
-  streakDays: 4,
   currency: "USD" as const,
   chores: [
     { id: "c1", name: "Make the bed", valueCents: 100, state: "todo" as const },
@@ -22,7 +21,6 @@ const baseProps = {
   savingsCents: 1280,
   givingCents: 120,
   causeName: "Animals",
-  givenCents: 120,
 };
 
 describe("KidApp shell", () => {
@@ -105,9 +103,12 @@ describe("KidApp shell", () => {
 
     expect(screen.getByText("not spendable")).toBeOnTheScreen();
     expect(screen.getByText("$12.80")).toBeOnTheScreen(); // savings
-    expect(screen.getByText(/Saving up to give to/)).toBeOnTheScreen();
     expect(screen.getByText(/Animals/)).toBeOnTheScreen();
-    expect(screen.getByLabelText("Mark as given")).toBeOnTheScreen();
+    // Giving is confirmed by a parent at settlement — kids don't self-certify,
+    // and no dead buttons ship on the kid surface.
+    expect(screen.queryByLabelText("Mark as given")).toBeNull();
+    expect(screen.queryByLabelText("See all earnings")).toBeNull();
+    expect(screen.queryByLabelText("Tell a parent something")).toBeNull();
   });
 
   it("suggests a giving cause through the sheet", () => {

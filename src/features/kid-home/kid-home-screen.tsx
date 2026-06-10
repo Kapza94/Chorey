@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
-import { Check, Clock, Flame, Lock, Sparkles } from "lucide-react-native";
+import { Check, Clock, Lock, Sparkles } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -31,7 +31,6 @@ export type KidChore = {
 
 type Props = {
   name?: string;
-  streakDays?: number;
   /** injectable for deterministic tests; defaults to now */
   today?: Date;
   split?: Split;
@@ -56,7 +55,6 @@ const WEEKDAYS = [
 
 export function KidHomeScreen({
   name = "there",
-  streakDays = 0,
   today = new Date(),
   split = DEFAULT_SPLIT,
   currency = DEFAULT_CURRENCY,
@@ -69,7 +67,7 @@ export function KidHomeScreen({
   const theme = useChoreyTheme();
   const { scheme, typography, space, radius } = theme;
 
-  // "This week so far" is real, approved money (matches You + Wishlist).
+  // The hero shows real, approved balances (matches You + Wishlist).
   const earnedCents = spendCents + savingsCents + givingCents;
   const balance = formatMoneyParts(earnedCents, currency);
 
@@ -109,29 +107,6 @@ export function KidHomeScreen({
               Hey, {name}.
             </Text>
           </View>
-          {streakDays > 0 ? (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingHorizontal: space[3],
-                paddingVertical: 6,
-                borderRadius: radius.pill,
-                backgroundColor: scheme.tint.warning,
-              }}
-            >
-              <Flame size={15} color={theme.palette.semantic.warning[600]} strokeWidth={2} />
-              <Text
-                style={[
-                  typography.text.label,
-                  { color: theme.palette.semantic.warning[600] },
-                ]}
-              >
-                {streakDays}-day streak
-              </Text>
-            </View>
-          ) : null}
         </View>
 
         {/* Hero balance card */}
@@ -148,7 +123,7 @@ export function KidHomeScreen({
           }}
         >
           <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
-            This week so far
+            Your money
           </Text>
           <View style={{ flexDirection: "row", alignItems: "baseline", marginTop: 4 }}>
             <Text
@@ -242,15 +217,26 @@ export function KidHomeScreen({
             overflow: "hidden",
           }}
         >
-          {chores.map((chore, index) => (
-            <ChoreRow
-              key={chore.id}
-              chore={chore}
-              currency={currency}
-              isLast={index === chores.length - 1}
-              onOpen={onOpenChore}
-            />
-          ))}
+          {chores.length === 0 ? (
+            <View style={{ alignItems: "center", paddingHorizontal: 18, paddingVertical: 22 }}>
+              <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
+                Nothing on your list today.
+              </Text>
+              <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
+                New chores from your parents show up here.
+              </Text>
+            </View>
+          ) : (
+            chores.map((chore, index) => (
+              <ChoreRow
+                key={chore.id}
+                chore={chore}
+                currency={currency}
+                isLast={index === chores.length - 1}
+                onOpen={onOpenChore}
+              />
+            ))
+          )}
         </View>
 
         {/* Split info note */}

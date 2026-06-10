@@ -8,7 +8,6 @@ function renderHome(overrides = {}) {
   return render(
     <KidHomeScreen
       name="Mia"
-      streakDays={4}
       today={saturday}
       chores={[
         { id: "c1", name: "Make the bed", valueCents: 100, state: "todo" },
@@ -24,21 +23,30 @@ function renderHome(overrides = {}) {
 }
 
 describe("KidHomeScreen", () => {
-  it("greets the kid with the weekday and a streak chip", () => {
+  it("greets the kid with the weekday — no streak pressure", () => {
     renderHome();
 
     expect(screen.getByText("Saturday")).toBeOnTheScreen();
     expect(screen.getByText("Hey, Mia.")).toBeOnTheScreen();
-    expect(screen.getByText("4-day streak")).toBeOnTheScreen();
+    expect(screen.queryByText(/streak/)).toBeNull();
   });
 
-  it("shows only real, approved money in 'this week so far'", () => {
+  it("shows only real, approved money under an honest label", () => {
     // Approved ledger: 80 spend / 80 save / 40 give = $2.00 total.
     renderHome({ spendCents: 80, savingsCents: 80, givingCents: 40 });
 
+    // Balances are all-time, so the label must not claim "this week".
+    expect(screen.getByText("Your money")).toBeOnTheScreen();
+    expect(screen.queryByText("This week so far")).toBeNull();
     expect(screen.getByText("$2")).toBeOnTheScreen(); // hero lead
     expect(screen.getAllByText("$0.80")).toHaveLength(2); // Spend + Save buckets
     expect(screen.getByText("$0.40")).toBeOnTheScreen(); // Give bucket
+  });
+
+  it("shows a friendly empty state when no chores are assigned", () => {
+    renderHome({ chores: [] });
+
+    expect(screen.getByText("Nothing on your list today.")).toBeOnTheScreen();
   });
 
   it("shows done-but-unapproved chores as waiting, not as money", () => {
