@@ -1,3 +1,9 @@
+import {
+  CURRENCIES,
+  DEFAULT_CURRENCY,
+  type CurrencyCode,
+} from "@/features/money/currency";
+
 type ChildAccessClient = {
   from(table: string): any;
   rpc?(fn: string, args: Record<string, unknown>): PromiseLike<{
@@ -14,6 +20,8 @@ export type ChildAccessCode = {
 
 export type ResolvedChildAccess = ChildAccessCode & {
   childName: string;
+  /** The household's display currency — kids see money the way parents set it up. */
+  currency: CurrencyCode;
 };
 
 export function normalizeAccessCode(value: string) {
@@ -84,11 +92,17 @@ export function createChildAccessActions(client: ChildAccessClient) {
         throw new Error("Access code was not found.");
       }
 
+      const currency =
+        typeof row.currency === "string" && row.currency in CURRENCIES
+          ? (row.currency as CurrencyCode)
+          : DEFAULT_CURRENCY;
+
       return {
         accessCode: row.access_code,
         childProfileId: row.child_profile_id,
         childName: row.child_name ?? "Child",
         householdId: row.household_id,
+        currency,
       };
     },
   };

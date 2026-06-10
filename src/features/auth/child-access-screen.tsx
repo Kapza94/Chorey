@@ -10,11 +10,12 @@ type Props = {
   onResolveAccessCode?: (code: string) => Promise<ResolvedChildAccess>;
 };
 
-const noopResolve = async (code: string) => ({
+const noopResolve = async (code: string): Promise<ResolvedChildAccess> => ({
   accessCode: code,
   childProfileId: "preview-child",
   childName: "Child",
   householdId: "preview-household",
+  currency: "USD",
 });
 
 function getErrorMessage(error: unknown) {

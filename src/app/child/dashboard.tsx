@@ -1,142 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams } from "expo-router";
 
-import { KidApp } from "@/features/kid-home/kid-app";
-import type { KidChore } from "@/features/kid-home/kid-home-screen";
-import type { KidWish } from "@/features/kid-home/kid-wishlist-screen";
-import type { ChildChore } from "@/features/chores/child-chore-actions";
-import type { BucketBalances } from "@/features/chores/money";
-import {
-  listChoresForChild,
-  submitChoreForChild,
-  undoChoreSubmissionForChild,
-} from "@/features/chores/default-child-chore-actions";
-import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
-import {
-  listWishlistForChild,
-  requestWishlistPurchase,
-} from "@/features/spend-wishlist/default-spend-wishlist-actions";
-import type { SpendWishlistItem } from "@/features/spend-wishlist/spend-wishlist-actions";
-
-const emptyBalances: BucketBalances = {
-  givingCents: 0,
-  savingsCents: 0,
-  spendCents: 0,
-};
-
+/**
+ * The legacy kid dashboard route. The kid app lives at `/child/home`, which
+ * also resolves and persists the device session; this route only forwards.
+ */
 export default function ChildDashboardRoute() {
-  const router = useRouter();
   const params = useLocalSearchParams<{ accessCode?: string; childName?: string }>();
-  const accessCode = Array.isArray(params.accessCode)
-    ? params.accessCode[0]
-    : params.accessCode;
-  const childName = Array.isArray(params.childName)
-    ? params.childName[0]
-    : params.childName;
-
-  const [chores, setChores] = useState<ChildChore[]>([]);
-  const [wishlistItems, setWishlistItems] = useState<SpendWishlistItem[]>([]);
-  const [bucketBalances, setBucketBalances] =
-    useState<BucketBalances>(emptyBalances);
-
-  useEffect(() => {
-    let mounted = true;
-
-    if (!accessCode) {
-      return;
-    }
-
-    Promise.all([
-      listChoresForChild(accessCode),
-      getBucketBalancesForChild(accessCode),
-      listWishlistForChild(accessCode),
-    ]).then(([nextChores, nextBalances, nextWishlistItems]) => {
-      if (mounted) {
-        setChores(nextChores);
-        setBucketBalances(nextBalances);
-        setWishlistItems(nextWishlistItems);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [accessCode]);
-
-  const kidChores = useMemo<KidChore[]>(
-    () =>
-      chores.map((chore) => ({
-        id: chore.id,
-        name: chore.title,
-        valueCents: chore.rewardCents,
-        state:
-          chore.status === "approved"
-            ? ("approved" as const)
-            : chore.status === "submitted"
-              ? ("waiting" as const)
-              : ("todo" as const),
-      })),
-    [chores],
-  );
-
-  const wishes = useMemo<KidWish[]>(
-    () =>
-      wishlistItems.map((item) => ({
-        id: item.id,
-        name: item.name,
-        targetCents: item.targetCents,
-        status: item.status,
-      })),
-    [wishlistItems],
-  );
 
   return (
-    <KidApp
-      name={childName}
-      currency="USD"
-      chores={kidChores}
-      onSubmitChore={async (choreId) => {
-        if (!accessCode) {
-          throw new Error("Child access code is missing.");
-        }
-
-        const submitted = await submitChoreForChild({ accessCode, choreId });
-        setChores((current) =>
-          current.map((chore) => (chore.id === choreId ? submitted : chore)),
-        );
+    <Redirect
+      href={{
+        pathname: "/child/home",
+        params: {
+          accessCode: params.accessCode ?? "",
+          childName: params.childName ?? "",
+        },
       }}
-      onUndoChore={async (choreId) => {
-        if (!accessCode) {
-          throw new Error("Child access code is missing.");
-        }
-
-        try {
-          const assigned = await undoChoreSubmissionForChild({ accessCode, choreId });
-          setChores((current) =>
-            current.map((chore) => (chore.id === choreId ? assigned : chore)),
-          );
-        } catch (error) {
-          setChores(await listChoresForChild(accessCode));
-          throw error;
-        }
-      }}
-      spendableCents={bucketBalances.spendCents}
-      wishes={wishes}
-      onRequestPurchase={async (wishId) => {
-        if (!accessCode) {
-          return;
-        }
-
-        await requestWishlistPurchase({ accessCode, wishlistItemId: wishId });
-        setWishlistItems((current) =>
-          current.map((item) =>
-            item.id === wishId ? { ...item, status: "requested" } : item,
-          ),
-        );
-      }}
-      savingsCents={bucketBalances.savingsCents}
-      givingCents={bucketBalances.givingCents}
-      onLogOut={() => router.replace("/")}
     />
   );
 }

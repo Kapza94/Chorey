@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { KidApp } from "@/features/kid-home/kid-app";
 import type { KidChore } from "@/features/kid-home/kid-home-screen";
@@ -23,6 +23,14 @@ import {
   suggestGivingOptionForChild,
 } from "@/features/giving/default-giving-actions";
 import type { GivingOption } from "@/features/giving/giving-actions";
+import { resolveChildAccessCode } from "@/features/children/default-child-access-actions";
+import type { ChildSession } from "@/features/children/child-session";
+import {
+  clearChildSession,
+  loadChildSession,
+  saveChildSession,
+} from "@/features/children/default-child-session";
+import { DEFAULT_CURRENCY } from "@/features/money/currency";
 
 const emptyBalances: BucketBalances = {
   givingCents: 0,
@@ -31,25 +39,79 @@ const emptyBalances: BucketBalances = {
 };
 
 /**
- * The redesigned kid app, fed from real Supabase rows via the child's access
- * code. Mirrors the data wiring in `child/dashboard.tsx`, plus the chosen giving
- * cause. (Giving "given so far" tracking is a follow-up — see the build plan.)
+ * The kid app, fed from real Supabase rows via the child's access code.
+ *
+ * Entering with an access code (from the access screen or onboarding) resolves
+ * the full child + household currency and persists the session, so the device
+ * remembers the kid across restarts. With no code and no stored session, the
+ * kid is sent back to the start.
  */
 export default function ChildHomeRoute() {
   const router = useRouter();
   const params = useLocalSearchParams<{ accessCode?: string; childName?: string }>();
-  const accessCode = Array.isArray(params.accessCode)
+  const paramAccessCode = Array.isArray(params.accessCode)
     ? params.accessCode[0]
     : params.accessCode;
-  const childName = Array.isArray(params.childName)
+  const paramChildName = Array.isArray(params.childName)
     ? params.childName[0]
     : params.childName;
+
+  const [session, setSession] = useState<ChildSession | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   const [chores, setChores] = useState<ChildChore[]>([]);
   const [wishlistItems, setWishlistItems] = useState<SpendWishlistItem[]>([]);
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
   const [givingOptions, setGivingOptions] = useState<GivingOption[]>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function establishSession() {
+      if (paramAccessCode) {
+        try {
+          const resolved = await resolveChildAccessCode(paramAccessCode);
+          if (!active) return;
+
+          const next: ChildSession = {
+            accessCode: resolved.accessCode,
+            childName: resolved.childName || paramChildName || "",
+            childProfileId: resolved.childProfileId,
+            householdId: resolved.householdId,
+            currency: resolved.currency,
+          };
+          saveChildSession(next);
+          setSession(next);
+        } catch {
+          if (!active) return;
+          // Couldn't resolve right now (offline?) — keep the kid in with what
+          // the params carry rather than bouncing them out.
+          setSession({
+            accessCode: paramAccessCode,
+            childName: paramChildName ?? "",
+            childProfileId: "",
+            householdId: "",
+            currency: DEFAULT_CURRENCY,
+          });
+        }
+      } else {
+        setSession(loadChildSession());
+      }
+
+      if (active) {
+        setSessionChecked(true);
+      }
+    }
+
+    void establishSession();
+
+    return () => {
+      active = false;
+    };
+  }, [paramAccessCode, paramChildName]);
+
+  const accessCode = session?.accessCode;
 
   useFocusEffect(
     useCallback(() => {
@@ -110,10 +172,18 @@ export default function ChildHomeRoute() {
     [wishlistItems],
   );
 
+  if (sessionChecked && !session) {
+    return <Redirect href="/" />;
+  }
+
+  if (!session) {
+    return null;
+  }
+
   return (
     <KidApp
-      name={childName}
-      currency="USD"
+      name={session.childName || undefined}
+      currency={session.currency}
       chores={kidChores}
       onSubmitChore={async (choreId) => {
         if (!accessCode) {
@@ -165,7 +235,10 @@ export default function ChildHomeRoute() {
       savingsCents={bucketBalances.savingsCents}
       givingCents={bucketBalances.givingCents}
       causeName={givingOptions[0]?.name ?? null}
-      onLogOut={() => router.replace("/")}
+      onLogOut={() => {
+        clearChildSession();
+        router.replace("/");
+      }}
       onSuggestCause={async (causeName) => {
         if (!accessCode) {
           return;

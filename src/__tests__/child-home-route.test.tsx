@@ -18,9 +18,14 @@ const mockUndoChoreSubmissionForChild = jest.fn();
 const mockGetBucketBalancesForChild = jest.fn();
 const mockListWishlistForChild = jest.fn();
 const mockListGivingOptionsForChild = jest.fn();
+const mockResolveChildAccessCode = jest.fn();
+const mockSaveChildSession = jest.fn();
+const mockLoadChildSession = jest.fn();
+const mockClearChildSession = jest.fn();
 
 jest.mock("expo-router", () => {
   return {
+    Redirect: () => null,
     useFocusEffect: (effect: () => void | (() => void)) => {
       mockReact.useEffect(effect, [effect]);
     },
@@ -31,6 +36,17 @@ jest.mock("expo-router", () => {
     useRouter: () => ({ replace: jest.fn() }),
   };
 });
+
+jest.mock("@/features/children/default-child-access-actions", () => ({
+  resolveChildAccessCode: (...args: unknown[]) =>
+    mockResolveChildAccessCode(...args),
+}));
+
+jest.mock("@/features/children/default-child-session", () => ({
+  saveChildSession: (...args: unknown[]) => mockSaveChildSession(...args),
+  loadChildSession: (...args: unknown[]) => mockLoadChildSession(...args),
+  clearChildSession: (...args: unknown[]) => mockClearChildSession(...args),
+}));
 
 jest.mock("@/features/kid-home/kid-app", () => ({
   KidApp: (props: {
@@ -112,6 +128,28 @@ beforeEach(() => {
   });
   mockListWishlistForChild.mockResolvedValue([]);
   mockListGivingOptionsForChild.mockResolvedValue([]);
+  mockResolveChildAccessCode.mockResolvedValue({
+    accessCode: "123456",
+    childName: "Mia",
+    childProfileId: "child-1",
+    householdId: "household-1",
+    currency: "RSD",
+  });
+  mockLoadChildSession.mockReturnValue(null);
+});
+
+it("persists the resolved session (with the household currency) on entry", async () => {
+  render(<ChildHomeRoute />);
+
+  expect(await screen.findByText("todo")).toBeOnTheScreen();
+  expect(mockResolveChildAccessCode).toHaveBeenCalledWith("123456");
+  expect(mockSaveChildSession).toHaveBeenCalledWith({
+    accessCode: "123456",
+    childName: "Mia",
+    childProfileId: "child-1",
+    householdId: "household-1",
+    currency: "RSD",
+  });
 });
 
 it("replaces the local chore after submit and undo", async () => {

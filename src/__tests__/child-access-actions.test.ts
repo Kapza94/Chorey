@@ -12,6 +12,7 @@ function createClient() {
           child_profile_id: "child-1",
           child_name: "Mina",
           household_id: "household-1",
+          currency: "RSD",
         },
       ],
       error: null,
@@ -61,7 +62,7 @@ describe("child access actions", () => {
     expect(client.from).toHaveBeenCalledWith("child_access_codes");
   });
 
-  it("resolves a child from an access code", async () => {
+  it("resolves a child (and the household currency) from an access code", async () => {
     const client = createClient();
     const actions = createChildAccessActions(client);
 
@@ -72,9 +73,29 @@ describe("child access actions", () => {
       childProfileId: "child-1",
       childName: "Mina",
       householdId: "household-1",
+      currency: "RSD",
     });
     expect(client.rpc).toHaveBeenCalledWith("resolve_child_access_code", {
       input_access_code: "123456",
     });
+  });
+
+  it("falls back to USD when the household currency is unknown", async () => {
+    const client = createClient();
+    client.rpc.mockResolvedValue({
+      data: [
+        {
+          access_code: "123456",
+          child_profile_id: "child-1",
+          child_name: "Mina",
+          household_id: "household-1",
+          currency: "XYZ",
+        },
+      ],
+      error: null,
+    });
+
+    const child = await createChildAccessActions(client).resolveAccessCode("123456");
+    expect(child.currency).toBe("USD");
   });
 });

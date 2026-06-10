@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
+import { loadChildSession } from "@/features/children/default-child-session";
 import { getPrimaryHouseholdId } from "@/features/household/default-household-actions";
 import { OnboardingFlow, type OnboardingAuth } from "@/features/onboarding/onboarding-flow";
 import { persistOnboardingForSignedInParent } from "@/features/onboarding/default-onboarding-persistence";
@@ -33,6 +34,14 @@ export default function IndexRoute() {
         if (!active) return;
 
         if (!session) {
+          // No parent signed in — a kid may still own this device.
+          const childSession = loadChildSession();
+
+          if (childSession) {
+            router.replace("/child/home");
+            return;
+          }
+
           setSessionChecked(true);
           return;
         }

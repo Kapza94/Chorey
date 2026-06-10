@@ -33,6 +33,14 @@ jest.mock("@/features/household/default-household-actions", () => ({
     mockGetPrimaryHouseholdId(...args),
 }));
 
+const mockLoadChildSession = jest.fn();
+
+jest.mock("@/features/children/default-child-session", () => ({
+  loadChildSession: (...args: unknown[]) => mockLoadChildSession(...args),
+  saveChildSession: jest.fn(),
+  clearChildSession: jest.fn(),
+}));
+
 jest.mock("@/features/auth/default-parent-auth-actions", () => ({
   createDefaultParentAuthActions: () => ({
     sendMagicLink: jest.fn(),
@@ -53,6 +61,7 @@ describe("IndexRoute", () => {
     jest.clearAllMocks();
     mockGetSession.mockReset();
     mockGetPrimaryHouseholdId.mockReset();
+    mockLoadChildSession.mockReturnValue(null);
   });
 
   it("routes a signed-in parent with a household to parent home", async () => {
@@ -85,6 +94,26 @@ describe("IndexRoute", () => {
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith("/parent/household/new");
+    });
+  });
+
+  it("restores a remembered kid to the kid app", async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    mockLoadChildSession.mockReturnValue({
+      accessCode: "123456",
+      childName: "Mia",
+      childProfileId: "child-1",
+      householdId: "household-1",
+      currency: "USD",
+    });
+
+    render(<IndexRoute />);
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/child/home");
     });
   });
 

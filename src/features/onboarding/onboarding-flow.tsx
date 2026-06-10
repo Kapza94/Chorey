@@ -1090,7 +1090,7 @@ function OBBudgetSplit({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography } = useChoreyTheme();
   const country = COUNTRIES.find((c) => c.code === data.country);
   const symbol = country?.symbol ?? "$";
   const groupSeparator = CURRENCIES[currencyForCountry(data.country)].groupSeparator;

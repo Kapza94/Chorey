@@ -11,12 +11,10 @@ export default function ChildAccessRoute() {
       onBack={() => router.back()}
       onChildAccess={(child) =>
         router.replace({
-          pathname: "/child/dashboard",
+          pathname: "/child/home",
           params: {
             accessCode: child.accessCode,
             childName: child.childName,
-            childProfileId: child.childProfileId,
-            householdId: child.householdId,
           },
         })
       }

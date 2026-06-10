@@ -32,6 +32,7 @@ describe("ChildAccessScreen", () => {
       childProfileId: "child-1",
       childName: "Mina",
       householdId: "household-1",
+      currency: "USD" as const,
     };
     const onResolveAccessCode = jest.fn().mockResolvedValue(child);
     const onChildAccess = jest.fn();
