@@ -32,6 +32,15 @@ function createClient() {
               }),
             })),
           })),
+          select: jest.fn(() => ({
+            eq: jest.fn().mockResolvedValue({
+              data: [
+                { access_code: "123456", child_profile_id: "child-1" },
+                { access_code: "654321", child_profile_id: "child-2" },
+              ],
+              error: null,
+            }),
+          })),
         };
       }
 
@@ -97,5 +106,17 @@ describe("child access actions", () => {
 
     const child = await createChildAccessActions(client).resolveAccessCode("123456");
     expect(child.currency).toBe("USD");
+  });
+
+  it("lists a household's access codes for parents", async () => {
+    const client = createClient();
+    const actions = createChildAccessActions(client);
+
+    const codes = await actions.listAccessCodesForHousehold("household-1");
+
+    expect(codes).toEqual([
+      { accessCode: "123456", childProfileId: "child-1" },
+      { accessCode: "654321", childProfileId: "child-2" },
+    ]);
   });
 });

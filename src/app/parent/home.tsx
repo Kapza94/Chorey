@@ -45,6 +45,7 @@ import {
   ensureRecurringInstancesForHousehold,
 } from "@/features/chores/default-chore-template-actions";
 import { updateChildSettingsForHousehold } from "@/features/children/default-child-actions";
+import { listChildAccessCodes } from "@/features/children/default-child-access-actions";
 import {
   listPayoutsForHousehold,
   recordPayoutForHousehold,
@@ -75,6 +76,9 @@ export default function ParentHomeRoute() {
   const [purchases, setPurchases] = useState<HouseholdPurchaseRequest[]>([]);
   const [suggestions, setSuggestions] = useState<GivingSuggestion[]>([]);
   const [settlementPeriod, setSettlementPeriod] = useState<SettlementPeriod | null>(null);
+  const [accessCodes, setAccessCodes] = useState<
+    { kidId: string; accessCode: string }[]
+  >([]);
   const [access, setAccess] = useState<HouseholdAccess>("free");
 
   const reload = useCallback(async () => {
@@ -94,6 +98,7 @@ export default function ParentHomeRoute() {
       nextSuggestions,
       nextPeriod,
       nextAccess,
+      nextAccessCodes,
     ] = await Promise.all([
       listHouseholdKids(householdId),
       getHouseholdSettings(householdId),
@@ -103,6 +108,7 @@ export default function ParentHomeRoute() {
       listGivingSuggestionsForHousehold(householdId),
       getActiveSettlementPeriod(householdId),
       getHouseholdAccess(householdId),
+      listChildAccessCodes(householdId),
     ]);
 
     setKids(nextKids);
@@ -114,6 +120,12 @@ export default function ParentHomeRoute() {
     setSuggestions(nextSuggestions);
     setSettlementPeriod(nextPeriod);
     setAccess(nextAccess);
+    setAccessCodes(
+      nextAccessCodes.map((code) => ({
+        kidId: code.childProfileId,
+        accessCode: code.accessCode,
+      })),
+    );
   }, [householdId]);
 
   useFocusEffect(
@@ -235,6 +247,7 @@ export default function ParentHomeRoute() {
         await approveGivingSuggestionForHousehold({ householdId, suggestionId });
         await reload();
       }}
+      accessCodes={accessCodes}
       onChangeBudget={async (kidId, budgetCents) => {
         if (!householdId) {
           return;

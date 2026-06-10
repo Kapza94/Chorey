@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, LogOut } from "lucide-react-native";
+import { KeyRound, LogOut } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -16,30 +16,24 @@ import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primi
 const BUDGET_STEP_CENTS = 500;
 const BUDGET_MIN_CENTS = 500;
 
-type GeneralRow = { label: string; meta: string };
+/** A kid's device sign-in code, joined to the kid for display. */
+export type KidAccessCode = { kidId: string; accessCode: string };
 
 type Props = {
   currency?: CurrencyCode;
   split?: Split;
   kids?: ParentKid[];
-  generalRows?: GeneralRow[];
+  accessCodes?: KidAccessCode[];
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onLogOut?: () => void;
 };
 
-const DEFAULT_GENERAL: GeneralRow[] = [
-  { label: "Causes kids can give to", meta: "3 picked" },
-  { label: "Pay-out day", meta: "Sunday" },
-  { label: "Notifications", meta: "On" },
-  { label: "Dark mode", meta: "Auto" },
-];
-
 export function ParentSettingsScreen({
   currency = DEFAULT_CURRENCY,
   split = DEFAULT_SPLIT,
   kids = [],
-  generalRows = DEFAULT_GENERAL,
+  accessCodes = [],
   onChangeBudget,
   onChangeCadence,
   onLogOut,
@@ -136,7 +130,15 @@ export function ParentSettingsScreen({
             </View>
           </View>
 
-          {/* General settings */}
+          {/* Kid sign-in codes — parents will lose these; keep them findable. */}
+          <Text
+            style={[
+              typography.text.overline,
+              { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+            ]}
+          >
+            Kid sign-in codes
+          </Text>
           <View
             style={{
               backgroundColor: scheme.bgRaised,
@@ -146,26 +148,62 @@ export function ParentSettingsScreen({
               overflow: "hidden",
             }}
           >
-            {generalRows.map((row, index) => (
-              <View
-                key={row.label}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  borderBottomWidth: index < generalRows.length - 1 ? 1 : 0,
-                  borderBottomColor: scheme.border,
-                }}
+            {accessCodes.length === 0 ? (
+              <Text
+                style={[
+                  typography.text.caption,
+                  { color: scheme.fgFaint, paddingHorizontal: 16, paddingVertical: 14 },
+                ]}
               >
-                <Text style={[typography.text.label, { flex: 1, color: scheme.fg }]}>
-                  {row.label}
-                </Text>
-                <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>{row.meta}</Text>
-                <ChevronRight size={14} color={scheme.fgFaint} strokeWidth={2} />
-              </View>
-            ))}
+                Codes appear here once a kid has one.
+              </Text>
+            ) : (
+              accessCodes.map((entry, index) => {
+                const kid = kids.find((candidate) => candidate.id === entry.kidId);
+
+                return (
+                  <View
+                    key={entry.kidId}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                      borderBottomWidth: index < accessCodes.length - 1 ? 1 : 0,
+                      borderBottomColor: scheme.border,
+                    }}
+                  >
+                    <KeyRound size={16} color={scheme.fgMuted} strokeWidth={2} />
+                    <Text style={[typography.text.label, { flex: 1, color: scheme.fg }]}>
+                      {kid?.name ?? "Kid"}
+                    </Text>
+                    <Text
+                      selectable
+                      style={[
+                        typography.text.money,
+                        { color: scheme.fg, fontSize: 16, letterSpacing: 2 },
+                      ]}
+                    >
+                      {entry.accessCode}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+            <Text
+              style={[
+                typography.text.caption,
+                {
+                  color: scheme.fgFaint,
+                  paddingHorizontal: 16,
+                  paddingBottom: 12,
+                  paddingTop: accessCodes.length === 0 ? 0 : 10,
+                },
+              ]}
+            >
+              Kids use their code to sign in on their own device.
+            </Text>
           </View>
 
           <Pressable

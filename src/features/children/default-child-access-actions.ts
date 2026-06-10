@@ -17,3 +17,9 @@ export async function resolveChildAccessCode(
 ): Promise<ResolvedChildAccess> {
   return createChildAccessActions(supabase).resolveAccessCode(code);
 }
+
+export async function listChildAccessCodes(
+  householdId: string,
+): Promise<{ accessCode: string; childProfileId: string }[]> {
+  return createChildAccessActions(supabase).listAccessCodesForHousehold(householdId);
+}

@@ -122,6 +122,9 @@ export default function ChildHomeRoute() {
     useCallback(() => {
       let mounted = true;
 
+      // Bumping loadAttempt re-arms this effect after a failed load.
+      void loadAttempt;
+
       if (!accessCode) {
         return;
       }

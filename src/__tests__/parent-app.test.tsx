@@ -568,4 +568,27 @@ describe("ParentApp · Settings", () => {
     fireEvent.press(screen.getByLabelText("Log out"));
     expect(onLogOut).toHaveBeenCalledTimes(1);
   });
+
+  it("shows each kid's access code so a lost code is recoverable", () => {
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        accessCodes={[{ kidId: "k1", accessCode: "482913" }]}
+      />,
+    );
+
+    expect(screen.getByText("Kid sign-in codes")).toBeOnTheScreen();
+    expect(screen.getByText("482913")).toBeOnTheScreen();
+  });
+
+  it("ships no placeholder settings rows", () => {
+    render(<ParentApp initialTab="settings" kids={[mia]} />);
+
+    // These were static labels wired to nothing — gone until they're real.
+    expect(screen.queryByText("Pay-out day")).toBeNull();
+    expect(screen.queryByText("Notifications")).toBeNull();
+    expect(screen.queryByText("Dark mode")).toBeNull();
+    expect(screen.queryByText("Causes kids can give to")).toBeNull();
+  });
 });

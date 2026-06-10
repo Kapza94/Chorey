@@ -63,6 +63,25 @@ export function createChildAccessActions(client: ChildAccessClient) {
       };
     },
 
+    /** All sign-in codes in a household, so parents can recover a lost one. */
+    async listAccessCodesForHousehold(
+      householdId: string,
+    ): Promise<{ accessCode: string; childProfileId: string }[]> {
+      const result = await client
+        .from("child_access_codes")
+        .select("access_code, child_profile_id")
+        .eq("household_id", householdId);
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return (result.data ?? []).map((row: any) => ({
+        accessCode: row.access_code,
+        childProfileId: row.child_profile_id,
+      }));
+    },
+
     async resolveAccessCode(code: string): Promise<ResolvedChildAccess> {
       const accessCode = normalizeAccessCode(code);
 

@@ -71,6 +71,7 @@ type Props = {
     recurrence?: Recurrence;
   }) => void;
   // Settings
+  accessCodes?: { kidId: string; accessCode: string }[];
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onLogOut?: () => void;
@@ -107,6 +108,7 @@ export function ParentApp({
   assignees,
   recurringLocked,
   onAddChore,
+  accessCodes,
   onChangeBudget,
   onChangeCadence,
   onLogOut,
@@ -166,6 +168,7 @@ export function ParentApp({
           currency={currency}
           split={split}
           kids={kids}
+          accessCodes={accessCodes}
           onChangeBudget={onChangeBudget}
           onChangeCadence={onChangeCadence}
           onLogOut={onLogOut}
