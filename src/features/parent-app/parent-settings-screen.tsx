@@ -25,7 +25,6 @@ type Props = {
   generalRows?: GeneralRow[];
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
-  onEditSplits?: () => void;
   onLogOut?: () => void;
 };
 
@@ -43,7 +42,6 @@ export function ParentSettingsScreen({
   generalRows = DEFAULT_GENERAL,
   onChangeBudget,
   onChangeCadence,
-  onEditSplits,
   onLogOut,
 }: Props) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
@@ -112,8 +110,8 @@ export function ParentSettingsScreen({
               {split.spend} / {split.save} / {split.give}
             </Text>
             <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: 4 }]}>
-              Every dollar your kids earn splits into three buckets. The default teaches them
-              spend, save and give in balance.
+              Every dollar your kids earn splits into three buckets — the same for every
+              Chorey family, always. Spend a little, save a little more, always give some.
             </Text>
 
             <View
@@ -136,25 +134,6 @@ export function ParentSettingsScreen({
               <SplitPill tone="savings" label="Save" value={split.save} />
               <SplitPill tone="giving" label="Give" value={split.give} />
             </View>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit per-kid splits"
-              onPress={onEditSplits}
-              style={{
-                marginTop: 16,
-                paddingVertical: 12,
-                borderRadius: radius.pill,
-                borderWidth: 1,
-                borderColor: palette.border.mid,
-                backgroundColor: scheme.bgPage,
-                alignItems: "center",
-              }}
-            >
-              <Text style={[typography.text.label, { color: scheme.fg }]}>
-                Edit per-kid splits
-              </Text>
-            </Pressable>
           </View>
 
           {/* General settings */}

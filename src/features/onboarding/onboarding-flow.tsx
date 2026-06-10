@@ -24,7 +24,7 @@ import {
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
-import { balanceSplit, type Split } from "@/features/money/split";
+import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 import {
   OBField,
   OBPrimary,
@@ -217,7 +217,8 @@ export function OnboardingFlow({
     country: data.country,
     currency: currencyForCountry(data.country),
     kids: data.kids,
-    split: balanceSplit(data.split.spend, data.split.give),
+    // The 40 / 40 / 20 split is brand-fixed and never user-configurable.
+    split: DEFAULT_SPLIT,
     cadence: data.cadence,
     budgetCents: data.budgetDollars * 100,
     chores: data.chores,
@@ -1093,37 +1094,19 @@ function OBBudgetSplit({
   const country = COUNTRIES.find((c) => c.code === data.country);
   const symbol = country?.symbol ?? "$";
   const groupSeparator = CURRENCIES[currencyForCountry(data.country)].groupSeparator;
-  const { spend, give } = data.split;
-  const save = 100 - spend - give;
-  const isDefault = spend === 40 && give === 20;
-
-  const stepSplit = (key: "spend" | "give", dir: 1 | -1) => {
-    const next =
-      key === "spend"
-        ? balanceSplit(spend + dir * 5, give)
-        : balanceSplit(spend, give + dir * 5);
-    patch({ split: { spend: next.spend, give: next.give } });
-  };
+  // The 40 / 40 / 20 split is brand-fixed; this step explains it, never edits it.
+  const spend = 40;
+  const save = 40;
+  const give = 20;
 
   return (
     <OBShell
       onBack={onBack}
-      footer={
-        <>
-          <OBPrimary onPress={onNext}>
-            {isDefault ? "Use the 40/40/20 split" : "Use this split"}
-          </OBPrimary>
-          {!isDefault ? (
-            <OBSecondary onPress={() => patch({ split: { spend: 40, give: 20 } })}>
-              Reset to 40/40/20
-            </OBSecondary>
-          ) : null}
-        </>
-      }
+      footer={<OBPrimary onPress={onNext}>Continue</OBPrimary>}
     >
       <OBTitle
         title="Budget & split."
-        subtitle="Set how much each kid can earn, and how their money divides."
+        subtitle="Set how much each kid can earn. Every dollar they earn divides the same way."
       />
 
       {/* budget cap + cadence */}
@@ -1207,32 +1190,34 @@ function OBBudgetSplit({
         <View style={{ flex: give, backgroundColor: bucketTokens.giving.ramp[400] }} />
       </View>
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <SplitStepper tone="spend" label="Spend" value={spend} onStep={(d) => stepSplit("spend", d)} />
-        <SplitStepper tone="savings" label="Save" value={save} />
-        <SplitStepper tone="giving" label="Give" value={give} onStep={(d) => stepSplit("give", d)} />
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+        <SplitTile tone="spend" label="Spend" value={spend} />
+        <SplitTile tone="savings" label="Save" value={save} />
+        <SplitTile tone="giving" label="Give" value={give} />
       </View>
+
+      <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
+        The split is the same for every Chorey family: spend a little, save a
+        little more, and always give some. It never changes — that&apos;s the habit.
+      </Text>
     </OBShell>
   );
 }
 
-function SplitStepper({
+function SplitTile({
   tone,
   label,
   value,
-  onStep,
 }: {
   tone: "spend" | "savings" | "giving";
   label: string;
   value: number;
-  onStep?: (dir: 1 | -1) => void;
 }) {
   const { scheme, typography, bucketInk } = useChoreyTheme();
-  const ramp = bucketTokens[tone].ramp;
   const tintKey = tone === "spend" ? "allowance" : tone;
   const ink = bucketInk(tone);
   return (
-    <View style={{ flex: 1, backgroundColor: scheme.tint[tintKey], borderRadius: 14, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10 }}>
+    <View style={{ flex: 1, backgroundColor: scheme.tint[tintKey], borderRadius: 14, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }}>
       <Text style={[typography.text.overline, { color: ink, fontSize: 10, textAlign: "center" }]}>
         {label}
       </Text>
@@ -1240,17 +1225,6 @@ function SplitStepper({
         {value}
         <Text style={{ fontSize: 14 }}>%</Text>
       </Text>
-      {onStep ? (
-        <View style={{ flexDirection: "row", gap: 6, marginTop: 8, justifyContent: "center" }}>
-          <OBStepButton symbol="−" label={`Decrease ${label}`} tone={tone} onPress={() => onStep(-1)} />
-          <OBStepButton symbol="+" label={`Increase ${label}`} tone={tone} onPress={() => onStep(1)} />
-        </View>
-      ) : (
-        <View style={{ flexDirection: "row", gap: 4, marginTop: 8, justifyContent: "center", alignItems: "center" }}>
-          <Lock size={11} color={ramp[600]} strokeWidth={2.4} />
-          <Text style={[typography.text.caption, { color: ramp[600], fontWeight: "700", fontSize: 10 }]}>auto</Text>
-        </View>
-      )}
     </View>
   );
 }

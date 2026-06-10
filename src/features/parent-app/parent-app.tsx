@@ -73,7 +73,6 @@ type Props = {
   // Settings
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
-  onEditSplits?: () => void;
   onLogOut?: () => void;
   initialTab?: ParentTab;
 };
@@ -110,7 +109,6 @@ export function ParentApp({
   onAddChore,
   onChangeBudget,
   onChangeCadence,
-  onEditSplits,
   onLogOut,
   initialTab = "kids",
 }: Props) {
@@ -163,7 +161,6 @@ export function ParentApp({
           kids={kids}
           onChangeBudget={onChangeBudget}
           onChangeCadence={onChangeCadence}
-          onEditSplits={onEditSplits}
           onLogOut={onLogOut}
         />
       )}

@@ -47,9 +47,9 @@ describe("OnboardingFlow", () => {
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
     fireEvent.press(screen.getByText("Continue"));
 
-    // Budget & split — default 40/40/20
+    // Budget & the fixed 40/40/20 split
     expect(screen.getByText("Budget & split.")).toBeOnTheScreen();
-    fireEvent.press(screen.getByText("Use the 40/40/20 split"));
+    fireEvent.press(screen.getByText("Continue"));
 
     // First chores
     fireEvent.press(screen.getByLabelText("Make the bed"));
@@ -135,13 +135,14 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByText("Budget & split.")).toBeNull();
   });
 
-  it("auto-balances Save when Spend changes in the split editor", () => {
+  it("shows the fixed 40/40/20 split with nothing to adjust", () => {
     render(<OnboardingFlow initialStep="p_split" />);
 
-    // default 40/40/20 → increase Spend by 5 → 45 spend, 35 save, 20 give
-    fireEvent.press(screen.getByLabelText("Increase Spend"));
-    expect(screen.getByText("45%")).toBeOnTheScreen();
-    expect(screen.getByText("35%")).toBeOnTheScreen();
+    // 40 / 40 / 20 is brand-fixed — the step explains it, no editor exists.
+    expect(screen.getAllByText("40%")).toHaveLength(2);
+    expect(screen.getByText("20%")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Increase Spend")).toBeNull();
+    expect(screen.queryByLabelText("Decrease Give")).toBeNull();
   });
 
   it("gates the kid branch on a full 6-char code and reports it", () => {
@@ -190,7 +191,7 @@ describe("OnboardingFlow", () => {
     fireEvent.changeText(screen.getByLabelText("Name"), "Eli");
     fireEvent.press(screen.getByText("Continue")); // commits Eli → split
 
-    fireEvent.press(screen.getByText("Use the 40/40/20 split")); // → chores
+    fireEvent.press(screen.getByText("Continue")); // split explainer → chores
     fireEvent.press(screen.getByLabelText("Make the bed"));
     fireEvent.press(screen.getByText("Add 1 chore")); // → causes
     fireEvent.press(screen.getByLabelText("Animals"));
