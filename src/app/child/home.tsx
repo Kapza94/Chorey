@@ -9,6 +9,7 @@ import type { BucketBalances } from "@/features/chores/money";
 import {
   listChoresForChild,
   submitChoreForChild,
+  undoChoreSubmissionForChild,
 } from "@/features/chores/default-child-chore-actions";
 import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
 import {
@@ -28,10 +29,6 @@ const emptyBalances: BucketBalances = {
   savingsCents: 0,
   spendCents: 0,
 };
-
-function isDone(status: ChildChore["status"]) {
-  return status === "submitted" || status === "approved";
-}
 
 /**
  * The redesigned kid app, fed from real Supabase rows via the child's access
@@ -118,20 +115,30 @@ export default function ChildHomeRoute() {
       name={childName}
       currency="USD"
       chores={kidChores}
-      onToggleChore={async (choreId) => {
+      onSubmitChore={async (choreId) => {
         if (!accessCode) {
-          return;
-        }
-
-        const target = chores.find((chore) => chore.id === choreId);
-        if (!target || isDone(target.status)) {
-          return; // already submitted/approved — no un-check path in v1
+          throw new Error("Child access code is missing.");
         }
 
         const submitted = await submitChoreForChild({ accessCode, choreId });
         setChores((current) =>
           current.map((chore) => (chore.id === choreId ? submitted : chore)),
         );
+      }}
+      onUndoChore={async (choreId) => {
+        if (!accessCode) {
+          throw new Error("Child access code is missing.");
+        }
+
+        try {
+          const assigned = await undoChoreSubmissionForChild({ accessCode, choreId });
+          setChores((current) =>
+            current.map((chore) => (chore.id === choreId ? assigned : chore)),
+          );
+        } catch (error) {
+          setChores(await listChoresForChild(accessCode));
+          throw error;
+        }
       }}
       spendableCents={bucketBalances.spendCents}
       wishes={wishes}
