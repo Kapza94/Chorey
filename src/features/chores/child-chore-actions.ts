@@ -65,5 +65,27 @@ export function createChildChoreActions(client: RpcClient) {
 
       return mapChore(row);
     },
+
+    async undoSubmission(input: {
+      accessCode: string;
+      choreId: string;
+    }): Promise<ChildChore> {
+      const result = await client.rpc("undo_child_chore_submission", {
+        input_access_code: input.accessCode,
+        input_chore_id: input.choreId,
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      const row = Array.isArray(result.data) ? result.data[0] : result.data;
+
+      if (!row) {
+        throw new Error("Chore can no longer be moved back to To do.");
+      }
+
+      return mapChore(row);
+    },
   };
 }

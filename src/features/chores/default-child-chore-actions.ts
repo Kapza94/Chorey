@@ -14,3 +14,10 @@ export async function submitChoreForChild(input: {
 }): Promise<ChildChore> {
   return createChildChoreActions(supabase).submitChore(input);
 }
+
+export async function undoChoreSubmissionForChild(input: {
+  accessCode: string;
+  choreId: string;
+}): Promise<ChildChore> {
+  return createChildChoreActions(supabase).undoSubmission(input);
+}

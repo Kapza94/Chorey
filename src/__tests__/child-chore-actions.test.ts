@@ -84,6 +84,49 @@ describe("child chore actions", () => {
     });
   });
 
+  it("undoes a submitted chore", async () => {
+    const client = {
+      rpc: jest.fn(() =>
+        Promise.resolve({
+          data: [
+            {
+              id: "chore-1",
+              title: "Load dishwasher",
+              reward_cents: 250,
+              status: "assigned",
+              sent_back_reason: null,
+            },
+          ],
+          error: null,
+        }),
+      ),
+    };
+
+    const chore = await createChildChoreActions(client).undoSubmission({
+      accessCode: "123456",
+      choreId: "chore-1",
+    });
+
+    expect(chore.status).toBe("assigned");
+    expect(client.rpc).toHaveBeenCalledWith("undo_child_chore_submission", {
+      input_access_code: "123456",
+      input_chore_id: "chore-1",
+    });
+  });
+
+  it("rejects an undo when the server changes no row", async () => {
+    const client = {
+      rpc: jest.fn(() => Promise.resolve({ data: [], error: null })),
+    };
+
+    await expect(
+      createChildChoreActions(client).undoSubmission({
+        accessCode: "123456",
+        choreId: "chore-1",
+      }),
+    ).rejects.toThrow("Chore can no longer be moved back to To do.");
+  });
+
   it("maps a sent-back reason from the chore row", async () => {
     const client = {
       rpc: jest.fn(() =>
