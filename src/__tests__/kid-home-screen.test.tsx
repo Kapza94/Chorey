@@ -59,19 +59,15 @@ describe("KidHomeScreen", () => {
     expect(screen.queryByText("Done for today.")).toBeNull();
   });
 
-  it("submits a to-do chore when its row is pressed", () => {
-    const onToggleChore = jest.fn();
-    renderHome({ onToggleChore });
+  it.each([
+    ["Make the bed", "c1"],
+    ["Walk the dog", "c2"],
+  ])("opens %s when its row is pressed", (label, id) => {
+    const onOpenChore = jest.fn();
+    renderHome({ onOpenChore });
 
-    fireEvent.press(screen.getByLabelText("Make the bed"));
-    expect(onToggleChore).toHaveBeenCalledWith("c1");
-  });
+    fireEvent.press(screen.getByLabelText(label));
 
-  it("does not re-submit a waiting chore", () => {
-    const onToggleChore = jest.fn();
-    renderHome({ onToggleChore });
-
-    fireEvent.press(screen.getByLabelText("Walk the dog")); // waiting
-    expect(onToggleChore).not.toHaveBeenCalled();
+    expect(onOpenChore).toHaveBeenCalledWith(id);
   });
 });

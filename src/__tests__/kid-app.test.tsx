@@ -1,4 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 
 import { KidApp } from "@/features/kid-home/kid-app";
 
@@ -33,6 +38,41 @@ describe("KidApp shell", () => {
     fireEvent.press(screen.getByLabelText("You tab"));
     expect(screen.getByText("You.")).toBeOnTheScreen();
     expect(screen.getByText("Savings (locked)")).toBeOnTheScreen();
+  });
+
+  it("opens chore details and submits through the modal", async () => {
+    const onSubmitChore = jest.fn().mockResolvedValue(undefined);
+    render(<KidApp {...baseProps} onSubmitChore={onSubmitChore} />);
+
+    fireEvent.press(screen.getByLabelText("Make the bed"));
+    expect(screen.getByLabelText("Close chore")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Mark as finished"));
+    await waitFor(() => expect(onSubmitChore).toHaveBeenCalledWith("c1"));
+  });
+
+  it("opens a waiting chore and forwards confirmed undo", async () => {
+    const onUndoChore = jest.fn().mockResolvedValue(undefined);
+    render(
+      <KidApp
+        {...baseProps}
+        chores={[
+          {
+            id: "c2",
+            name: "Walk the dog",
+            valueCents: 300,
+            state: "waiting",
+          },
+        ]}
+        onUndoChore={onUndoChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Walk the dog"));
+    fireEvent.press(screen.getByLabelText("Undo finished"));
+    fireEvent.press(screen.getByLabelText("Confirm move to To do"));
+
+    await waitFor(() => expect(onUndoChore).toHaveBeenCalledWith("c2"));
   });
 
   it("shows a Request button on an affordable wish and reports it", () => {

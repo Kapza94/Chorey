@@ -15,7 +15,7 @@ import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 
 /**
  * A chore's state from the kid's point of view:
- * - todo: not started (or sent back) — tap to mark done
+ * - todo: not started (or sent back)
  * - waiting: marked done, waiting for a parent to approve (no money yet)
  * - approved: approved — counted in the kid's real balances
  */
@@ -41,7 +41,7 @@ type Props = {
   spendCents?: number;
   savingsCents?: number;
   givingCents?: number;
-  onToggleChore?: (id: string) => void;
+  onOpenChore?: (id: string) => void;
 };
 
 const WEEKDAYS = [
@@ -64,7 +64,7 @@ export function KidHomeScreen({
   spendCents = 0,
   savingsCents = 0,
   givingCents = 0,
-  onToggleChore,
+  onOpenChore,
 }: Props) {
   const theme = useChoreyTheme();
   const { scheme, typography, space, radius } = theme;
@@ -248,7 +248,7 @@ export function KidHomeScreen({
               chore={chore}
               currency={currency}
               isLast={index === chores.length - 1}
-              onToggle={onToggleChore}
+              onOpen={onOpenChore}
             />
           ))}
         </View>
@@ -365,27 +365,24 @@ function ChoreRow({
   chore,
   currency,
   isLast,
-  onToggle,
+  onOpen,
 }: {
   chore: KidChore;
   currency: CurrencyCode;
   isLast: boolean;
-  onToggle?: (id: string) => void;
+  onOpen?: (id: string) => void;
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
 
   const approved = chore.state === "approved";
   const waiting = chore.state === "waiting";
-  // Only to-do chores are actionable; waiting/approved can't be re-submitted.
-  const actionable = chore.state === "todo";
 
   return (
     <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: !actionable, disabled: !actionable }}
+      accessibilityRole="button"
       accessibilityLabel={chore.name}
-      onPress={() => (actionable ? onToggle?.(chore.id) : undefined)}
+      onPress={() => onOpen?.(chore.id)}
       style={{
         flexDirection: "row",
         alignItems: "center",
