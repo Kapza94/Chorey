@@ -70,6 +70,33 @@ describe("ParentApp · Kids", () => {
     expect(screen.queryByText("Kids.")).toBeNull();
   });
 
+  it("badges the Kids tab with everything waiting for review", () => {
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        pendingApprovals={[
+          { id: "ci1", childName: "Mia", title: "Dishes", rewardCents: 250, tone: "allowance" },
+          { id: "ci2", childName: "Mia", title: "Trash", rewardCents: 100, tone: "allowance" },
+        ]}
+        purchaseRequests={[
+          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500 },
+        ]}
+      />,
+    );
+
+    // 2 chores + 1 purchase await review, visible from any tab.
+    expect(screen.getByLabelText("Kids tab, 3 waiting for review")).toBeOnTheScreen();
+    expect(screen.getByText("3")).toBeOnTheScreen();
+  });
+
+  it("shows no review badge when nothing is waiting", () => {
+    render(<ParentApp initialTab="chores" kids={[{ ...mia, pendingApprovals: 0 }]} />);
+
+    expect(screen.getByLabelText("Kids tab")).toBeOnTheScreen();
+    expect(screen.queryByLabelText(/waiting for review/)).toBeNull();
+  });
+
   it("shows a labelled Add kid button that fires onAddKid", () => {
     const onAddKid = jest.fn();
     render(<ParentApp kids={[mia]} onAddKid={onAddKid} />);

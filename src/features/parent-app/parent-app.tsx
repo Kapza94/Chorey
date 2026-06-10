@@ -115,6 +115,13 @@ export function ParentApp({
   const { scheme } = useChoreyTheme();
   const [tab, setTab] = useState<ParentTab>(initialTab);
 
+  // Approving is the parent's most frequent job — surface what's waiting from
+  // every tab, not just inside Kids.
+  const reviewCount =
+    (pendingApprovals?.length ?? 0) +
+    (purchaseRequests?.length ?? 0) +
+    (givingSuggestions?.length ?? 0);
+
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
       {tab === "kids" ? (
@@ -165,7 +172,7 @@ export function ParentApp({
         />
       )}
 
-      <ParentTabBar active={tab} onChange={setTab} />
+      <ParentTabBar active={tab} onChange={setTab} reviewCount={reviewCount} />
     </View>
   );
 }
