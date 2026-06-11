@@ -329,6 +329,33 @@ const motion = {
 } as const;
 
 /* ============================================================
+   TOYBOX — the tile language: ink outlines + solid offset shadows.
+   Cards read as physical tiles sitting on the page; pressing a
+   button drops it onto its shadow (translateY by `offset`).
+   ============================================================ */
+const toybox = {
+  /** outline weight on tiles, buttons, avatars, stickers */
+  borderWidth: 2,
+  /** solid shadow drop — also the press-down travel distance */
+  offset: 3,
+  /** default tile corner */
+  radius: 16,
+  /** squircle corner for avatars */
+  squircle: 13,
+  /** sticker badges sit slightly off-axis */
+  stickerRotate: "-1.5deg",
+} as const;
+
+/** Solid offset shadow (no blur) — the toybox tile drop. */
+const toyShadow = (color: string, drop: number): ChoreyShadow => ({
+  shadowColor: color,
+  shadowOffset: { width: 0, height: drop },
+  shadowOpacity: 1,
+  shadowRadius: 0,
+  elevation: drop,
+});
+
+/* ============================================================
    SCHEMES — semantic surface/text tokens per color mode.
    Use the theme hook to get the active scheme.
    ============================================================ */
@@ -356,6 +383,12 @@ export type ChoreyScheme = {
     info: string;
   };
   shadow: Record<"xs" | "sm" | "md" | "lg", ChoreyShadow>;
+  /** toybox tile tokens — ink outline color + solid offset shadows */
+  toy: {
+    border: string;
+    shadow: ChoreyShadow;
+    shadowSm: ChoreyShadow;
+  };
 };
 
 const lightScheme: ChoreyScheme = {
@@ -379,6 +412,11 @@ const lightScheme: ChoreyScheme = {
     info: semantic.info[100],
   },
   shadow: shadowLight,
+  toy: {
+    border: fg[1],
+    shadow: toyShadow(fg[1], toybox.offset),
+    shadowSm: toyShadow(fg[1], 2),
+  },
 };
 
 const darkScheme: ChoreyScheme = {
@@ -402,6 +440,11 @@ const darkScheme: ChoreyScheme = {
     info: semantic.info.tintDark,
   },
   shadow: shadowDark,
+  toy: {
+    border: fgDark[4],
+    shadow: toyShadow("#000000", toybox.offset),
+    shadowSm: toyShadow("#000000", 2),
+  },
 };
 
 export const schemes: Record<ColorScheme, ChoreyScheme> = {
@@ -460,6 +503,7 @@ export const choreyTheme = {
   motion,
   schemes,
   buckets,
+  toybox,
   shadow: { light: shadowLight, dark: shadowDark },
 
   // ---- Legacy compatibility surface (design-authoritative values) ----
