@@ -79,3 +79,32 @@ describe("KidHomeScreen", () => {
     expect(onOpenChore).toHaveBeenCalledWith(id);
   });
 });
+
+describe("KidHomeScreen gamification", () => {
+  it("shows the level sticker and XP progress from lifetime points", () => {
+    render(<KidHomeScreen name="Mia" totalPoints={15} />);
+
+    // 15 points → level 2, 5 of the 20 needed for level 3.
+    expect(screen.getByText("Level 2")).toBeOnTheScreen();
+    expect(screen.getByText("5 / 20 to level 3")).toBeOnTheScreen();
+  });
+
+  it("pins the progress label at max level", () => {
+    render(<KidHomeScreen name="Mia" totalPoints={49_500} />);
+
+    expect(screen.getByText("Level 100")).toBeOnTheScreen();
+    expect(screen.getByText("Top level — legend.")).toBeOnTheScreen();
+  });
+
+  it("shows points alongside money on every chore row", () => {
+    render(
+      <KidHomeScreen
+        name="Mia"
+        chores={[{ id: "c1", name: "Feed the cat", valueCents: 100, state: "todo" }]}
+      />,
+    );
+
+    // 100 cents → 10 base + 2 bonus = 12 points.
+    expect(screen.getByText("+12 pts")).toBeOnTheScreen();
+  });
+});

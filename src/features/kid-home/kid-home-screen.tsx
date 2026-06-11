@@ -4,6 +4,8 @@ import { Check, Clock, Lock, Sparkles } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
+import { ToyProgressBar, ToySticker } from "@/components/toybox";
+import { MAX_LEVEL, levelProgress, pointsForChore } from "@/features/game/leveling";
 import {
   DEFAULT_CURRENCY,
   formatMoney,
@@ -40,6 +42,8 @@ type Props = {
   spendCents?: number;
   savingsCents?: number;
   givingCents?: number;
+  /** lifetime game points (every approved chore earns some) */
+  totalPoints?: number;
   onOpenChore?: (id: string) => void;
 };
 
@@ -62,10 +66,12 @@ export function KidHomeScreen({
   spendCents = 0,
   savingsCents = 0,
   givingCents = 0,
+  totalPoints = 0,
   onOpenChore,
 }: Props) {
   const theme = useChoreyTheme();
-  const { scheme, typography, space, radius } = theme;
+  const { scheme, typography, space, radius, toybox } = theme;
+  const game = levelProgress(totalPoints);
 
   // The hero shows real, approved balances (matches You + Wishlist).
   const earnedCents = spendCents + savingsCents + givingCents;
@@ -99,27 +105,51 @@ export function KidHomeScreen({
               {WEEKDAYS[today.getDay()]}
             </Text>
             <Text
-              style={[
-                typography.text.h1,
-                { color: scheme.fg, fontSize: 32, marginTop: 2 },
-              ]}
+              style={{
+                fontFamily: typography.family.display.extra,
+                fontSize: 34,
+                letterSpacing: -0.8,
+                color: scheme.fg,
+                marginTop: 2,
+              }}
             >
               Hey, {name}.
             </Text>
           </View>
         </View>
 
+        {/* Level + XP toward the next one */}
+        <View style={{ marginHorizontal: 18, marginTop: 6, gap: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <ToySticker label={`Level ${game.level}`} tone="savings" straight />
+            <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
+              {game.level >= MAX_LEVEL
+                ? "Top level — legend."
+                : `${game.intoLevel} / ${game.neededForNext} to level ${game.level + 1}`}
+            </Text>
+          </View>
+          <ToyProgressBar ratio={game.ratio} tone="savings" height={12} />
+        </View>
+
         {/* Hero balance card */}
         <View
           style={{
             marginHorizontal: 18,
-            marginTop: 10,
-            backgroundColor: scheme.bgRaised,
-            borderRadius: 26,
+            marginTop: 14,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            borderRadius: radius.lg,
             paddingHorizontal: 22,
             paddingTop: 22,
             paddingBottom: 18,
-            ...scheme.shadow.md,
+            ...scheme.toy.shadow,
           }}
         >
           <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
@@ -167,10 +197,13 @@ export function KidHomeScreen({
               paddingHorizontal: 16,
               paddingVertical: 14,
               backgroundColor: scheme.tint.warning,
+              borderColor: scheme.toy.border,
+              borderWidth: toybox.borderWidth,
               borderRadius: radius.md,
               flexDirection: "row",
               alignItems: "center",
               gap: 12,
+              ...scheme.toy.shadowSm,
             }}
           >
             <Clock size={20} color={theme.palette.semantic.warning[600]} strokeWidth={2.2} />
@@ -210,11 +243,12 @@ export function KidHomeScreen({
         <View
           style={{
             marginHorizontal: 18,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            borderRadius: 16,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            borderRadius: toybox.radius,
             overflow: "hidden",
+            ...scheme.toy.shadow,
           }}
         >
           {chores.length === 0 ? (
@@ -247,10 +281,13 @@ export function KidHomeScreen({
             paddingHorizontal: 16,
             paddingVertical: 14,
             backgroundColor: scheme.tint.info,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
             borderRadius: radius.md,
             flexDirection: "row",
             gap: 12,
             alignItems: "flex-start",
+            ...scheme.toy.shadowSm,
           }}
         >
           <Sparkles size={18} color={theme.palette.semantic.info[600]} strokeWidth={2.2} />
@@ -309,19 +346,22 @@ function BucketCard({
   currency: CurrencyCode;
   locked?: boolean;
 }) {
-  const { scheme, typography, bucketInk } = useChoreyTheme();
+  const { scheme, typography, toybox, isDark, bucketInk } = useChoreyTheme();
   const ink = bucketInk(bucket);
-  const tintKey = bucket === "spend" ? "allowance" : bucket === "savings" ? "savings" : "giving";
+  const ramp = bucketTokens[bucket].ramp;
 
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: scheme.tint[tintKey],
-        borderRadius: 14,
-        paddingHorizontal: 14,
+        backgroundColor: isDark ? ramp.tintDark : ramp[200],
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        borderRadius: 12,
+        paddingHorizontal: 12,
         paddingVertical: 12,
         gap: 2,
+        ...scheme.toy.shadowSm,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -358,7 +398,7 @@ function ChoreRow({
   isLast: boolean;
   onOpen?: (id: string) => void;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography, palette, bucketInk } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
 
   const approved = chore.state === "approved";
@@ -418,23 +458,28 @@ function ChoreRow({
           </Text>
         ) : null}
       </View>
-      <Text
-        style={[
-          typography.text.money,
-          { fontSize: 15, color: approved ? giving[600] : scheme.fgMuted },
-        ]}
-      >
-        {approved
-          ? formatMoneyDelta(chore.valueCents, currency)
-          : formatMoney(chore.valueCents, currency)}
-      </Text>
+      <View style={{ alignItems: "flex-end", gap: 1 }}>
+        <Text
+          style={[
+            typography.text.money,
+            { fontSize: 15, color: approved ? giving[600] : scheme.fgMuted },
+          ]}
+        >
+          {approved
+            ? formatMoneyDelta(chore.valueCents, currency)
+            : formatMoney(chore.valueCents, currency)}
+        </Text>
+        <Text style={[typography.text.caption, { fontSize: 11, color: bucketInk("savings") }]}>
+          +{pointsForChore(chore.valueCents)} pts
+        </Text>
+      </View>
     </Pressable>
   );
 }
 
 /** 26×26 checkbox that springs (small bounce) when it flips to done. */
 function SpringCheckbox({ done }: { done: boolean }) {
-  const { scheme, palette } = useChoreyTheme();
+  const { scheme, toybox } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
   // Lazy-init the Animated.Value once (no ref read during render).
   const [scale] = useState(() => new Animated.Value(done ? 1 : 0.9));
@@ -458,8 +503,8 @@ function SpringCheckbox({ done }: { done: boolean }) {
         justifyContent: "center",
         transform: [{ scale }],
         backgroundColor: done ? giving[400] : scheme.bgPage,
-        borderWidth: done ? 0 : 1.5,
-        borderColor: palette.border.strong,
+        borderWidth: toybox.borderWidth,
+        borderColor: scheme.toy.border,
       }}
     >
       {done ? <Check size={16} color={giving[800]} strokeWidth={3} /> : null}

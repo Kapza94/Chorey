@@ -53,6 +53,12 @@ jest.mock("@/features/savings-goal/default-savings-goal-actions", () => ({
   setSavingsGoalForChild: jest.fn(),
 }));
 
+jest.mock("@/features/game/default-game-actions", () => ({
+  getGameStatsForChild: jest
+    .fn()
+    .mockResolvedValue({ totalPoints: 0, approvedCount: 0 }),
+}));
+
 jest.mock("@/features/kid-home/kid-app", () => ({
   KidApp: (props: {
     chores: { id: string; state: string }[];

@@ -26,6 +26,8 @@ import {
 } from "@/features/giving/default-giving-actions";
 import type { GivingOption } from "@/features/giving/giving-actions";
 import { resolveChildAccessCode } from "@/features/children/default-child-access-actions";
+import { getGameStatsForChild } from "@/features/game/default-game-actions";
+import type { ChildGameStats } from "@/features/game/game-actions";
 import {
   getSavingsGoalForChild,
   setSavingsGoalForChild,
@@ -76,6 +78,10 @@ export default function ChildHomeRoute() {
     useState<BucketBalances>(emptyBalances);
   const [givingOptions, setGivingOptions] = useState<GivingOption[]>([]);
   const [savingsGoal, setSavingsGoal] = useState<SavingsGoal | null>(null);
+  const [gameStats, setGameStats] = useState<ChildGameStats>({
+    totalPoints: 0,
+    approvedCount: 0,
+  });
 
   useEffect(() => {
     let active = true;
@@ -144,8 +150,9 @@ export default function ChildHomeRoute() {
         // Re-resolve every visit so a pause (or resume) shows up promptly.
         resolveChildAccessCode(accessCode),
         getSavingsGoalForChild(accessCode),
+        getGameStatsForChild(accessCode),
       ])
-        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions, resolved, nextGoal]) => {
+        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions, resolved, nextGoal, nextGameStats]) => {
           if (mounted) {
             setLoadFailed(false);
             setChores(nextChores);
@@ -154,6 +161,7 @@ export default function ChildHomeRoute() {
             setGivingOptions(nextGivingOptions);
             setPaused(resolved.paused);
             setSavingsGoal(nextGoal);
+            setGameStats(nextGameStats);
           }
         })
         .catch(() => {
@@ -288,6 +296,7 @@ export default function ChildHomeRoute() {
       name={session.childName || undefined}
       currency={session.currency}
       chores={kidChores}
+      totalPoints={gameStats.totalPoints}
       onSubmitChore={async (choreId) => {
         if (!accessCode) {
           throw new Error("Child access code is missing.");

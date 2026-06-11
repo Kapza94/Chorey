@@ -27,6 +27,8 @@ type Props = {
   wishes?: KidWish[];
   onRequestPurchase?: (wishId: string) => void;
   onAddWish?: (input: { name: string; targetCents: number }) => void;
+  /** lifetime game points (drives the level sticker + XP bar) */
+  totalPoints?: number;
   // You
   savingsCents?: number;
   givingCents?: number;
@@ -55,6 +57,7 @@ export function KidApp({
   wishes,
   onRequestPurchase,
   onAddWish,
+  totalPoints,
   savingsCents,
   givingCents,
   causeName,
@@ -81,6 +84,7 @@ export function KidApp({
           spendCents={spendableCents}
           savingsCents={savingsCents}
           givingCents={givingCents}
+          totalPoints={totalPoints}
           onOpenChore={setSelectedChoreId}
         />
       ) : tab === "wish" ? (
