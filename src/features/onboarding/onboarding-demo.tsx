@@ -8,6 +8,7 @@ import { DEFAULT_CURRENCY, formatMoney } from "@/features/money/currency";
 import { OBPrimary, OBSecondary, OBShell, OBTitle } from "@/features/onboarding/onboarding-kit";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
+import { ToyAvatar } from "@/components/toybox";
 
 /* ---------- demo data ---------- */
 
@@ -41,7 +42,7 @@ export function OBDemoApprove({
   onSkip: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography, palette, toybox } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
   const [approved, setApproved] = useState(false);
 
@@ -69,35 +70,17 @@ export function OBDemoApprove({
 
       <View
         style={{
-          backgroundColor: scheme.bgRaised,
-          borderColor: scheme.border,
-          borderWidth: 1.5,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.toy.border,
+          borderWidth: toybox.borderWidth,
           borderRadius: 18,
           padding: 16,
           gap: 14,
+          ...scheme.toy.shadow,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 999,
-              backgroundColor: bucketTokens.savings.ramp[200],
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: typography.family.display.bold,
-                fontSize: 18,
-                color: bucketTokens.savings.ramp[800],
-              }}
-            >
-              {DEMO_KID_NAME[0]}
-            </Text>
-          </View>
+          <ToyAvatar name={DEMO_KID_NAME} tone="savings" size={44} />
           <View style={{ flex: 1 }}>
             <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 17 }]}>
               {DEMO_CHORE.name}
@@ -150,7 +133,11 @@ export function OBDemoApprove({
               borderRadius: 999,
               alignItems: "center",
               backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
-              transform: [{ scale: pressed ? 0.975 : 1 }],
+              borderColor: scheme.toy.border,
+              borderWidth: toybox.borderWidth,
+              ...(pressed
+                ? { transform: [{ translateY: toybox.offset }] }
+                : scheme.toy.shadow),
             })}
           >
             <Text style={[typography.text.label, { fontSize: 15, color: palette.cream[4] }]}>

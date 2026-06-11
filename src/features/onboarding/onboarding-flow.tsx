@@ -34,6 +34,7 @@ import {
   OBTitle,
 } from "@/features/onboarding/onboarding-kit";
 import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo";
+import { ToySticker } from "@/components/toybox";
 
 /* ---------- reference data ---------- */
 
@@ -530,31 +531,35 @@ function RoleCard({
   body: string;
   onPress: () => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, toybox, motion } = useChoreyTheme();
   const ramp = bucketTokens[tone === "allowance" ? "spend" : "savings"].ramp;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={onPress}
-      style={{
+      style={({ pressed }) => ({
         flexDirection: "row",
         alignItems: "center",
         gap: 16,
-        backgroundColor: scheme.bgRaised,
-        borderColor: scheme.border,
-        borderWidth: 1.5,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
         borderRadius: 18,
         padding: 18,
         marginBottom: 12,
-      }}
+        transform: [{ scale: pressed ? motion.pressScale : 1 }],
+        ...(pressed ? scheme.toy.shadowSm : scheme.toy.shadow),
+      })}
     >
       <View
         style={{
           width: 52,
           height: 52,
-          borderRadius: 16,
+          borderRadius: toybox.squircle,
           backgroundColor: ramp[200],
+          borderColor: scheme.toy.border,
+          borderWidth: toybox.borderWidth,
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -1779,7 +1784,7 @@ function OBPlanChoice({
   onChoose: (plan: "monthly" | "yearly") => Promise<void>;
   onContinue: () => void;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography, palette, toybox } = useChoreyTheme();
   const spend = bucketTokens.spend.ramp;
   const [plan, setPlan] = useState<"monthly" | "yearly">("yearly");
   const [submitting, setSubmitting] = useState(false);
@@ -1812,6 +1817,12 @@ function OBPlanChoice({
         </OBPrimary>
       }
     >
+      {/* Sticker shelf — the honest perks, worn like badges. */}
+      <View style={{ flexDirection: "row", gap: 12, marginTop: 4, marginBottom: 14 }}>
+        <ToySticker label="14 days free" />
+        <ToySticker label="Every kid included" tone="giving" straight />
+      </View>
+
       <OBTitle
         title="Try Chorey Family."
         subtitle="Everything free for 14 days — every kid, every parent, every chore."
@@ -1820,13 +1831,14 @@ function OBPlanChoice({
       {data.kids.length > 0 ? (
         <View
           style={{
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
             borderRadius: 14,
             padding: 14,
             marginBottom: 14,
             gap: 4,
+            ...scheme.toy.shadowSm,
           }}
         >
           <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
@@ -1864,31 +1876,37 @@ function OBPlanChoice({
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                backgroundColor: selected ? scheme.tint.allowance : scheme.bgRaised,
-                borderColor: selected ? spend[400] : scheme.border,
-                borderWidth: 1.5,
+                backgroundColor: selected ? scheme.tint.allowance : scheme.bgModal,
+                borderColor: scheme.toy.border,
+                borderWidth: toybox.borderWidth,
                 borderRadius: 16,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                ...(selected ? scheme.toy.shadow : scheme.toy.shadowSm),
               }}
             >
-              <View>
-                <Text
-                  style={[
-                    typography.text.h3,
-                    { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-                <Text
-                  style={[
-                    typography.text.caption,
-                    { color: selected ? spend[600] : scheme.fgFaint, marginTop: 2 },
-                  ]}
-                >
-                  {option.caption}
-                </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View>
+                  <Text
+                    style={[
+                      typography.text.h3,
+                      { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  <Text
+                    style={[
+                      typography.text.caption,
+                      { color: selected ? spend[600] : scheme.fgFaint, marginTop: 2 },
+                    ]}
+                  >
+                    {option.caption}
+                  </Text>
+                </View>
+                {option.id === "yearly" ? (
+                  <ToySticker label="Best deal" tone="spend" />
+                ) : null}
               </View>
               <View
                 style={{

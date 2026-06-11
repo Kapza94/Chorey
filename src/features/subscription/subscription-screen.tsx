@@ -11,6 +11,7 @@ import {
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
+import { ToySticker } from "@/components/toybox";
 import type {
   HouseholdSubscription,
   SubscriptionPlan,
@@ -41,7 +42,7 @@ const PROMISE = [
 ];
 
 export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Props) {
-  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const { scheme, typography, palette, radius, toybox, bucketInk } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
   const lapsed = subscription.status === "lapsed";
 
@@ -111,11 +112,12 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
           <>
             <View
               style={{
-                backgroundColor: scheme.bgRaised,
-                borderColor: scheme.border,
-                borderWidth: 1,
-                borderRadius: 18,
+                backgroundColor: scheme.bgModal,
+                borderColor: scheme.toy.border,
+                borderWidth: toybox.borderWidth,
+                borderRadius: toybox.radius,
                 padding: 18,
+                ...scheme.toy.shadow,
               }}
             >
               <View
@@ -125,26 +127,20 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24 }]}>
-                  Chorey Family
-                </Text>
-                <View
+                <Text
                   style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: radius.pill,
-                    backgroundColor: scheme.tint.giving,
+                    fontFamily: typography.family.display.extra,
+                    fontSize: 24,
+                    letterSpacing: -0.5,
+                    color: scheme.fg,
                   }}
                 >
-                  <Text
-                    style={[
-                      typography.text.caption,
-                      { color: giving[600], fontWeight: "700" },
-                    ]}
-                  >
-                    {subscription.status === "trialing" ? "Free trial" : "Active"}
-                  </Text>
-                </View>
+                  Chorey Family
+                </Text>
+                <ToySticker
+                  label={subscription.status === "trialing" ? "Free trial" : "Active"}
+                  tone="giving"
+                />
               </View>
 
               <Text
@@ -275,31 +271,35 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          backgroundColor: selected ? scheme.tint.allowance : scheme.bgRaised,
-          borderColor: selected ? spend[400] : scheme.border,
-          borderWidth: 1.5,
+          backgroundColor: selected ? scheme.tint.allowance : scheme.bgModal,
+          borderColor: scheme.toy.border,
+          borderWidth: toybox.borderWidth,
           borderRadius: 16,
           paddingHorizontal: 16,
           paddingVertical: 14,
+          ...(selected ? scheme.toy.shadow : scheme.toy.shadowSm),
         }}
       >
-        <View>
-          <Text
-            style={[
-              typography.text.h3,
-              { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
-            ]}
-          >
-            {label}
-          </Text>
-          <Text
-            style={[
-              typography.text.caption,
-              { color: selected ? spend[600] : scheme.fgFaint, marginTop: 2 },
-            ]}
-          >
-            {caption}
-          </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View>
+            <Text
+              style={[
+                typography.text.h3,
+                { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
+              ]}
+            >
+              {label}
+            </Text>
+            <Text
+              style={[
+                typography.text.caption,
+                { color: selected ? spend[600] : scheme.fgFaint, marginTop: 2 },
+              ]}
+            >
+              {caption}
+            </Text>
+          </View>
+          {plan === "yearly" ? <ToySticker label="Best deal" tone="spend" /> : null}
         </View>
         <View
           style={{

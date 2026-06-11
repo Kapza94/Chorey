@@ -116,7 +116,7 @@ export function OBPrimary({
   onPress?: () => void;
   disabled?: boolean;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography, palette, toybox } = useChoreyTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -128,11 +128,16 @@ export function OBPrimary({
         borderRadius: 999,
         alignItems: "center",
         backgroundColor: disabled
-          ? palette.cream[0]
+          ? scheme.bgSunken
           : pressed
             ? palette.accent[800]
             : palette.accent[600],
-        transform: [{ scale: pressed && !disabled ? 0.975 : 1 }],
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        // Pressing drops the button onto its shadow.
+        ...(pressed && !disabled
+          ? { transform: [{ translateY: toybox.offset }] }
+          : scheme.toy.shadow),
       })}
     >
       <Text
