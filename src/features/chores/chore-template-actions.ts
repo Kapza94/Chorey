@@ -49,7 +49,7 @@ export function createChoreTemplateActions(
   householdId: string,
 ) {
   return {
-    /** Create a recurring chore template (paid households only). */
+    /** Create a recurring chore template (paused while a household is lapsed). */
     async createTemplate(
       input: CreateChoreTemplateInput,
     ): Promise<CreatedChoreTemplate> {
@@ -74,7 +74,9 @@ export function createChoreTemplateActions(
       }
 
       if (!canUseRecurringChores(resolveHouseholdEntitlement(entitlement.data))) {
-        throw new Error("Upgrade required to create recurring chores.");
+        throw new Error(
+          "Chorey is paused. Resume your subscription to use recurring chores.",
+        );
       }
 
       const result = await client

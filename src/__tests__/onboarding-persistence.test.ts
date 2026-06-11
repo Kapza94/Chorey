@@ -61,8 +61,15 @@ function makeClient() {
             eq() {
               const promise = Promise.resolve({ data: [], error: null });
               return Object.assign(promise, {
+                // New households carry a trialing entitlement (DB trigger).
                 maybeSingle: () =>
-                  Promise.resolve({ data: null, error: null }),
+                  Promise.resolve({
+                    data:
+                      table === "household_entitlements"
+                        ? { status: "trialing" }
+                        : null,
+                    error: null,
+                  }),
               });
             },
           };

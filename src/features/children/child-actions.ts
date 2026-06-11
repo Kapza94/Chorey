@@ -51,15 +51,17 @@ export function createChildActions(client: ChildClient, householdId: string) {
         throw entitlement.error;
       }
 
-      const access = resolveHouseholdEntitlement(entitlement.data);
+      const status = resolveHouseholdEntitlement(entitlement.data);
 
       if (
         !canAddChild({
-          access,
+          status,
           currentChildCount: (existingChildren.data ?? []).length,
         })
       ) {
-        throw new Error("Upgrade required to add another child.");
+        throw new Error(
+          "Chorey is paused. Resume your subscription to add another child.",
+        );
       }
 
       const payload: Record<string, unknown> = {

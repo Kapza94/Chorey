@@ -53,10 +53,12 @@ describe("ChildSetupScreen", () => {
     });
   });
 
-  it("shows an upgrade prompt when the free child limit is reached", async () => {
+  it("shows the subscription notice when the household is paused", async () => {
     const onCreateChild = jest
       .fn()
-      .mockRejectedValue(new Error("Upgrade required to add another child."));
+      .mockRejectedValue(
+        new Error("Chorey is paused. Resume your subscription to add another child."),
+      );
     const onUpgrade = jest.fn();
 
     render(
@@ -70,8 +72,8 @@ describe("ChildSetupScreen", () => {
     fireEvent.changeText(screen.getByLabelText("Child name"), "Leo");
     fireEvent.press(screen.getByLabelText("Submit child setup"));
 
-    expect(await screen.findByText("Add more children with Chorey Plus")).toBeOnTheScreen();
-    fireEvent.press(screen.getByLabelText("View upgrade options"));
+    expect(await screen.findByText("Chorey is paused")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("View subscription"));
 
     expect(onUpgrade).toHaveBeenCalledTimes(1);
   });

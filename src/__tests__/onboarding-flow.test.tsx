@@ -182,10 +182,10 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByLabelText("Suggest a chore")).toBeNull();
   });
 
-  it("gates a second kid behind Premium and lets you remove one to continue", () => {
+  it("lets a family add several kids with no gate before the account step", () => {
     render(<OnboardingFlow initialStep="p_addkid" />);
 
-    // Add two kids.
+    // Add two kids — Chorey Family covers every kid in the household.
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
     fireEvent.press(screen.getByText("+ Add another kid"));
     fireEvent.changeText(screen.getByLabelText("Name"), "Eli");
@@ -195,16 +195,9 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Make the bed"));
     fireEvent.press(screen.getByText("Add 1 chore")); // → causes
     fireEvent.press(screen.getByLabelText("Animals"));
-    fireEvent.press(screen.getByText("Continue")); // → premium gate (2 kids)
+    fireEvent.press(screen.getByText("Continue")); // straight to the account step
 
-    expect(screen.getByText("Add the whole family with Premium.")).toBeOnTheScreen();
-    // Can't proceed with two kids on free.
-    expect(screen.getByText("Remove a kid to continue")).toBeOnTheScreen();
-
-    fireEvent.press(screen.getByLabelText("Remove Eli"));
-    expect(screen.queryByLabelText("Remove Mia")).toBeNull();
-    // Down to one kid → continue to the account step.
-    fireEvent.press(screen.getByText("Continue"));
+    expect(screen.queryByText(/Premium/)).toBeNull();
     expect(screen.getByText("Save your family.")).toBeOnTheScreen();
   });
 });

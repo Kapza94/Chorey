@@ -15,15 +15,15 @@ function entitlementClient(status: string | null) {
 }
 
 describe("canUseRecurringChores", () => {
-  it("is paid-only", () => {
-    expect(canUseRecurringChores("paid")).toBe(true);
-    expect(canUseRecurringChores("free")).toBe(false);
+  it("runs while trialing or active, pauses when lapsed", () => {
+    expect(canUseRecurringChores("trialing")).toBe(true);
+    expect(canUseRecurringChores("active")).toBe(true);
     expect(canUseRecurringChores("lapsed")).toBe(false);
   });
 });
 
 describe("createChoreTemplateActions.createTemplate", () => {
-  it("creates a template for a paid household", async () => {
+  it("creates a template for an entitled household", async () => {
     const single = jest.fn().mockResolvedValue({
       data: {
         id: "tmpl-1",
@@ -63,7 +63,27 @@ describe("createChoreTemplateActions.createTemplate", () => {
     expect(template.recurrence).toBe("daily");
   });
 
-  it("blocks recurring chores for a free household", async () => {
+  it("blocks recurring chores while the household is paused", async () => {
+    const insert = jest.fn();
+    const client = {
+      from: jest.fn((table: string) =>
+        table === "household_entitlements" ? entitlementClient("lapsed") : { insert },
+      ),
+      rpc: jest.fn(),
+    };
+
+    await expect(
+      createChoreTemplateActions(client as any, "h-1").createTemplate({
+        childProfileId: "c-1",
+        title: "Feed the cat",
+        rewardCents: 100,
+        recurrence: "daily",
+      }),
+    ).rejects.toThrow(/Chorey is paused/);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("treats a missing entitlement record as paused, not free", async () => {
     const insert = jest.fn();
     const client = {
       from: jest.fn((table: string) =>
@@ -79,7 +99,7 @@ describe("createChoreTemplateActions.createTemplate", () => {
         rewardCents: 100,
         recurrence: "daily",
       }),
-    ).rejects.toThrow(/upgrade required/i);
+    ).rejects.toThrow(/Chorey is paused/);
     expect(insert).not.toHaveBeenCalled();
   });
 

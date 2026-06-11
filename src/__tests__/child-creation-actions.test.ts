@@ -4,11 +4,12 @@ function createClient() {
   return {
     from: jest.fn((table: string) => {
       if (table === "household_entitlements") {
+        // New households get a trialing entitlement row from the DB trigger.
         return {
           select: jest.fn(() => ({
             eq: jest.fn(() => ({
               maybeSingle: jest.fn().mockResolvedValue({
-                data: null,
+                data: { status: "trialing" },
                 error: null,
               }),
             })),
@@ -72,7 +73,7 @@ describe("child creation actions", () => {
     expect(client.from).not.toHaveBeenCalled();
   });
 
-  it("blocks a second child for free households", async () => {
+  it("blocks adding a child while the household is paused (lapsed)", async () => {
     const client = {
       from: jest.fn((table: string) => {
         if (table === "child_profiles") {
@@ -90,7 +91,7 @@ describe("child creation actions", () => {
           select: jest.fn(() => ({
             eq: jest.fn(() => ({
               maybeSingle: jest.fn().mockResolvedValue({
-                data: null,
+                data: { status: "lapsed" },
                 error: null,
               }),
             })),
@@ -101,8 +102,53 @@ describe("child creation actions", () => {
     const actions = createChildActions(client, "household-1");
 
     await expect(actions.createChild({ displayName: "Leo" })).rejects.toThrow(
-      "Upgrade required to add another child.",
+      /Chorey is paused/,
     );
+  });
+
+  it("never blocks an entitled household on child count", async () => {
+    const client = createClient();
+    // Several existing kids; trialing households add more freely.
+    client.from = jest.fn((table: string) => {
+      if (table === "household_entitlements") {
+        return {
+          select: jest.fn(() => ({
+            eq: jest.fn(() => ({
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: { status: "trialing" },
+                error: null,
+              }),
+            })),
+          })),
+        };
+      }
+
+      return {
+        select: jest.fn(() => ({
+          eq: jest.fn().mockResolvedValue({
+            data: [{ id: "child-1" }, { id: "child-2" }, { id: "child-3" }],
+            error: null,
+          }),
+        })),
+        insert: jest.fn(() => ({
+          select: jest.fn(() => ({
+            single: jest.fn().mockResolvedValue({
+              data: {
+                id: "child-4",
+                display_name: "Leo",
+                household_id: "household-1",
+              },
+              error: null,
+            }),
+          })),
+        })),
+      };
+    });
+
+    const actions = createChildActions(client, "household-1");
+    const child = await actions.createChild({ displayName: "Leo" });
+
+    expect(child.id).toBe("child-4");
   });
 });
 

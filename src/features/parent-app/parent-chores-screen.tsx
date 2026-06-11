@@ -30,7 +30,7 @@ type Props = {
   kids?: ParentKid[];
   chores?: ChoreLibraryItem[];
   assignees?: ChoreAssignee[];
-  /** when true, recurring options are Premium-locked (free/lapsed household). */
+  /** when true, recurring options are paused (the household is lapsed). */
   recurringLocked?: boolean;
   onAddChore?: (input: {
     name: string;
@@ -416,7 +416,7 @@ function AddChoreSheet({
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: showRecurUpsell ? 8 : 16 }}>
           {REPEAT_OPTIONS.map((option) => {
             const selected = option.id === repeat;
-            // Recurring options are Premium; lock them for free/lapsed homes.
+            // Recurring chores pause with the subscription (lapsed household).
             const locked = recurringLocked && option.id !== "one-off";
             return (
               <Pressable
@@ -461,7 +461,7 @@ function AddChoreSheet({
 
         {showRecurUpsell ? (
           <Text style={[typography.text.caption, { color: scheme.fgMuted, marginBottom: 16 }]}>
-            Recurring chores are a Premium feature — coming soon.
+            Chorey is paused — resume your subscription to use repeats.
           </Text>
         ) : null}
 

@@ -1,13 +1,13 @@
 import {
   resolveHouseholdEntitlement,
-  type HouseholdAccess,
+  type SubscriptionStatus,
 } from "@/features/entitlements/entitlements";
 import { supabase } from "@/lib/supabase";
 
-/** The household's access tier (free / paid / lapsed) for the signed-in parent. */
-export async function getHouseholdAccess(
+/** The household's subscription status (trialing / active / lapsed). */
+export async function getHouseholdSubscriptionStatus(
   householdId: string,
-): Promise<HouseholdAccess> {
+): Promise<SubscriptionStatus> {
   const result = await supabase
     .from("household_entitlements")
     .select("status")

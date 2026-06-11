@@ -147,7 +147,6 @@ type Step =
   | "p_split"
   | "p_chores"
   | "p_causes"
-  | "p_premium"
   | "p_account"
   | "p_done"
   | "k_code"
@@ -293,19 +292,9 @@ export function OnboardingFlow({
         <OBCauses
           data={data}
           patch={patch}
-          // Free households get one kid. With more than one, gate on Premium
-          // before the account step so persistence never half-fails.
-          onNext={() => setStep(data.kids.length > 1 ? "p_premium" : "p_account")}
+          // Chorey Family covers every kid — no gate between causes and account.
+          onNext={() => setStep("p_account")}
           onBack={() => setStep("p_chores")}
-        />
-      );
-    case "p_premium":
-      return (
-        <OBPremiumGate
-          data={data}
-          patch={patch}
-          onContinue={() => setStep("p_account")}
-          onBack={() => setStep("p_causes")}
         />
       );
     case "p_account":
@@ -877,103 +866,6 @@ function KidRow({ kid, onRemove }: { kid: Kid; onRemove?: () => void }) {
         <Check size={18} color={bucketTokens.giving.ramp[600]} strokeWidth={2.6} />
       )}
     </View>
-  );
-}
-
-/* ---------- Premium gate (more than one kid) ---------- */
-
-function OBPremiumGate({
-  data,
-  patch,
-  onContinue,
-  onBack,
-}: {
-  data: OnboardingData;
-  patch: (p: Partial<OnboardingData>) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}) {
-  const { scheme, typography, palette } = useChoreyTheme();
-  const giving = bucketTokens.giving.ramp;
-  const [showSoon, setShowSoon] = useState(false);
-
-  const oneKid = data.kids.length === 1;
-  const removeKid = (index: number) => {
-    if (data.kids.length <= 1) return;
-    patch({ kids: data.kids.filter((_, i) => i !== index) });
-  };
-
-  return (
-    <OBShell
-      onBack={onBack}
-      footer={
-        <OBPrimary onPress={onContinue} disabled={!oneKid}>
-          {oneKid ? "Continue" : "Remove a kid to continue"}
-        </OBPrimary>
-      }
-    >
-      <OBTitle
-        title="Add the whole family with Premium."
-        subtitle="Chorey Free includes one kid. Keep everyone with Premium, or remove a kid to continue free."
-      />
-
-      {/* Premium upsell (the hard paywall). */}
-      <View
-        style={{
-          padding: 18,
-          borderRadius: 18,
-          backgroundColor: scheme.tint.giving,
-          borderColor: giving[400],
-          borderWidth: 1.5,
-          marginBottom: 18,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <Sparkles size={18} color={giving[800]} strokeWidth={2.2} />
-          <Text style={[typography.text.h3, { color: giving[800], fontSize: 16 }]}>
-            Chorey Premium
-          </Text>
-        </View>
-        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginBottom: 12 }]}>
-          Add multiple kids, recurring chores, reminders, and more.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Unlock Premium"
-          onPress={() => setShowSoon(true)}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            paddingVertical: 13,
-            borderRadius: 999,
-            backgroundColor: pressed ? giving[400] : giving[600],
-          })}
-        >
-          <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 15 }]}>
-            Unlock Premium
-          </Text>
-        </Pressable>
-        {showSoon ? (
-          <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 10, textAlign: "center" }]}>
-            In-app purchases are coming soon — for now, keep one kid to continue.
-          </Text>
-        ) : null}
-      </View>
-
-      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>
-        Your kids ({data.kids.length})
-      </Text>
-      <View style={{ gap: 8 }}>
-        {data.kids.map((kid, index) => (
-          <KidRow
-            key={`${kid.name}-${index}`}
-            kid={kid}
-            onRemove={
-              data.kids.length > 1 ? () => removeKid(index) : undefined
-            }
-          />
-        ))}
-      </View>
-    </OBShell>
   );
 }
 

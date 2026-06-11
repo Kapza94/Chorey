@@ -451,7 +451,7 @@ describe("ParentApp · Chores", () => {
     });
   });
 
-  it("locks recurring options for a free household (no navigation)", () => {
+  it("locks recurring options for a paused household (no navigation)", () => {
     const onAddChore = jest.fn();
     render(
       <ParentApp
@@ -467,10 +467,10 @@ describe("ParentApp · Chores", () => {
     fireEvent.press(screen.getByLabelText("New chore"));
     fireEvent.changeText(screen.getByLabelText("Chore name"), "Feed cat");
     fireEvent.changeText(screen.getByLabelText("Chore reward"), "2.00");
-    // Tapping a locked recurrence shows an inline upsell, doesn't select it.
+    // Tapping a locked recurrence explains the pause inline, doesn't select it.
     fireEvent.press(screen.getByLabelText("Repeat Daily"));
     expect(
-      screen.getByText("Recurring chores are a Premium feature — coming soon."),
+      screen.getByText("Chorey is paused — resume your subscription to use repeats."),
     ).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Add chore"));
 

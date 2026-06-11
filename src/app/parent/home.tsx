@@ -30,8 +30,8 @@ import {
   settleAllSettlementBuckets,
 } from "@/features/settlement/default-settlement-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
-import { getHouseholdAccess } from "@/features/entitlements/default-entitlement-actions";
-import type { HouseholdAccess } from "@/features/entitlements/entitlements";
+import { getHouseholdSubscriptionStatus } from "@/features/entitlements/default-entitlement-actions";
+import { isEntitled, type SubscriptionStatus } from "@/features/entitlements/entitlements";
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import {
   approveChoreForHousehold,
@@ -79,7 +79,7 @@ export default function ParentHomeRoute() {
   const [accessCodes, setAccessCodes] = useState<
     { kidId: string; accessCode: string }[]
   >([]);
-  const [access, setAccess] = useState<HouseholdAccess>("free");
+  const [subscription, setSubscription] = useState<SubscriptionStatus>("trialing");
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -107,7 +107,7 @@ export default function ParentHomeRoute() {
       listPurchaseRequestsForHousehold(householdId),
       listGivingSuggestionsForHousehold(householdId),
       getActiveSettlementPeriod(householdId),
-      getHouseholdAccess(householdId),
+      getHouseholdSubscriptionStatus(householdId),
       listChildAccessCodes(householdId),
     ]);
 
@@ -119,7 +119,7 @@ export default function ParentHomeRoute() {
     setPurchases(nextPurchases);
     setSuggestions(nextSuggestions);
     setSettlementPeriod(nextPeriod);
-    setAccess(nextAccess);
+    setSubscription(nextAccess);
     setAccessCodes(
       nextAccessCodes.map((code) => ({
         kidId: code.childProfileId,
@@ -318,7 +318,7 @@ export default function ParentHomeRoute() {
         assignedTo: kidsById.get(chore.childProfileId)?.name ?? "",
       }))}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
-      recurringLocked={access !== "paid"}
+      recurringLocked={!isEntitled(subscription)}
       onAddChore={async ({ name, rewardCents, assigneeId, recurrence }) => {
         if (!householdId || !name.trim()) {
           return;

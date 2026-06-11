@@ -48,7 +48,7 @@ export function ChildSetupScreen({
       const message =
         error instanceof Error ? error.message : "Child profile could not be created.";
 
-      if (message === "Upgrade required to add another child.") {
+      if (/Chorey is paused/.test(message)) {
         setShowUpgradePrompt(true);
       } else {
         setErrorMessage(message);
@@ -166,7 +166,7 @@ export function ChildSetupScreen({
               fontWeight: "800",
             }}
           >
-            Add more children with Chorey Plus
+            Chorey is paused
           </Text>
           <Text
             style={{
@@ -175,11 +175,11 @@ export function ChildSetupScreen({
               lineHeight: 20,
             }}
           >
-            Free households include one child. Plus unlocks multiple children
-            for the whole household.
+            Your family&apos;s data is safe. Resume your Chorey Family
+            subscription to add another child.
           </Text>
           <Pressable
-            accessibilityLabel="View upgrade options"
+            accessibilityLabel="View subscription"
             accessibilityRole="button"
             onPress={onUpgrade}
             style={({ pressed }) => ({
@@ -200,7 +200,7 @@ export function ChildSetupScreen({
                 fontWeight: "800",
               }}
             >
-              View upgrade options
+              View subscription
             </Text>
           </Pressable>
         </View>
