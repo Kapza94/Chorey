@@ -48,6 +48,11 @@ jest.mock("@/features/children/default-child-session", () => ({
   clearChildSession: (...args: unknown[]) => mockClearChildSession(...args),
 }));
 
+jest.mock("@/features/savings-goal/default-savings-goal-actions", () => ({
+  getSavingsGoalForChild: jest.fn().mockResolvedValue(null),
+  setSavingsGoalForChild: jest.fn(),
+}));
+
 jest.mock("@/features/kid-home/kid-app", () => ({
   KidApp: (props: {
     chores: { id: string; state: string }[];

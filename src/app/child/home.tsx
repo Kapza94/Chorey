@@ -26,6 +26,11 @@ import {
 } from "@/features/giving/default-giving-actions";
 import type { GivingOption } from "@/features/giving/giving-actions";
 import { resolveChildAccessCode } from "@/features/children/default-child-access-actions";
+import {
+  getSavingsGoalForChild,
+  setSavingsGoalForChild,
+} from "@/features/savings-goal/default-savings-goal-actions";
+import type { SavingsGoal } from "@/features/savings-goal/savings-goal-actions";
 import type { ChildSession } from "@/features/children/child-session";
 import {
   clearChildSession,
@@ -70,6 +75,7 @@ export default function ChildHomeRoute() {
   const [bucketBalances, setBucketBalances] =
     useState<BucketBalances>(emptyBalances);
   const [givingOptions, setGivingOptions] = useState<GivingOption[]>([]);
+  const [savingsGoal, setSavingsGoal] = useState<SavingsGoal | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -137,8 +143,9 @@ export default function ChildHomeRoute() {
         listGivingOptionsForChild(accessCode),
         // Re-resolve every visit so a pause (or resume) shows up promptly.
         resolveChildAccessCode(accessCode),
+        getSavingsGoalForChild(accessCode),
       ])
-        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions, resolved]) => {
+        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions, resolved, nextGoal]) => {
           if (mounted) {
             setLoadFailed(false);
             setChores(nextChores);
@@ -146,6 +153,7 @@ export default function ChildHomeRoute() {
             setWishlistItems(nextWishlistItems);
             setGivingOptions(nextGivingOptions);
             setPaused(resolved.paused);
+            setSavingsGoal(nextGoal);
           }
         })
         .catch(() => {
@@ -330,6 +338,14 @@ export default function ChildHomeRoute() {
       savingsCents={bucketBalances.savingsCents}
       givingCents={bucketBalances.givingCents}
       causeName={givingOptions[0]?.name ?? null}
+      savingsGoal={savingsGoal}
+      onSetSavingsGoal={async ({ name, targetCents }) => {
+        if (!accessCode) {
+          return;
+        }
+
+        setSavingsGoal(await setSavingsGoalForChild({ accessCode, name, targetCents }));
+      }}
       onLogOut={() => {
         clearChildSession();
         router.replace("/");

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, Heart, Lock, LogOut } from "lucide-react-native";
+import { ChevronRight, Heart, Lock, LogOut, Target } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -9,6 +9,10 @@ import {
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
+import { parseRewardCents } from "@/features/chores/money";
+
+/** The kid's single savings goal — a name and a target to fill toward. */
+export type KidSavingsGoal = { name: string; targetCents: number };
 
 type Props = {
   name?: string;
@@ -17,6 +21,8 @@ type Props = {
   savingsCents?: number;
   givingCents?: number;
   causeName?: string | null;
+  savingsGoal?: KidSavingsGoal | null;
+  onSetSavingsGoal?: (input: { name: string; targetCents: number }) => void;
   onSuggestCause?: (name: string) => void;
   onLogOut?: () => void;
 };
@@ -28,6 +34,8 @@ export function KidYouScreen({
   savingsCents = 0,
   givingCents = 0,
   causeName,
+  savingsGoal,
+  onSetSavingsGoal,
   onSuggestCause,
   onLogOut,
 }: Props) {
@@ -37,6 +45,7 @@ export function KidYouScreen({
   const allowance = bucketTokens.spend.ramp;
   const initial = name.trim().charAt(0).toUpperCase() || "?";
   const [suggesting, setSuggesting] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(false);
 
   // Only wired actions ship on the kid surface — no dead buttons.
   const quickActions = [
@@ -151,6 +160,63 @@ export function KidYouScreen({
                 </Text>
               </View>
             </View>
+
+            {/* Saving toward something beats saving toward nothing. */}
+            {savingsGoal ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Change savings goal"
+                onPress={() => setEditingGoal(true)}
+                style={{ marginTop: 12 }}
+              >
+                <View
+                  style={{
+                    height: 8,
+                    flexDirection: "row",
+                    borderRadius: radius.pill,
+                    overflow: "hidden",
+                    backgroundColor: scheme.bgSunken,
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: Math.min(savingsCents / savingsGoal.targetCents, 1),
+                      backgroundColor: savings[400],
+                    }}
+                  />
+                  <View
+                    style={{
+                      flex: Math.max(1 - savingsCents / savingsGoal.targetCents, 0),
+                    }}
+                  />
+                </View>
+                <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 6 }]}>
+                  Saving for {savingsGoal.name} — {formatMoney(savingsCents, currency)} of{" "}
+                  {formatMoney(savingsGoal.targetCents, currency)}
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Set a savings goal"
+                onPress={() => setEditingGoal(true)}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: 12,
+                  paddingVertical: 10,
+                  borderRadius: radius.pill,
+                  backgroundColor: pressed ? savings[200] : scheme.tint.savings,
+                })}
+              >
+                <Target size={13} color={savings[600]} strokeWidth={2.4} />
+                <Text style={[typography.text.label, { color: savings[600], fontSize: 13 }]}>
+                  Set a savings goal
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           {/* Giving — a parent confirms the handoff at settlement, not the kid. */}
@@ -279,7 +345,164 @@ export function KidYouScreen({
           setSuggesting(false);
         }}
       />
+      <SavingsGoalSheet
+        visible={editingGoal}
+        currentGoal={savingsGoal ?? null}
+        onClose={() => setEditingGoal(false)}
+        onConfirm={(goal) => {
+          onSetSavingsGoal?.(goal);
+          setEditingGoal(false);
+        }}
+      />
     </View>
+  );
+}
+
+function SavingsGoalSheet({
+  visible,
+  currentGoal,
+  onClose,
+  onConfirm,
+}: {
+  visible: boolean;
+  currentGoal: KidSavingsGoal | null;
+  onClose: () => void;
+  onConfirm: (goal: { name: string; targetCents: number }) => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const savings = bucketTokens.savings.ramp;
+  const [name, setName] = useState("");
+  const [cost, setCost] = useState("");
+
+  const nameValue = name || currentGoal?.name || "";
+
+  let targetCents = 0;
+  try {
+    targetCents = parseRewardCents(cost);
+  } catch {
+    targetCents = 0;
+  }
+  const canSave = nameValue.trim().length > 0 && targetCents > 0;
+
+  const reset = () => {
+    setName("");
+    setCost("");
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable
+        accessibilityLabel="Dismiss"
+        onPress={() => {
+          reset();
+          onClose();
+        }}
+        style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: scheme.bgModal,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingHorizontal: 22,
+          paddingTop: 14,
+          paddingBottom: 30,
+          ...scheme.shadow.lg,
+        }}
+      >
+        <View
+          style={{
+            width: 38,
+            height: 4,
+            borderRadius: radius.pill,
+            backgroundColor: palette.border.strong,
+            alignSelf: "center",
+            marginBottom: 16,
+          }}
+        />
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, marginBottom: 6 }]}>
+          {currentGoal ? "Change your goal." : "Save up for something."}
+        </Text>
+        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginBottom: 16 }]}>
+          Your Savings fills up toward it, chore by chore.
+        </Text>
+
+        <TextInput
+          accessibilityLabel="Goal name"
+          value={nameValue}
+          onChangeText={setName}
+          placeholder="e.g. New bike"
+          placeholderTextColor={scheme.fgFaint}
+          style={{
+            backgroundColor: scheme.bgPage,
+            borderColor: palette.border.mid,
+            borderWidth: 1,
+            borderRadius: radius.sm,
+            paddingHorizontal: 14,
+            paddingVertical: 11,
+            fontFamily: typography.family.body.regular,
+            fontSize: 15,
+            color: scheme.fg,
+            marginBottom: 10,
+          }}
+        />
+        <TextInput
+          accessibilityLabel="Goal cost"
+          keyboardType="decimal-pad"
+          value={cost}
+          onChangeText={setCost}
+          placeholder="60.00"
+          placeholderTextColor={scheme.fgFaint}
+          style={{
+            backgroundColor: scheme.bgPage,
+            borderColor: palette.border.mid,
+            borderWidth: 1,
+            borderRadius: radius.sm,
+            paddingHorizontal: 14,
+            paddingVertical: 11,
+            fontFamily: typography.family.body.regular,
+            fontSize: 15,
+            color: scheme.fg,
+            marginBottom: 20,
+          }}
+        />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Save goal"
+          accessibilityState={{ disabled: !canSave }}
+          disabled={!canSave}
+          onPress={() => {
+            onConfirm({ name: nameValue.trim(), targetCents });
+            reset();
+          }}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            paddingVertical: 14,
+            borderRadius: radius.pill,
+            backgroundColor: canSave
+              ? pressed
+                ? savings[400]
+                : savings[200]
+              : scheme.bgSunken,
+            opacity: canSave ? 1 : 0.6,
+          })}
+        >
+          <Text
+            style={[
+              typography.text.label,
+              { color: canSave ? savings[800] : scheme.fgFaint, fontSize: 15 },
+            ]}
+          >
+            {currentGoal ? "Update goal" : "Start saving"}
+          </Text>
+        </Pressable>
+      </View>
+    </Modal>
   );
 }
 

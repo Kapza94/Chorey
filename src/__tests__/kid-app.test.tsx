@@ -111,6 +111,42 @@ describe("KidApp shell", () => {
     expect(screen.queryByLabelText("Tell a parent something")).toBeNull();
   });
 
+  it("shows savings goal progress on You", () => {
+    render(
+      <KidApp
+        {...baseProps}
+        initialTab="you"
+        savingsGoal={{ name: "New bike", targetCents: 6000 }}
+      />,
+    );
+
+    // $12.80 saved toward the $60.00 bike.
+    expect(screen.getByText(/Saving for New bike/)).toBeOnTheScreen();
+    expect(screen.getByText(/\$12\.80 of \$60\.00/)).toBeOnTheScreen();
+  });
+
+  it("sets a savings goal through the sheet", () => {
+    const onSetSavingsGoal = jest.fn();
+    render(
+      <KidApp
+        {...baseProps}
+        initialTab="you"
+        savingsGoal={null}
+        onSetSavingsGoal={onSetSavingsGoal}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Set a savings goal"));
+    fireEvent.changeText(screen.getByLabelText("Goal name"), "Telescope");
+    fireEvent.changeText(screen.getByLabelText("Goal cost"), "90.00");
+    fireEvent.press(screen.getByLabelText("Save goal"));
+
+    expect(onSetSavingsGoal).toHaveBeenCalledWith({
+      name: "Telescope",
+      targetCents: 9000,
+    });
+  });
+
   it("suggests a giving cause through the sheet", () => {
     const onSuggestCause = jest.fn();
     render(<KidApp {...baseProps} initialTab="you" onSuggestCause={onSuggestCause} />);

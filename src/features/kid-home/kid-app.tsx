@@ -4,7 +4,7 @@ import { View } from "react-native";
 import { KidHomeScreen, type KidChore } from "@/features/kid-home/kid-home-screen";
 import { KidChoreModal } from "@/features/kid-home/kid-chore-modal";
 import { KidWishlistScreen, type KidWish } from "@/features/kid-home/kid-wishlist-screen";
-import { KidYouScreen } from "@/features/kid-home/kid-you-screen";
+import { KidYouScreen, type KidSavingsGoal } from "@/features/kid-home/kid-you-screen";
 import { KidTabBar, type KidTab } from "@/features/kid-home/kid-tab-bar";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import {
@@ -31,6 +31,8 @@ type Props = {
   savingsCents?: number;
   givingCents?: number;
   causeName?: string | null;
+  savingsGoal?: KidSavingsGoal | null;
+  onSetSavingsGoal?: (input: { name: string; targetCents: number }) => void;
   onSuggestCause?: (name: string) => void;
   onLogOut?: () => void;
   /** override the starting tab (tests) */
@@ -56,6 +58,8 @@ export function KidApp({
   savingsCents,
   givingCents,
   causeName,
+  savingsGoal,
+  onSetSavingsGoal,
   onSuggestCause,
   onLogOut,
   initialTab = "home",
@@ -95,6 +99,8 @@ export function KidApp({
           savingsCents={savingsCents}
           givingCents={givingCents}
           causeName={causeName}
+          savingsGoal={savingsGoal}
+          onSetSavingsGoal={onSetSavingsGoal}
           onSuggestCause={onSuggestCause}
           onLogOut={onLogOut}
         />
