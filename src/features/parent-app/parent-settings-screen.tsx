@@ -47,7 +47,7 @@ export function ParentSettingsScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
         <ParentHeader subtitle="Account" title="Settings." />
 
         <View style={{ paddingHorizontal: 18 }}>

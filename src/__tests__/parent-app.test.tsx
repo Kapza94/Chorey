@@ -609,3 +609,17 @@ describe("ParentApp · Settings", () => {
     expect(screen.queryByText("Causes kids can give to")).toBeNull();
   });
 });
+
+describe("ParentApp empty state", () => {
+  it("shows a getting-started state instead of zero totals when there are no kids", () => {
+    const onAddKid = jest.fn();
+    render(<ParentApp kids={[]} onAddKid={onAddKid} />);
+
+    expect(screen.getByText("No kids yet.")).toBeOnTheScreen();
+    // No wall of zeros: the household total card is replaced entirely.
+    expect(screen.queryByText("This week, all kids")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Add your first kid"));
+    expect(onAddKid).toHaveBeenCalled();
+  });
+});

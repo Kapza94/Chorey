@@ -12,6 +12,27 @@ import {
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import { KidCard } from "@/features/parent-app/kid-card";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
+import { ToyButton } from "@/components/toybox";
+
+/** A dashed, waiting-to-be-filled bucket for the empty state. */
+function EmptyBucket({ bucket, offset = false }: { bucket: "spend" | "savings" | "giving"; offset?: boolean }) {
+  const { isDark } = useChoreyTheme();
+  const ramp = bucketTokens[bucket].ramp;
+  return (
+    <View
+      style={{
+        flex: 1,
+        height: 72,
+        marginTop: offset ? 12 : 0,
+        backgroundColor: isDark ? ramp.tintDark : ramp[100],
+        borderColor: ramp[600],
+        borderWidth: 2,
+        borderStyle: "dashed",
+        borderRadius: 14,
+      }}
+    />
+  );
+}
 
 /** One off-app payout to a kid, for the per-kid payments sheet. */
 export type KidPaymentRow = {
@@ -90,7 +111,7 @@ export function ParentKidsScreen({
   onApprovePurchase,
   onApproveGivingSuggestion,
 }: Props) {
-  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const { scheme, typography, palette, radius, toybox, isDark, bucketInk } = useChoreyTheme();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [paymentsKid, setPaymentsKid] = useState<ParentKid | null>(null);
 
@@ -102,7 +123,7 @@ export function ParentKidsScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
         <ParentHeader
           subtitle={subtitle}
           title="Kids."
@@ -119,8 +140,10 @@ export function ParentKidsScreen({
                 paddingRight: 14,
                 paddingVertical: 8,
                 borderRadius: radius.pill,
-                backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
-                ...scheme.shadow.xs,
+                backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+                borderColor: scheme.toy.border,
+                borderWidth: toybox.borderWidth,
+                ...(pressed ? {} : scheme.toy.shadowSm),
               })}
             >
               <Plus size={15} color={scheme.fg} strokeWidth={2.4} />
@@ -145,10 +168,13 @@ export function ParentKidsScreen({
               paddingHorizontal: 16,
               paddingVertical: 14,
               backgroundColor: scheme.tint.warning,
+              borderColor: scheme.toy.border,
+              borderWidth: toybox.borderWidth,
               borderRadius: radius.md,
               flexDirection: "row",
               alignItems: "center",
               gap: 12,
+              ...scheme.toy.shadowSm,
             }}
           >
             <Sparkles size={20} color={palette.semantic.warning[600]} strokeWidth={2.2} />
@@ -164,54 +190,90 @@ export function ParentKidsScreen({
           </Pressable>
         ) : null}
 
-        <View style={{ gap: 12, paddingHorizontal: 18 }}>
-          {kids.map((kid) => (
-            <KidCard
-              key={kid.id}
-              kid={kid}
-              currency={currency}
-              onTap={() => {
-                onSelectKid?.(kid.id);
-                setPaymentsKid(kid);
+        {kids.length === 0 ? (
+          /* Composed getting-started state instead of a wall of zeros. */
+          <View style={{ paddingHorizontal: 18, gap: 14 }}>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <EmptyBucket bucket="spend" />
+              <EmptyBucket bucket="savings" offset />
+              <EmptyBucket bucket="giving" />
+            </View>
+            <Text
+              style={{
+                fontFamily: typography.family.display.extra,
+                fontSize: 26,
+                letterSpacing: -0.5,
+                color: scheme.fg,
               }}
-            />
-          ))}
-        </View>
-
-        {/* Household total */}
-        <Text
-          style={[
-            typography.text.overline,
-            { color: scheme.fgFaint, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 8 },
-          ]}
-        >
-          This week, all kids
-        </Text>
-        <View
-          style={{
-            marginHorizontal: 18,
-            paddingHorizontal: 18,
-            paddingVertical: 16,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            borderRadius: 16,
-          }}
-        >
-          <Text
-            style={[
-              typography.text.h1,
-              { color: scheme.fg, fontSize: 36, fontVariant: ["tabular-nums"] },
-            ]}
-          >
-            {formatMoney(sum((kid) => kid.earnedCents), currency)}
-          </Text>
-          <View style={{ flexDirection: "row", gap: 18, marginTop: 14 }}>
-            <TotalCell label="To spend" cents={sum((k) => k.allowanceCents)} color={bucketInk("spend")} currency={currency} />
-            <TotalCell label="To save" cents={sum((k) => k.savingsCents)} color={bucketInk("savings")} currency={currency} />
-            <TotalCell label="To give" cents={sum((k) => k.givingCents)} color={bucketInk("giving")} currency={currency} />
+            >
+              No kids yet.
+            </Text>
+            <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: -6 }]}>
+              Add your first kid and these three buckets start filling — 40% to
+              spend, 40% to save, 20% to give.
+            </Text>
+            <ToyButton onPress={onAddKid} accessibilityLabel="Add your first kid">
+              Add your first kid
+            </ToyButton>
           </View>
-        </View>
+        ) : (
+          <>
+            <View style={{ gap: 14, paddingHorizontal: 18 }}>
+              {kids.map((kid) => (
+                <KidCard
+                  key={kid.id}
+                  kid={kid}
+                  currency={currency}
+                  onTap={() => {
+                    onSelectKid?.(kid.id);
+                    setPaymentsKid(kid);
+                  }}
+                />
+              ))}
+            </View>
+
+            {/* Household total */}
+            <Text
+              style={[
+                typography.text.overline,
+                { color: scheme.fgFaint, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 8 },
+              ]}
+            >
+              This week, all kids
+            </Text>
+            <View
+              style={{
+                marginHorizontal: 18,
+                paddingHorizontal: 18,
+                paddingVertical: 16,
+                backgroundColor: isDark
+                  ? palette.allowance.tintDark
+                  : palette.allowance[200],
+                borderColor: scheme.toy.border,
+                borderWidth: toybox.borderWidth,
+                borderRadius: toybox.radius,
+                ...scheme.toy.shadow,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: typography.family.display.bold,
+                  fontSize: 36,
+                  letterSpacing: -0.7,
+                  color: bucketInk("spend"),
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
+                {formatMoney(sum((kid) => kid.earnedCents), currency)}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 18, marginTop: 14 }}>
+                <TotalCell label="To spend" cents={sum((k) => k.allowanceCents)} color={bucketInk("spend")} currency={currency} />
+                <TotalCell label="To save" cents={sum((k) => k.savingsCents)} color={bucketInk("savings")} currency={currency} />
+                <TotalCell label="To give" cents={sum((k) => k.givingCents)} color={bucketInk("giving")} currency={currency} />
+              </View>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <ApprovalsReviewSheet

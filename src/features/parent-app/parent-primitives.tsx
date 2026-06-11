@@ -54,7 +54,15 @@ export function ParentHeader({
             {subtitle}
           </Text>
         ) : null}
-        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 30, marginTop: 2 }]}>
+        <Text
+          style={{
+            fontFamily: typography.family.display.extra,
+            fontSize: 32,
+            letterSpacing: -0.8,
+            color: scheme.fg,
+            marginTop: 2,
+          }}
+        >
           {title}
         </Text>
       </View>
@@ -73,7 +81,8 @@ export function ParentTabBar({
   /** items waiting for parent review — badges the Kids tab from anywhere. */
   reviewCount?: number;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography, palette, toybox, radius, isDark } = useChoreyTheme();
+  const spendRamp = palette.allowance;
   const tabs: { id: ParentTab; label: string; Icon: typeof Home }[] = [
     { id: "kids", label: "Kids", Icon: User },
     { id: "chores", label: "Chores", Icon: Home },
@@ -86,22 +95,22 @@ export function ParentTabBar({
       testID="parent-tab-bar"
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
+        left: 14,
+        right: 14,
+        bottom: 24,
         flexDirection: "row",
-        justifyContent: "space-around",
-        paddingHorizontal: 24,
-        paddingTop: 10,
-        paddingBottom: 28,
-        backgroundColor: scheme.bgPage,
-        borderTopWidth: 1,
-        borderTopColor: scheme.border,
+        gap: 5,
+        padding: 5,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        borderRadius: radius.pill,
+        ...scheme.toy.shadow,
       }}
     >
       {tabs.map((tab) => {
         const isActive = tab.id === active;
-        const color = isActive ? palette.accent[600] : scheme.fgFaint;
+        const color = isActive ? (isDark ? spendRamp[200] : spendRamp[800]) : scheme.fgFaint;
         const badged = tab.id === "kids" && reviewCount > 0;
 
         return (
@@ -115,7 +124,20 @@ export function ParentTabBar({
                 : `${tab.label} tab`
             }
             onPress={() => onChange?.(tab.id)}
-            style={{ alignItems: "center", gap: 3, paddingHorizontal: 10, paddingVertical: 4 }}
+            style={{
+              flex: 1,
+              alignItems: "center",
+              gap: 3,
+              paddingVertical: 8,
+              borderRadius: radius.pill,
+              backgroundColor: isActive
+                ? isDark
+                  ? spendRamp.tintDark
+                  : spendRamp[200]
+                : "transparent",
+              borderWidth: isActive ? toybox.borderWidth : 0,
+              borderColor: scheme.toy.border,
+            }}
           >
             <View>
               <tab.Icon size={22} color={color} strokeWidth={isActive ? 2.4 : 2} />
@@ -132,6 +154,8 @@ export function ParentTabBar({
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: palette.accent[600],
+                    borderWidth: 1.5,
+                    borderColor: scheme.toy.border,
                   }}
                 >
                   <Text
