@@ -102,6 +102,7 @@ export function KidApp({
           currency={currency}
           savingsCents={savingsCents}
           givingCents={givingCents}
+          totalPoints={totalPoints}
           causeName={causeName}
           savingsGoal={savingsGoal}
           onSetSavingsGoal={onSetSavingsGoal}

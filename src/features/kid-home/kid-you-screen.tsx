@@ -4,6 +4,8 @@ import { ChevronRight, Heart, Lock, LogOut, Target } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
+import { ToyAvatar, ToyProgressBar, ToySticker } from "@/components/toybox";
+import { levelForPoints } from "@/features/game/leveling";
 import {
   DEFAULT_CURRENCY,
   formatMoney,
@@ -22,6 +24,8 @@ type Props = {
   givingCents?: number;
   causeName?: string | null;
   savingsGoal?: KidSavingsGoal | null;
+  /** lifetime game points — shows the level sticker on the profile */
+  totalPoints?: number;
   onSetSavingsGoal?: (input: { name: string; targetCents: number }) => void;
   onSuggestCause?: (name: string) => void;
   onLogOut?: () => void;
@@ -35,15 +39,14 @@ export function KidYouScreen({
   givingCents = 0,
   causeName,
   savingsGoal,
+  totalPoints = 0,
   onSetSavingsGoal,
   onSuggestCause,
   onLogOut,
 }: Props) {
-  const { scheme, typography, radius, bucketInk } = useChoreyTheme();
+  const { scheme, typography, radius, toybox, bucketInk } = useChoreyTheme();
   const savings = bucketTokens.savings.ramp;
   const giving = bucketTokens.giving.ramp;
-  const allowance = bucketTokens.spend.ramp;
-  const initial = name.trim().charAt(0).toUpperCase() || "?";
   const [suggesting, setSuggesting] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
 
@@ -62,7 +65,15 @@ export function KidYouScreen({
         {/* Header */}
         <View style={{ paddingHorizontal: 22, paddingTop: 12, paddingBottom: 12 }}>
           <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>Profile</Text>
-          <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 32, marginTop: 2 }]}>
+          <Text
+            style={{
+              fontFamily: typography.family.display.extra,
+              fontSize: 34,
+              letterSpacing: -0.8,
+              color: scheme.fg,
+              marginTop: 2,
+            }}
+          >
             You.
           </Text>
         </View>
@@ -77,35 +88,20 @@ export function KidYouScreen({
             paddingBottom: 18,
           }}
         >
-          <View
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: radius.pill,
-              backgroundColor: allowance[200],
-              borderColor: scheme.border,
-              borderWidth: 1,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: typography.family.display.semibold,
-                fontSize: 26,
-                color: allowance[800],
-              }}
-            >
-              {initial}
-            </Text>
-          </View>
-          <View>
+          <ToyAvatar name={name} tone="spend" size={60} />
+          <View style={{ gap: 4 }}>
             <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 17 }]}>{name}</Text>
             {typeof age === "number" ? (
               <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
                 {age} years old
               </Text>
             ) : null}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <ToySticker label={`Level ${levelForPoints(totalPoints)}`} tone="savings" straight />
+              <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
+                {totalPoints} lifetime points
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -113,11 +109,12 @@ export function KidYouScreen({
         <View
           style={{
             marginHorizontal: 18,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            borderRadius: 18,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            borderRadius: toybox.radius,
             overflow: "hidden",
+            ...scheme.toy.shadow,
           }}
         >
           {/* Savings (locked) */}
@@ -169,27 +166,11 @@ export function KidYouScreen({
                 onPress={() => setEditingGoal(true)}
                 style={{ marginTop: 12 }}
               >
-                <View
-                  style={{
-                    height: 8,
-                    flexDirection: "row",
-                    borderRadius: radius.pill,
-                    overflow: "hidden",
-                    backgroundColor: scheme.bgSunken,
-                  }}
-                >
-                  <View
-                    style={{
-                      flex: Math.min(savingsCents / savingsGoal.targetCents, 1),
-                      backgroundColor: savings[400],
-                    }}
-                  />
-                  <View
-                    style={{
-                      flex: Math.max(1 - savingsCents / savingsGoal.targetCents, 0),
-                    }}
-                  />
-                </View>
+                <ToyProgressBar
+                  ratio={savingsCents / savingsGoal.targetCents}
+                  tone="savings"
+                  height={12}
+                />
                 <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 6 }]}>
                   Saving for {savingsGoal.name} — {formatMoney(savingsCents, currency)} of{" "}
                   {formatMoney(savingsGoal.targetCents, currency)}
@@ -280,11 +261,12 @@ export function KidYouScreen({
         <View
           style={{
             marginHorizontal: 18,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
             borderRadius: radius.md,
             overflow: "hidden",
+            ...scheme.toy.shadowSm,
           }}
         >
           {quickActions.map((action, index) => (
@@ -325,9 +307,10 @@ export function KidYouScreen({
             gap: 8,
             paddingVertical: 14,
             borderRadius: radius.md,
-            backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
+            backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            ...(pressed ? {} : scheme.toy.shadowSm),
           })}
         >
           <LogOut size={17} color={scheme.fgMuted} strokeWidth={2.2} />

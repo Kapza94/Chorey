@@ -35,7 +35,7 @@ export function KidWishlistScreen({
   onRequestPurchase,
   onAddWish,
 }: Props) {
-  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const { scheme, typography, palette, radius, toybox, bucketInk } = useChoreyTheme();
   const allowance = bucketTokens.spend.ramp;
   const [adding, setAdding] = useState(false);
 
@@ -51,7 +51,15 @@ export function KidWishlistScreen({
           <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
             What you&apos;re saving for
           </Text>
-          <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 32, marginTop: 2 }]}>
+          <Text
+            style={{
+              fontFamily: typography.family.display.extra,
+              fontSize: 34,
+              letterSpacing: -0.8,
+              color: scheme.fg,
+              marginTop: 2,
+            }}
+          >
             Wishlist.
           </Text>
         </View>
@@ -61,12 +69,13 @@ export function KidWishlistScreen({
           style={{
             marginHorizontal: 18,
             marginTop: 8,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            borderRadius: 18,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            borderRadius: toybox.radius,
             paddingHorizontal: 16,
             paddingVertical: 14,
+            ...scheme.toy.shadow,
           }}
         >
           <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
@@ -105,13 +114,14 @@ export function KidWishlistScreen({
               <View
                 key={wish.id}
                 style={{
-                  backgroundColor: scheme.bgRaised,
-                  borderColor: scheme.border,
-                  borderWidth: 1,
+                  backgroundColor: scheme.bgModal,
+                  borderColor: scheme.toy.border,
+                  borderWidth: toybox.borderWidth,
                   borderRadius: 14,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
                   gap: 10,
+                  ...scheme.toy.shadowSm,
                 }}
               >
                 <View

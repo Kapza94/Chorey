@@ -1,13 +1,14 @@
 import { Pressable, Text, View } from "react-native";
 import { Heart, Home, User } from "lucide-react-native";
 
+import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 export type KidTab = "home" | "wish" | "you";
 
 /**
- * The kid bottom tab bar: Home / Wishlist / You. Active tab uses the peach
- * accent. Owned by the Kid app shell, not the individual screens.
+ * The kid bottom tab bar — a floating toybox pill dock. The active tab is a
+ * filled, outlined chip. Owned by the Kid app shell, not the screens.
  */
 export function KidTabBar({
   active,
@@ -16,7 +17,8 @@ export function KidTabBar({
   active: KidTab;
   onChange?: (tab: KidTab) => void;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
+  const { scheme, typography, toybox, radius, isDark } = useChoreyTheme();
+  const savings = bucketTokens.savings.ramp;
   const tabs: { id: KidTab; label: string; Icon: typeof Home }[] = [
     { id: "home", label: "Home", Icon: Home },
     { id: "wish", label: "Wishlist", Icon: Heart },
@@ -28,22 +30,22 @@ export function KidTabBar({
       testID="kid-tab-bar"
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
+        left: 18,
+        right: 18,
+        bottom: 24,
         flexDirection: "row",
-        justifyContent: "space-around",
-        paddingHorizontal: 24,
-        paddingTop: 10,
-        paddingBottom: 28,
-        backgroundColor: scheme.bgPage,
-        borderTopWidth: 1,
-        borderTopColor: scheme.border,
+        gap: 6,
+        padding: 6,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        borderRadius: radius.pill,
+        ...scheme.toy.shadow,
       }}
     >
       {tabs.map((tab) => {
         const isActive = tab.id === active;
-        const color = isActive ? palette.accent[600] : scheme.fgFaint;
+        const color = isActive ? (isDark ? savings[200] : savings[800]) : scheme.fgFaint;
 
         return (
           <Pressable
@@ -52,9 +54,24 @@ export function KidTabBar({
             accessibilityState={{ selected: isActive }}
             accessibilityLabel={`${tab.label} tab`}
             onPress={() => onChange?.(tab.id)}
-            style={{ alignItems: "center", gap: 3, paddingHorizontal: 14, paddingVertical: 4 }}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              paddingVertical: 9,
+              borderRadius: radius.pill,
+              backgroundColor: isActive
+                ? isDark
+                  ? savings.tintDark
+                  : savings[200]
+                : "transparent",
+              borderWidth: isActive ? toybox.borderWidth : 0,
+              borderColor: scheme.toy.border,
+            }}
           >
-            <tab.Icon size={22} color={color} strokeWidth={isActive ? 2.4 : 2} />
+            <tab.Icon size={18} color={color} strokeWidth={isActive ? 2.4 : 2} />
             <Text style={[typography.text.caption, { color, fontWeight: "700" }]}>
               {tab.label}
             </Text>
