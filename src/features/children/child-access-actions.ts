@@ -22,6 +22,8 @@ export type ResolvedChildAccess = ChildAccessCode & {
   childName: string;
   /** The household's display currency — kids see money the way parents set it up. */
   currency: CurrencyCode;
+  /** True when the household subscription lapsed; the kid app shows a neutral pause. */
+  paused: boolean;
 };
 
 export function normalizeAccessCode(value: string) {
@@ -122,6 +124,7 @@ export function createChildAccessActions(client: ChildAccessClient) {
         childName: row.child_name ?? "Child",
         householdId: row.household_id,
         currency,
+        paused: row.paused === true,
       };
     },
   };

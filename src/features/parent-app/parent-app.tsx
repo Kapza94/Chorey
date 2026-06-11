@@ -72,6 +72,8 @@ type Props = {
   }) => void;
   // Settings
   accessCodes?: { kidId: string; accessCode: string }[];
+  subscriptionLabel?: string;
+  onManageSubscription?: () => void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onLogOut?: () => void;
@@ -109,6 +111,8 @@ export function ParentApp({
   recurringLocked,
   onAddChore,
   accessCodes,
+  subscriptionLabel,
+  onManageSubscription,
   onChangeBudget,
   onChangeCadence,
   onLogOut,
@@ -169,6 +173,8 @@ export function ParentApp({
           split={split}
           kids={kids}
           accessCodes={accessCodes}
+          subscriptionLabel={subscriptionLabel}
+          onManageSubscription={onManageSubscription}
           onChangeBudget={onChangeBudget}
           onChangeCadence={onChangeCadence}
           onLogOut={onLogOut}

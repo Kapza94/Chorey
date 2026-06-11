@@ -63,6 +63,7 @@ export default function ChildHomeRoute() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   const [chores, setChores] = useState<ChildChore[]>([]);
   const [wishlistItems, setWishlistItems] = useState<SpendWishlistItem[]>([]);
@@ -134,14 +135,17 @@ export default function ChildHomeRoute() {
         getBucketBalancesForChild(accessCode),
         listWishlistForChild(accessCode),
         listGivingOptionsForChild(accessCode),
+        // Re-resolve every visit so a pause (or resume) shows up promptly.
+        resolveChildAccessCode(accessCode),
       ])
-        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions]) => {
+        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions, resolved]) => {
           if (mounted) {
             setLoadFailed(false);
             setChores(nextChores);
             setBucketBalances(nextBalances);
             setWishlistItems(nextWishlistItems);
             setGivingOptions(nextGivingOptions);
+            setPaused(resolved.paused);
           }
         })
         .catch(() => {
@@ -194,6 +198,40 @@ export default function ChildHomeRoute() {
 
   if (!session) {
     return null;
+  }
+
+  if (paused) {
+    // Neutral by design: a child never sees billing, prices, or subscription
+    // terminology — just that Chorey is resting and their money is safe.
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: scheme.bgPage,
+          flex: 1,
+          gap: 8,
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+          <View style={{ width: 14, height: 14, borderRadius: 999, backgroundColor: scheme.tint.allowance }} />
+          <View style={{ width: 14, height: 14, borderRadius: 999, backgroundColor: scheme.tint.savings }} />
+          <View style={{ width: 14, height: 14, borderRadius: 999, backgroundColor: scheme.tint.giving }} />
+        </View>
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26, textAlign: "center" }]}>
+          Chorey is taking a break.
+        </Text>
+        <Text
+          style={[
+            typography.text.bodySm,
+            { color: scheme.fgMuted, textAlign: "center", lineHeight: 22 },
+          ]}
+        >
+          Ask a parent to turn it back on. Your buckets are safe and waiting.
+        </Text>
+      </View>
+    );
   }
 
   if (loadFailed) {

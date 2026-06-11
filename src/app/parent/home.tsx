@@ -30,8 +30,13 @@ import {
   settleAllSettlementBuckets,
 } from "@/features/settlement/default-settlement-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
-import { getHouseholdSubscriptionStatus } from "@/features/entitlements/default-entitlement-actions";
-import { isEntitled, type SubscriptionStatus } from "@/features/entitlements/entitlements";
+import { getHouseholdSubscription } from "@/features/entitlements/default-subscription-actions";
+import {
+  describeSubscription,
+  type HouseholdSubscription,
+} from "@/features/entitlements/subscription-actions";
+import { isEntitled } from "@/features/entitlements/entitlements";
+import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import {
   approveChoreForHousehold,
@@ -79,7 +84,15 @@ export default function ParentHomeRoute() {
   const [accessCodes, setAccessCodes] = useState<
     { kidId: string; accessCode: string }[]
   >([]);
-  const [subscription, setSubscription] = useState<SubscriptionStatus>("trialing");
+  const [subscription, setSubscription] = useState<HouseholdSubscription>({
+    status: "trialing",
+    plan: null,
+    trialEndsAt: null,
+    currentPeriodEndsAt: null,
+  });
+  // A lapsed household lands on the subscription screen first; dismissing it
+  // leaves the parent in the read-only app (data stays readable by design).
+  const [pausedTakeoverDismissed, setPausedTakeoverDismissed] = useState(false);
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -107,7 +120,7 @@ export default function ParentHomeRoute() {
       listPurchaseRequestsForHousehold(householdId),
       listGivingSuggestionsForHousehold(householdId),
       getActiveSettlementPeriod(householdId),
-      getHouseholdSubscriptionStatus(householdId),
+      getHouseholdSubscription(householdId),
       listChildAccessCodes(householdId),
     ]);
 
@@ -205,6 +218,16 @@ export default function ParentHomeRoute() {
       })),
   }));
 
+  // The spec's lapsed behavior: parents land on a clear subscription screen.
+  if (subscription.status === "lapsed" && !pausedTakeoverDismissed) {
+    return (
+      <SubscriptionScreen
+        subscription={subscription}
+        onClose={() => setPausedTakeoverDismissed(true)}
+      />
+    );
+  }
+
   return (
     <ParentApp
       subtitle="This week"
@@ -248,6 +271,10 @@ export default function ParentHomeRoute() {
         await reload();
       }}
       accessCodes={accessCodes}
+      subscriptionLabel={describeSubscription(subscription)}
+      onManageSubscription={() =>
+        router.push({ pathname: "/parent/subscription", params: { householdId } })
+      }
       onChangeBudget={async (kidId, budgetCents) => {
         if (!householdId) {
           return;
@@ -318,7 +345,7 @@ export default function ParentHomeRoute() {
         assignedTo: kidsById.get(chore.childProfileId)?.name ?? "",
       }))}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
-      recurringLocked={!isEntitled(subscription)}
+      recurringLocked={!isEntitled(subscription.status)}
       onAddChore={async ({ name, rewardCents, assigneeId, recurrence }) => {
         if (!householdId || !name.trim()) {
           return;

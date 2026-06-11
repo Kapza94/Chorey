@@ -46,7 +46,7 @@ export default function NewChildRoute() {
       onCreateChild={createChildForHousehold}
       onUpgrade={() =>
         router.push({
-          pathname: "/parent/upgrade",
+          pathname: "/parent/subscription",
           params: { childAccessCode, childName, childProfileId, householdId },
         })
       }

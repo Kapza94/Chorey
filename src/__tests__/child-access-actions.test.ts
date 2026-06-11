@@ -13,6 +13,7 @@ function createClient() {
           child_name: "Mina",
           household_id: "household-1",
           currency: "RSD",
+          paused: false,
         },
       ],
       error: null,
@@ -83,6 +84,7 @@ describe("child access actions", () => {
       childName: "Mina",
       householdId: "household-1",
       currency: "RSD",
+      paused: false,
     });
     expect(client.rpc).toHaveBeenCalledWith("resolve_child_access_code", {
       input_access_code: "123456",

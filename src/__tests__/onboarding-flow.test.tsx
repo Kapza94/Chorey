@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { OnboardingFlow } from "@/features/onboarding/onboarding-flow";
 
@@ -25,12 +25,14 @@ describe("OnboardingFlow", () => {
       sendEmailCode: jest.fn().mockResolvedValue(undefined),
       verifyEmailCode: jest.fn().mockResolvedValue(undefined),
     };
+    const choosePlan = jest.fn().mockResolvedValue(undefined);
     render(
       <OnboardingFlow
         initialStep="p_family"
         onComplete={onComplete}
         auth={auth}
         persist={persist}
+        choosePlan={choosePlan}
       />,
     );
 
@@ -67,6 +69,16 @@ describe("OnboardingFlow", () => {
 
     fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
     fireEvent.press(screen.getByText("Create account & finish"));
+
+    // Plan choice before the trial — monthly or yearly, no prices invented.
+    expect(await screen.findByText("Try Chorey Family.")).toBeOnTheScreen();
+    expect(screen.getByText(/Free until/)).toBeOnTheScreen();
+    expect(screen.queryByText(/\$\d/)).toBeNull();
+    fireEvent.press(screen.getByLabelText("Choose monthly billing"));
+    fireEvent.press(screen.getByText("Start my free trial"));
+    await waitFor(() => {
+      expect(choosePlan).toHaveBeenCalledWith("h1", "monthly");
+    });
 
     // Verified + persisted → the success screen appears
     expect(await screen.findByText("You're all set.")).toBeOnTheScreen();

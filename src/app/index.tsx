@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import { loadChildSession } from "@/features/children/default-child-session";
+import { chooseSubscriptionPlan } from "@/features/entitlements/default-subscription-actions";
 import { getPrimaryHouseholdId } from "@/features/household/default-household-actions";
 import { OnboardingFlow, type OnboardingAuth } from "@/features/onboarding/onboarding-flow";
 import { persistOnboardingForSignedInParent } from "@/features/onboarding/default-onboarding-persistence";
@@ -147,6 +148,7 @@ export default function IndexRoute() {
     <OnboardingFlow
       auth={auth}
       persist={persistOnboardingForSignedInParent}
+      choosePlan={chooseSubscriptionPlan}
       onComplete={(result, persisted) => {
         if (result.role === "parent") {
           router.push({

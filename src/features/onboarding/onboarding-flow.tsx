@@ -148,6 +148,7 @@ type Step =
   | "p_chores"
   | "p_causes"
   | "p_account"
+  | "p_plan"
   | "p_done"
   | "k_code"
   | "k_avatar"
@@ -192,6 +193,7 @@ export function OnboardingFlow({
   initialStep = "welcome",
   auth,
   persist,
+  choosePlan,
 }: {
   onComplete?: (
     result: OnboardingResult,
@@ -202,6 +204,8 @@ export function OnboardingFlow({
   auth?: OnboardingAuth;
   /** Persist the finished parent setup (runs after the account is verified). */
   persist?: (result: ParentResult) => Promise<OnboardingPersistResult | void>;
+  /** Record the chosen billing plan for the new household's trial. */
+  choosePlan?: (householdId: string, plan: "monthly" | "yearly") => Promise<void>;
 }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
@@ -302,8 +306,19 @@ export function OnboardingFlow({
         <OBParentAccount
           auth={auth}
           onPersist={persistParent}
-          onNext={() => setStep("p_done")}
+          onNext={() => setStep("p_plan")}
           onBack={() => setStep("p_causes")}
+        />
+      );
+    case "p_plan":
+      return (
+        <OBPlanChoice
+          onChoose={async (plan) => {
+            if (persisted?.householdId) {
+              await choosePlan?.(persisted.householdId, plan);
+            }
+          }}
+          onContinue={() => setStep("p_done")}
         />
       );
     case "p_done":
@@ -1717,6 +1732,166 @@ function OBParentAccount({
       {error ? (
         <Text style={[typography.text.bodySm, { color: palette.semantic.danger[600], marginTop: 12 }]}>
           {error}
+        </Text>
+      ) : null}
+    </OBShell>
+  );
+}
+
+/* ---------- 9b. Choose the plan, start the trial ---------- */
+
+const PLAN_MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+/**
+ * The parent picks monthly or yearly before the 14-day trial begins. No
+ * prices appear here — amounts come from the App Store at purchase time and
+ * are never hard-coded in the app.
+ */
+function OBPlanChoice({
+  onChoose,
+  onContinue,
+}: {
+  onChoose: (plan: "monthly" | "yearly") => Promise<void>;
+  onContinue: () => void;
+}) {
+  const { scheme, typography, palette } = useChoreyTheme();
+  const spend = bucketTokens.spend.ramp;
+  const [plan, setPlan] = useState<"monthly" | "yearly">("yearly");
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Captured once on mount: the trial clock started when the household was
+  // created moments ago, so "now + 14 days" matches the DB trigger.
+  const [trialEnd] = useState(() => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  const trialEndLabel = `${PLAN_MONTHS[trialEnd.getMonth()]} ${trialEnd.getDate()}, ${trialEnd.getFullYear()}`;
+
+  const start = async () => {
+    setSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      await onChoose(plan);
+      onContinue();
+    } catch {
+      setErrorMessage("That didn't save. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <OBShell
+      footer={
+        <OBPrimary onPress={start} disabled={submitting}>
+          Start my free trial
+        </OBPrimary>
+      }
+    >
+      <OBTitle
+        title="Try Chorey Family."
+        subtitle="Everything free for 14 days — every kid, every parent, every chore."
+      />
+
+      <View style={{ gap: 10, marginBottom: 14 }}>
+        {(
+          [
+            { id: "monthly" as const, label: "Monthly", caption: "Simple, month to month" },
+            { id: "yearly" as const, label: "Yearly", caption: "2 months free" },
+          ]
+        ).map((option) => {
+          const selected = plan === option.id;
+          return (
+            <Pressable
+              key={option.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Choose ${option.id} billing`}
+              accessibilityState={{ selected }}
+              onPress={() => setPlan(option.id)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                backgroundColor: selected ? scheme.tint.allowance : scheme.bgRaised,
+                borderColor: selected ? spend[400] : scheme.border,
+                borderWidth: 1.5,
+                borderRadius: 16,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+              }}
+            >
+              <View>
+                <Text
+                  style={[
+                    typography.text.h3,
+                    { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+                <Text
+                  style={[
+                    typography.text.caption,
+                    { color: selected ? spend[600] : scheme.fgFaint, marginTop: 2 },
+                  ]}
+                >
+                  {option.caption}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 999,
+                  borderWidth: selected ? 0 : 1.5,
+                  borderColor: scheme.border,
+                  backgroundColor: selected ? spend[600] : "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {selected ? <Check size={13} color={palette.cream[4]} strokeWidth={3} /> : null}
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 10,
+          alignItems: "flex-start",
+          backgroundColor: scheme.bgRaised,
+          borderColor: scheme.border,
+          borderWidth: 1,
+          borderRadius: 14,
+          padding: 12,
+          marginBottom: 10,
+        }}
+      >
+        <Sparkles size={16} color={spend[600]} strokeWidth={2.2} />
+        <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted, lineHeight: 18 }]}>
+          Free until {trialEndLabel}. Renews automatically on the plan you pick —
+          cancel anytime before then and pay nothing.
+        </Text>
+      </View>
+
+      <Text style={[typography.text.caption, { color: scheme.fgFaint, textAlign: "center" }]}>
+        You won&apos;t be charged today. Pricing is confirmed in the App Store
+        before any charge.
+      </Text>
+
+      {errorMessage ? (
+        <Text
+          style={[
+            typography.text.caption,
+            { color: palette.semantic.danger[600], textAlign: "center", marginTop: 8 },
+          ]}
+        >
+          {errorMessage}
         </Text>
       ) : null}
     </OBShell>

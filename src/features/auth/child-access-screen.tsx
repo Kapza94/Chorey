@@ -16,6 +16,7 @@ const noopResolve = async (code: string): Promise<ResolvedChildAccess> => ({
   childName: "Child",
   householdId: "preview-household",
   currency: "USD",
+  paused: false,
 });
 
 function getErrorMessage(error: unknown) {

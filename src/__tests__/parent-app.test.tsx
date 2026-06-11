@@ -569,6 +569,23 @@ describe("ParentApp · Settings", () => {
     expect(onLogOut).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the subscription row and opens management from settings", () => {
+    const onManageSubscription = jest.fn();
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        subscriptionLabel="Free trial · ends Jun 25, 2026"
+        onManageSubscription={onManageSubscription}
+      />,
+    );
+
+    expect(screen.getByText("Chorey Family")).toBeOnTheScreen();
+    expect(screen.getByText("Free trial · ends Jun 25, 2026")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Manage subscription"));
+    expect(onManageSubscription).toHaveBeenCalledTimes(1);
+  });
+
   it("shows each kid's access code so a lost code is recoverable", () => {
     render(
       <ParentApp

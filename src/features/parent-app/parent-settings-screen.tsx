@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { KeyRound, LogOut } from "lucide-react-native";
+import { ChevronRight, CreditCard, KeyRound, LogOut } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -24,6 +24,9 @@ type Props = {
   split?: Split;
   kids?: ParentKid[];
   accessCodes?: KidAccessCode[];
+  /** one-line status, e.g. "Free trial · ends Jun 25, 2026" */
+  subscriptionLabel?: string;
+  onManageSubscription?: () => void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onLogOut?: () => void;
@@ -34,6 +37,8 @@ export function ParentSettingsScreen({
   split = DEFAULT_SPLIT,
   kids = [],
   accessCodes = [],
+  subscriptionLabel,
+  onManageSubscription,
   onChangeBudget,
   onChangeCadence,
   onLogOut,
@@ -129,6 +134,48 @@ export function ParentSettingsScreen({
               <SplitPill tone="giving" label="Give" value={split.give} />
             </View>
           </View>
+
+          {/* Subscription — one household plan; parents manage it here. */}
+          {subscriptionLabel ? (
+            <>
+              <Text
+                style={[
+                  typography.text.overline,
+                  { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+                ]}
+              >
+                Subscription
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Manage subscription"
+                onPress={onManageSubscription}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
+                  borderColor: scheme.border,
+                  borderWidth: 1,
+                  borderRadius: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  marginBottom: 20,
+                })}
+              >
+                <CreditCard size={17} color={scheme.fgMuted} strokeWidth={2} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.text.label, { color: scheme.fg }]}>
+                    Chorey Family
+                  </Text>
+                  <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+                    {subscriptionLabel}
+                  </Text>
+                </View>
+                <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
+              </Pressable>
+            </>
+          ) : null}
 
           {/* Kid sign-in codes — parents will lose these; keep them findable. */}
           <Text

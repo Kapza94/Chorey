@@ -134,8 +134,29 @@ beforeEach(() => {
     childProfileId: "child-1",
     householdId: "household-1",
     currency: "RSD",
+    paused: false,
   });
   mockLoadChildSession.mockReturnValue(null);
+});
+
+it("shows the neutral paused screen when the household subscription lapsed", async () => {
+  mockResolveChildAccessCode.mockResolvedValue({
+    accessCode: "123456",
+    childName: "Mia",
+    childProfileId: "child-1",
+    householdId: "household-1",
+    currency: "RSD",
+    paused: true,
+  });
+
+  render(<ChildHomeRoute />);
+
+  expect(
+    await screen.findByText("Chorey is taking a break."),
+  ).toBeOnTheScreen();
+  // No prices, no subscription words, no interactive chore surface.
+  expect(screen.getByText(/Ask a parent to turn it back on/)).toBeOnTheScreen();
+  expect(screen.queryByLabelText("Route submit")).toBeNull();
 });
 
 it("persists the resolved session (with the household currency) on entry", async () => {
