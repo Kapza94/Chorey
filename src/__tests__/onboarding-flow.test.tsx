@@ -72,6 +72,9 @@ describe("OnboardingFlow", () => {
 
     // Plan choice before the trial — monthly or yearly, no prices invented.
     expect(await screen.findByText("Try Chorey Family.")).toBeOnTheScreen();
+    // The paywall recaps what this family already set up during onboarding.
+    expect(screen.getByText("1 chore ready for Mia")).toBeOnTheScreen();
+    expect(screen.getByText(/Giving pointed at Animals/)).toBeOnTheScreen();
     expect(screen.getByText(/Free until/)).toBeOnTheScreen();
     expect(screen.queryByText(/\$\d/)).toBeNull();
     fireEvent.press(screen.getByLabelText("Choose monthly billing"));

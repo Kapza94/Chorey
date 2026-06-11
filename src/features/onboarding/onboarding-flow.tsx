@@ -33,6 +33,7 @@ import {
   OBStepButton,
   OBTitle,
 } from "@/features/onboarding/onboarding-kit";
+import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo";
 
 /* ---------- reference data ---------- */
 
@@ -142,6 +143,8 @@ type Step =
   | "welcome"
   | "idea"
   | "role"
+  | "p_demo"
+  | "p_demo_kid"
   | "p_family"
   | "p_addkid"
   | "p_split"
@@ -251,10 +254,20 @@ export function OnboardingFlow({
       return (
         <OBRole
           onBack={() => setStep("idea")}
-          onParent={() => setStep("p_family")}
+          onParent={() => setStep("p_demo")}
           onKid={() => setStep("k_code")}
         />
       );
+    case "p_demo":
+      return (
+        <OBDemoApprove
+          onNext={() => setStep("p_demo_kid")}
+          onSkip={() => setStep("p_family")}
+          onBack={() => setStep("role")}
+        />
+      );
+    case "p_demo_kid":
+      return <OBDemoKid onNext={() => setStep("p_family")} onBack={() => setStep("p_demo")} />;
     case "p_family":
       return (
         <OBFamily
@@ -313,6 +326,7 @@ export function OnboardingFlow({
     case "p_plan":
       return (
         <OBPlanChoice
+          data={data}
           onChoose={async (plan) => {
             if (persisted?.householdId) {
               await choosePlan?.(persisted.householdId, plan);
@@ -1750,10 +1764,18 @@ const PLAN_MONTHS = [
  * prices appear here — amounts come from the App Store at purchase time and
  * are never hard-coded in the app.
  */
+/** "Mia" / "Mia & Leo" / "Mia, Leo & Zoe" */
+function listKidNames(names: string[]) {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+}
+
 function OBPlanChoice({
+  data,
   onChoose,
   onContinue,
 }: {
+  data: OnboardingData;
   onChoose: (plan: "monthly" | "yearly") => Promise<void>;
   onContinue: () => void;
 }) {
@@ -1794,6 +1816,34 @@ function OBPlanChoice({
         title="Try Chorey Family."
         subtitle="Everything free for 14 days — every kid, every parent, every chore."
       />
+
+      {data.kids.length > 0 ? (
+        <View
+          style={{
+            backgroundColor: scheme.bgRaised,
+            borderColor: scheme.border,
+            borderWidth: 1,
+            borderRadius: 14,
+            padding: 14,
+            marginBottom: 14,
+            gap: 4,
+          }}
+        >
+          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
+            Already set up
+          </Text>
+          <Text style={[typography.text.body, { color: scheme.fg }]}>
+            {data.chores.length > 0
+              ? `${data.chores.length} ${data.chores.length === 1 ? "chore" : "chores"} ready for ${listKidNames(data.kids.map((kid) => kid.name))}`
+              : `${listKidNames(data.kids.map((kid) => kid.name))} ${data.kids.length === 1 ? "is" : "are"} ready to start`}
+          </Text>
+          {data.causes.length > 0 ? (
+            <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
+              Giving pointed at {data.causes.join(", ")}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={{ gap: 10, marginBottom: 14 }}>
         {(
