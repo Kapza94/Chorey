@@ -43,7 +43,7 @@ export function ParentSettingsScreen({
   onChangeCadence,
   onLogOut,
 }: Props) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -92,9 +92,10 @@ export function ParentSettingsScreen({
           </Text>
           <View
             style={{
-              backgroundColor: scheme.bgRaised,
-              borderColor: scheme.border,
-              borderWidth: 1,
+              backgroundColor: scheme.bgModal,
+              borderColor: scheme.toy.border,
+              borderWidth: toybox.borderWidth,
+              ...scheme.toy.shadowSm,
               borderRadius: 18,
               paddingHorizontal: 18,
               paddingTop: 18,
@@ -154,9 +155,10 @@ export function ParentSettingsScreen({
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 12,
-                  backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
-                  borderColor: scheme.border,
-                  borderWidth: 1,
+                  backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+                  borderColor: scheme.toy.border,
+                  borderWidth: toybox.borderWidth,
+                  ...(pressed ? null : scheme.toy.shadowSm),
                   borderRadius: 16,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
@@ -188,9 +190,10 @@ export function ParentSettingsScreen({
           </Text>
           <View
             style={{
-              backgroundColor: scheme.bgRaised,
-              borderColor: scheme.border,
-              borderWidth: 1,
+              backgroundColor: scheme.bgModal,
+              borderColor: scheme.toy.border,
+              borderWidth: toybox.borderWidth,
+              ...scheme.toy.shadowSm,
               borderRadius: 16,
               overflow: "hidden",
             }}
@@ -265,9 +268,10 @@ export function ParentSettingsScreen({
               gap: 8,
               paddingVertical: 14,
               borderRadius: radius.md,
-              backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
-              borderColor: scheme.border,
-              borderWidth: 1,
+              backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+              borderColor: scheme.toy.border,
+              borderWidth: toybox.borderWidth,
+              ...(pressed ? null : scheme.toy.shadowSm),
             })}
           >
             <LogOut size={17} color={palette.semantic.danger[600]} strokeWidth={2.2} />
@@ -309,7 +313,7 @@ function BudgetCard({
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
 }) {
-  const { scheme, typography, radius } = useChoreyTheme();
+  const { scheme, typography, radius, toybox } = useChoreyTheme();
   const tone = bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp;
   const [budgetCents, setBudgetCents] = useState(kid.budgetCents);
   const [cadence, setCadence] = useState<SettlementFrequency>(kid.cadence);
@@ -331,9 +335,10 @@ function BudgetCard({
   return (
     <View
       style={{
-        backgroundColor: scheme.bgRaised,
-        borderColor: scheme.border,
-        borderWidth: 1,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        ...scheme.toy.shadowSm,
         borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 14,
@@ -380,7 +385,9 @@ function BudgetCard({
                   paddingVertical: 6,
                   borderRadius: radius.pill,
                   backgroundColor: selected ? scheme.bgModal : "transparent",
-                  ...(selected ? scheme.shadow.xs : null),
+                  borderWidth: selected ? toybox.borderWidth : 0,
+                  borderColor: scheme.toy.border,
+                  ...(selected ? scheme.toy.shadowSm : null),
                 }}
               >
                 <Text

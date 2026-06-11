@@ -49,7 +49,7 @@ export function ParentChoresScreen({
   recurringLocked = false,
   onAddChore,
 }: Props) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const [showAdd, setShowAdd] = useState(false);
 
   return (
@@ -94,9 +94,10 @@ export function ParentChoresScreen({
         <View
           style={{
             marginHorizontal: 18,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            ...scheme.toy.shadowSm,
             borderRadius: 16,
             overflow: "hidden",
           }}
@@ -148,7 +149,7 @@ export function ParentChoresScreen({
 }
 
 function AssignedVsCap({ kid, currency }: { kid: ParentKid; currency: CurrencyCode }) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const tone = bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp;
   const over = kid.assignedCents > kid.budgetCents;
   const pct =
@@ -161,9 +162,10 @@ function AssignedVsCap({ kid, currency }: { kid: ParentKid; currency: CurrencyCo
     <View
       style={{
         flex: 1,
-        backgroundColor: scheme.bgRaised,
-        borderColor: scheme.border,
-        borderWidth: 1,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        ...scheme.toy.shadowSm,
         borderRadius: radius.md,
         paddingHorizontal: 14,
         paddingVertical: 12,

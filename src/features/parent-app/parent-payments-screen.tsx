@@ -88,7 +88,7 @@ export function ParentPaymentsScreen({
   onMarkPaid,
   onMarkAllSettled,
 }: Props) {
-  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const { scheme, typography, palette, radius, bucketInk, toybox } = useChoreyTheme();
   const [sheetKid, setSheetKid] = useState<DuePayout | null>(null);
 
   // Only kids who are still owed money show in "due"; the rest are paid up.
@@ -137,9 +137,10 @@ export function ParentPaymentsScreen({
               paddingHorizontal: 18,
               paddingVertical: 22,
               alignItems: "center",
-              backgroundColor: scheme.bgRaised,
-              borderColor: scheme.border,
-              borderWidth: 1,
+              backgroundColor: scheme.bgModal,
+              borderColor: scheme.toy.border,
+              borderWidth: toybox.borderWidth,
+              ...scheme.toy.shadowSm,
               borderRadius: 16,
             }}
           >
@@ -219,9 +220,10 @@ export function ParentPaymentsScreen({
         <View
           style={{
             marginHorizontal: 18,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            ...scheme.toy.shadowSm,
             borderRadius: 16,
             overflow: "hidden",
           }}
@@ -314,7 +316,7 @@ function SettlementCard({
   period: SettlementPeriod;
   onMarkAllSettled?: () => void;
 }) {
-  const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const { scheme, typography, palette, radius, bucketInk, toybox } = useChoreyTheme();
   const buckets: { key: "spend" | "savings" | "giving"; label: string }[] = [
     { key: "spend", label: "Spend" },
     { key: "savings", label: "Save" },
@@ -330,9 +332,10 @@ function SettlementCard({
         marginHorizontal: 18,
         marginBottom: 16,
         padding: 16,
-        backgroundColor: scheme.bgRaised,
-        borderColor: scheme.border,
-        borderWidth: 1,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        ...scheme.toy.shadowSm,
         borderRadius: 16,
       }}
     >
@@ -413,7 +416,7 @@ function DueCard({
   currency: CurrencyCode;
   onMarkPaid: () => void;
 }) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const tone = bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp;
   const allowance = bucketTokens.spend.ramp;
   const savings = bucketTokens.savings.ramp;
@@ -422,12 +425,12 @@ function DueCard({
   return (
     <View
       style={{
-        backgroundColor: scheme.bgRaised,
-        borderColor: scheme.border,
-        borderWidth: 1,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        ...scheme.toy.shadowSm,
         borderRadius: 16,
         padding: 16,
-        ...scheme.shadow.xs,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>

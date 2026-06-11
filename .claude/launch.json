@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "chorey-site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/Users/kapza/Documents/Projects/chorey-site"],
+      "port": 3000
+    }
+  ]
+}
