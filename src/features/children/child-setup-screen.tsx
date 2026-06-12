@@ -4,6 +4,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { SetupScreenLayout } from "@/components/setup-screen-layout";
 import type { CreatedChild } from "@/features/children/child-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type CreateChildPayload = {
   householdId: string;
@@ -31,6 +32,7 @@ export function ChildSetupScreen({
   onUpgrade,
   onBack,
 }: Props) {
+  const { scheme, palette } = useChoreyTheme();
   const [displayName, setDisplayName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -71,9 +73,9 @@ export function ChildSetupScreen({
           style={({ pressed }) => ({
             alignItems: "center",
             backgroundColor: pressed
-              ? choreyTheme.colors.primaryPressed
-              : choreyTheme.colors.primary,
-            borderColor: choreyTheme.colors.primaryPressed,
+              ? palette.accent[800]
+              : palette.accent[600],
+            borderColor: palette.accent[800],
             borderRadius: choreyTheme.radii.pill,
             borderWidth: 1,
             opacity: isSubmitting ? 0.65 : 1,
@@ -83,7 +85,7 @@ export function ChildSetupScreen({
         >
           <Text
             style={{
-              color: choreyTheme.colors.cream1,
+              color: palette.cream[4],
               fontSize: 16,
               fontWeight: "800",
             }}
@@ -97,8 +99,8 @@ export function ChildSetupScreen({
     >
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.md,
@@ -109,7 +111,7 @@ export function ChildSetupScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 14,
             fontWeight: "800",
           }}
@@ -120,13 +122,13 @@ export function ChildSetupScreen({
           accessibilityLabel="Child name"
           onChangeText={setDisplayName}
           placeholder="Mina"
-          placeholderTextColor={choreyTheme.colors.inkMuted}
+          placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
-            borderColor: choreyTheme.colors.borderSoft,
+            borderColor: scheme.border,
             borderWidth: 1,
-            backgroundColor: choreyTheme.colors.surface,
-            color: choreyTheme.colors.ink1,
+            backgroundColor: scheme.bgModal,
+            color: scheme.fg,
             fontSize: 16,
             paddingHorizontal: choreyTheme.spacing.lg,
             paddingVertical: 15,
@@ -138,7 +140,7 @@ export function ChildSetupScreen({
         <Text
           accessibilityRole="alert"
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 14,
             lineHeight: 20,
           }}
@@ -151,8 +153,8 @@ export function ChildSetupScreen({
         <View
           accessibilityRole="alert"
           style={{
-            backgroundColor: choreyTheme.colors.primarySoft,
-            borderColor: choreyTheme.colors.borderMedium,
+            backgroundColor: scheme.tint.allowance,
+            borderColor: scheme.borderHover,
             borderRadius: choreyTheme.radii.lg,
             borderWidth: 1,
             gap: choreyTheme.spacing.md,
@@ -161,7 +163,7 @@ export function ChildSetupScreen({
         >
           <Text
             style={{
-              color: choreyTheme.colors.ink1,
+              color: scheme.fg,
               fontSize: 18,
               fontWeight: "800",
             }}
@@ -170,7 +172,7 @@ export function ChildSetupScreen({
           </Text>
           <Text
             style={{
-              color: choreyTheme.colors.ink2,
+              color: scheme.fgMuted,
               fontSize: 14,
               lineHeight: 20,
             }}
@@ -186,8 +188,8 @@ export function ChildSetupScreen({
               alignItems: "center",
               alignSelf: "flex-start",
               backgroundColor: pressed
-                ? choreyTheme.colors.primaryPressed
-                : choreyTheme.colors.primary,
+                ? palette.accent[800]
+                : palette.accent[600],
               borderRadius: choreyTheme.radii.pill,
               paddingHorizontal: choreyTheme.spacing.lg,
               paddingVertical: choreyTheme.spacing.md,
@@ -195,7 +197,7 @@ export function ChildSetupScreen({
           >
             <Text
               style={{
-                color: choreyTheme.colors.cream1,
+                color: palette.cream[4],
                 fontSize: 14,
                 fontWeight: "800",
               }}

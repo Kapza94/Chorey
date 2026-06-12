@@ -4,6 +4,7 @@ import { CheckCircleIcon } from "@/components/status-icons";
 import { BucketBalances, formatReward } from "@/features/chores/money";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type Props = {
   bucketBalances: BucketBalances;
@@ -33,6 +34,7 @@ export function SettlementReviewScreen({
   onMarkAllSettled,
   settlementPeriod,
 }: Props) {
+  const { scheme, palette } = useChoreyTheme();
   const total =
     bucketBalances.spendCents +
     bucketBalances.savingsCents +
@@ -49,12 +51,12 @@ export function SettlementReviewScreen({
         paddingBottom: choreyTheme.spacing.xxl,
         gap: choreyTheme.spacing.xl,
       }}
-      style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}
+      style={{ flex: 1, backgroundColor: scheme.bgPage }}
     >
       <View style={{ gap: choreyTheme.spacing.sm }}>
         <Text
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 13,
             fontWeight: "800",
           }}
@@ -63,7 +65,7 @@ export function SettlementReviewScreen({
         </Text>
         <Text
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 34,
             fontWeight: "800",
             letterSpacing: 0,
@@ -73,7 +75,7 @@ export function SettlementReviewScreen({
         </Text>
         <Text
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 14,
             fontWeight: "800",
           }}
@@ -82,7 +84,7 @@ export function SettlementReviewScreen({
         </Text>
         <Text
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 15,
           }}
         >
@@ -92,8 +94,8 @@ export function SettlementReviewScreen({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.lg,
@@ -103,7 +105,7 @@ export function SettlementReviewScreen({
       >
         <Text
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 26,
             fontVariant: ["tabular-nums"],
             fontWeight: "900",
@@ -126,7 +128,7 @@ export function SettlementReviewScreen({
               key={row.bucket}
               style={{
                 backgroundColor: bucketTheme.softColor,
-                borderColor: choreyTheme.colors.borderMedium,
+                borderColor: scheme.borderHover,
                 borderRadius: choreyTheme.radii.md,
                 borderWidth: 1,
                 flexDirection: "row",
@@ -136,7 +138,7 @@ export function SettlementReviewScreen({
             >
               <Text
                 style={{
-                  color: choreyTheme.colors.ink1,
+                  color: scheme.fg,
                   flex: 1,
                   fontSize: 15,
                   fontWeight: "800",
@@ -146,7 +148,7 @@ export function SettlementReviewScreen({
               </Text>
               <Text
                 style={{
-                  color: choreyTheme.colors.ink1,
+                  color: scheme.fg,
                   fontSize: 16,
                   fontVariant: ["tabular-nums"],
                   fontWeight: "900",
@@ -170,7 +172,7 @@ export function SettlementReviewScreen({
           <CheckCircleIcon />
           <Text
             style={{
-              color: choreyTheme.colors.ink2,
+              color: scheme.fgMuted,
               fontSize: 16,
               fontWeight: "900",
             }}
@@ -186,9 +188,9 @@ export function SettlementReviewScreen({
           style={({ pressed }) => ({
             alignItems: "center",
             backgroundColor: pressed
-              ? choreyTheme.colors.primaryPressed
-              : choreyTheme.colors.primary,
-            borderColor: choreyTheme.colors.primaryPressed,
+              ? palette.accent[800]
+              : palette.accent[600],
+            borderColor: palette.accent[800],
             borderRadius: choreyTheme.radii.pill,
             borderWidth: 1,
             paddingVertical: 16,
@@ -197,7 +199,7 @@ export function SettlementReviewScreen({
         >
           <Text
             style={{
-              color: choreyTheme.colors.cream1,
+              color: palette.cream[4],
               fontSize: 16,
               fontWeight: "900",
             }}
@@ -215,9 +217,9 @@ export function SettlementReviewScreen({
           style={({ pressed }) => ({
             alignItems: "center",
             backgroundColor: pressed
-              ? choreyTheme.colors.primarySoft
-              : choreyTheme.colors.surface,
-            borderColor: choreyTheme.colors.borderMedium,
+              ? scheme.tint.allowance
+              : scheme.bgModal,
+            borderColor: scheme.borderHover,
             borderRadius: choreyTheme.radii.pill,
             borderWidth: 1,
             paddingVertical: 14,
@@ -225,7 +227,7 @@ export function SettlementReviewScreen({
         >
           <Text
             style={{
-              color: choreyTheme.colors.ink1,
+              color: scheme.fg,
               fontSize: 15,
               fontWeight: "800",
             }}

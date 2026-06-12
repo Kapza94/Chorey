@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { AppleIcon, GoogleIcon } from "@/components/brand-icons";
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 export type ParentSignInActions = {
   signInWithApple(): void;
@@ -27,6 +28,7 @@ function AuthButton({
   variant: "apple" | "google";
   onPress: () => void;
 }) {
+  const { scheme, palette } = useChoreyTheme();
   const isApple = variant === "apple";
 
   return (
@@ -40,9 +42,9 @@ function AuthButton({
         backgroundColor: isApple
           ? "#11100F"
           : pressed
-            ? choreyTheme.colors.primarySoft
-            : choreyTheme.colors.surface,
-        borderColor: isApple ? "#11100F" : choreyTheme.colors.borderSoft,
+            ? scheme.tint.allowance
+            : scheme.bgModal,
+        borderColor: isApple ? "#11100F" : scheme.border,
         borderWidth: 1,
         flexDirection: "row",
         minHeight: 48,
@@ -56,7 +58,7 @@ function AuthButton({
       <View style={{ flex: 1, alignItems: "center", paddingRight: 24 }}>
         <Text
           style={{
-            color: isApple ? choreyTheme.colors.cream1 : "#3C4043",
+            color: isApple ? palette.cream[4] : "#3C4043",
             fontSize: 16,
             fontWeight: "700",
           }}
@@ -75,6 +77,7 @@ export function ParentSignInScreen({
   actions?: ParentSignInActions;
   onSignedIn?: () => void;
 }) {
+  const { scheme, palette } = useChoreyTheme();
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [magicLinkStatus, setMagicLinkStatus] = useState<
@@ -118,7 +121,7 @@ export function ParentSignInScreen({
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}
+      style={{ flex: 1, backgroundColor: scheme.bgPage }}
       contentContainerStyle={{
         flexGrow: 1,
         justifyContent: "space-between",
@@ -129,8 +132,8 @@ export function ParentSignInScreen({
       <View style={{ gap: choreyTheme.spacing.lg }}>
         <View
           style={{
-            backgroundColor: choreyTheme.colors.surfaceWarm,
-            borderColor: choreyTheme.colors.borderSoft,
+            backgroundColor: scheme.bgRaised,
+            borderColor: scheme.border,
             borderRadius: choreyTheme.radii.lg,
             borderWidth: 1,
             gap: choreyTheme.spacing.sm,
@@ -141,7 +144,7 @@ export function ParentSignInScreen({
           <Text
             selectable
             style={{
-              color: choreyTheme.colors.inkMuted,
+              color: scheme.fgFaint,
               fontSize: 13,
               fontWeight: "800",
             }}
@@ -151,7 +154,7 @@ export function ParentSignInScreen({
           <Text
             selectable
             style={{
-              color: choreyTheme.colors.ink1,
+              color: scheme.fg,
               fontSize: 34,
               fontWeight: "800",
               letterSpacing: 0,
@@ -162,7 +165,7 @@ export function ParentSignInScreen({
           <Text
             selectable
             style={{
-              color: choreyTheme.colors.inkMuted,
+              color: scheme.fgFaint,
               fontSize: 16,
               lineHeight: 24,
             }}
@@ -174,8 +177,8 @@ export function ParentSignInScreen({
 
         <View
           style={{
-            backgroundColor: choreyTheme.colors.surface,
-            borderColor: choreyTheme.colors.borderSoft,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.border,
             borderRadius: choreyTheme.radii.lg,
             borderWidth: 1,
             gap: choreyTheme.spacing.md,
@@ -197,8 +200,8 @@ export function ParentSignInScreen({
 
         <View
           style={{
-            backgroundColor: choreyTheme.colors.surface,
-            borderColor: choreyTheme.colors.borderSoft,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.border,
             borderRadius: choreyTheme.radii.lg,
             borderWidth: 1,
             gap: choreyTheme.spacing.md,
@@ -209,7 +212,7 @@ export function ParentSignInScreen({
           <Text
             selectable
             style={{
-              color: choreyTheme.colors.inkMuted,
+              color: scheme.fgFaint,
               fontSize: 14,
               fontWeight: "700",
             }}
@@ -222,13 +225,13 @@ export function ParentSignInScreen({
             keyboardType="email-address"
             onChangeText={setEmail}
             placeholder="you@example.com"
-            placeholderTextColor={choreyTheme.colors.inkMuted}
+            placeholderTextColor={scheme.fgFaint}
             style={{
               borderRadius: choreyTheme.radii.md,
-              borderColor: choreyTheme.colors.borderSoft,
+              borderColor: scheme.border,
               borderWidth: 1,
-              backgroundColor: choreyTheme.colors.surface,
-              color: choreyTheme.colors.ink1,
+              backgroundColor: scheme.bgModal,
+              color: scheme.fg,
               fontSize: 16,
               paddingHorizontal: choreyTheme.spacing.lg,
               paddingVertical: 15,
@@ -242,9 +245,9 @@ export function ParentSignInScreen({
             style={({ pressed }) => ({
               alignItems: "center",
               backgroundColor: pressed
-                ? choreyTheme.colors.primaryPressed
-                : choreyTheme.colors.primary,
-              borderColor: choreyTheme.colors.primaryPressed,
+                ? palette.accent[800]
+                : palette.accent[600],
+              borderColor: palette.accent[800],
               borderRadius: choreyTheme.radii.pill,
               borderWidth: 1,
               paddingVertical: 15,
@@ -253,7 +256,7 @@ export function ParentSignInScreen({
           >
             <Text
               style={{
-                color: choreyTheme.colors.cream1,
+                color: palette.cream[4],
                 fontSize: 16,
                 fontWeight: "800",
               }}
@@ -267,8 +270,8 @@ export function ParentSignInScreen({
               style={{
                 color:
                   magicLinkStatus === "error"
-                    ? choreyTheme.colors.danger
-                    : choreyTheme.colors.inkMuted,
+                    ? palette.semantic.danger[600]
+                    : scheme.fgFaint,
                 fontSize: 14,
                 lineHeight: 20,
               }}
@@ -285,13 +288,13 @@ export function ParentSignInScreen({
                 keyboardType="number-pad"
                 onChangeText={setOtpCode}
                 placeholder="6-digit code"
-                placeholderTextColor={choreyTheme.colors.inkMuted}
+                placeholderTextColor={scheme.fgFaint}
                 style={{
                   borderRadius: choreyTheme.radii.md,
-                  borderColor: choreyTheme.colors.borderSoft,
+                  borderColor: scheme.border,
                   borderWidth: 1,
-                  backgroundColor: choreyTheme.colors.surface,
-                  color: choreyTheme.colors.ink1,
+                  backgroundColor: scheme.bgModal,
+                  color: scheme.fg,
                   fontSize: 16,
                   fontVariant: ["tabular-nums"],
                   paddingHorizontal: choreyTheme.spacing.lg,
@@ -306,17 +309,17 @@ export function ParentSignInScreen({
                 style={({ pressed }) => ({
                   alignItems: "center",
                   backgroundColor: pressed
-                    ? choreyTheme.colors.primarySoft
-                    : choreyTheme.colors.surfaceWarm,
+                    ? scheme.tint.allowance
+                    : scheme.bgRaised,
                   borderRadius: choreyTheme.radii.pill,
-                  borderColor: choreyTheme.colors.borderMedium,
+                  borderColor: scheme.borderHover,
                   borderWidth: 1,
                   paddingVertical: 15,
                 })}
               >
                 <Text
                   style={{
-                    color: choreyTheme.colors.ink1,
+                    color: scheme.fg,
                     fontSize: 16,
                     fontWeight: "800",
                   }}
@@ -332,7 +335,7 @@ export function ParentSignInScreen({
       <Text
         selectable
         style={{
-          color: choreyTheme.colors.inkMuted,
+          color: scheme.fgFaint,
           fontSize: 13,
           lineHeight: 19,
           textAlign: "center",

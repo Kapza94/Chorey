@@ -1,12 +1,14 @@
 import { ScrollView, Text, View } from "react-native";
 
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 export function AuthCallbackScreen() {
+  const { scheme } = useChoreyTheme();
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}
+      style={{ flex: 1, backgroundColor: scheme.bgPage }}
       contentContainerStyle={{
         flexGrow: 1,
         justifyContent: "center",
@@ -16,8 +18,8 @@ export function AuthCallbackScreen() {
     >
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surfaceWarm,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgRaised,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.sm,
@@ -28,7 +30,7 @@ export function AuthCallbackScreen() {
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 28,
             fontWeight: "800",
           }}
@@ -38,7 +40,7 @@ export function AuthCallbackScreen() {
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 16,
             lineHeight: 24,
           }}

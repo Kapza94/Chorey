@@ -10,8 +10,10 @@ import { OnboardingFlow, type OnboardingAuth } from "@/features/onboarding/onboa
 import { persistOnboardingForSignedInParent } from "@/features/onboarding/default-onboarding-persistence";
 import { supabase } from "@/lib/supabase";
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 export default function IndexRoute() {
+  const { scheme, palette } = useChoreyTheme();
   const router = useRouter();
   const [sessionChecked, setSessionChecked] = useState(false);
   const [launchError, setLaunchError] = useState(false);
@@ -74,7 +76,7 @@ export default function IndexRoute() {
       <View
         style={{
           alignItems: "center",
-          backgroundColor: choreyTheme.colors.cream2,
+          backgroundColor: scheme.bgPage,
           flex: 1,
           gap: choreyTheme.spacing.md,
           justifyContent: "center",
@@ -83,7 +85,7 @@ export default function IndexRoute() {
       >
         <Text
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontFamily: choreyTheme.typography.family.display.bold,
             fontSize: 28,
             textAlign: "center",
@@ -93,7 +95,7 @@ export default function IndexRoute() {
         </Text>
         <Text
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontFamily: choreyTheme.typography.family.body.regular,
             fontSize: 16,
             lineHeight: 24,
@@ -112,8 +114,8 @@ export default function IndexRoute() {
           }}
           style={({ pressed }) => ({
             backgroundColor: pressed
-              ? choreyTheme.colors.primaryPressed
-              : choreyTheme.colors.primary,
+              ? palette.accent[800]
+              : palette.accent[600],
             borderRadius: choreyTheme.radii.pill,
             marginTop: choreyTheme.spacing.sm,
             paddingHorizontal: choreyTheme.spacing.xl,
@@ -122,7 +124,7 @@ export default function IndexRoute() {
         >
           <Text
             style={{
-              color: choreyTheme.colors.cream1,
+              color: palette.cream[4],
               fontFamily: choreyTheme.typography.family.body.bold,
               fontSize: 16,
             }}

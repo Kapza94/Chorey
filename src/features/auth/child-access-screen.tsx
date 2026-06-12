@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import type { ResolvedChildAccess } from "@/features/children/child-access-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type Props = {
   onBack?: () => void;
@@ -41,6 +42,7 @@ export function ChildAccessScreen({
   onChildAccess,
   onResolveAccessCode = noopResolve,
 }: Props) {
+  const { scheme, palette } = useChoreyTheme();
   const [accessCode, setAccessCode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,7 +64,7 @@ export function ChildAccessScreen({
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}
+      style={{ flex: 1, backgroundColor: scheme.bgPage }}
       contentContainerStyle={{
         padding: choreyTheme.spacing.xl,
         paddingBottom: choreyTheme.spacing.xxl,
@@ -78,9 +80,9 @@ export function ChildAccessScreen({
           alignItems: "center",
           alignSelf: "flex-start",
           backgroundColor: pressed
-            ? choreyTheme.colors.primarySoft
-            : choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderMedium,
+            ? scheme.tint.allowance
+            : scheme.bgModal,
+          borderColor: scheme.borderHover,
           borderRadius: choreyTheme.radii.pill,
           borderWidth: 1,
           height: 44,
@@ -90,7 +92,7 @@ export function ChildAccessScreen({
       >
         <Text
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 24,
             fontWeight: "700",
             lineHeight: 26,
@@ -102,8 +104,8 @@ export function ChildAccessScreen({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surfaceWarm,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgRaised,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.sm,
@@ -114,7 +116,7 @@ export function ChildAccessScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 34,
             fontWeight: "800",
           }}
@@ -124,7 +126,7 @@ export function ChildAccessScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 16,
             lineHeight: 24,
           }}
@@ -135,8 +137,8 @@ export function ChildAccessScreen({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.md,
@@ -147,7 +149,7 @@ export function ChildAccessScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 13,
             fontWeight: "900",
           }}
@@ -157,7 +159,7 @@ export function ChildAccessScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 14,
             fontWeight: "800",
           }}
@@ -169,13 +171,13 @@ export function ChildAccessScreen({
           keyboardType="number-pad"
           onChangeText={setAccessCode}
           placeholder="123456"
-          placeholderTextColor={choreyTheme.colors.inkMuted}
+          placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
-            borderColor: choreyTheme.colors.borderSoft,
+            borderColor: scheme.border,
             borderWidth: 1,
-            backgroundColor: choreyTheme.colors.surface,
-            color: choreyTheme.colors.ink1,
+            backgroundColor: scheme.bgModal,
+            color: scheme.fg,
             fontSize: 20,
             fontVariant: ["tabular-nums"],
             paddingHorizontal: choreyTheme.spacing.lg,
@@ -188,7 +190,7 @@ export function ChildAccessScreen({
         <Text
           accessibilityRole="alert"
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 14,
             lineHeight: 20,
           }}
@@ -205,9 +207,9 @@ export function ChildAccessScreen({
         style={({ pressed }) => ({
           alignItems: "center",
           backgroundColor: pressed
-            ? choreyTheme.colors.primaryPressed
-            : choreyTheme.colors.primary,
-          borderColor: choreyTheme.colors.primaryPressed,
+            ? palette.accent[800]
+            : palette.accent[600],
+          borderColor: palette.accent[800],
           borderRadius: choreyTheme.radii.pill,
           borderWidth: 1,
           opacity: isSubmitting ? 0.65 : 1,
@@ -217,7 +219,7 @@ export function ChildAccessScreen({
       >
         <Text
           style={{
-            color: choreyTheme.colors.cream1,
+            color: palette.cream[4],
             fontSize: 16,
             fontWeight: "800",
           }}

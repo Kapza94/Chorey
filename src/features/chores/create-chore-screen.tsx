@@ -9,6 +9,7 @@ import {
   splitRewardCents,
 } from "@/features/chores/money";
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type CreateChorePayload = {
   householdId: string;
@@ -68,6 +69,7 @@ export function CreateChoreScreen({
   onChoreCreated,
   onCreateChore = noopCreateChore,
 }: Props) {
+  const { scheme, palette } = useChoreyTheme();
   const [title, setTitle] = useState("");
   const [rewardAmount, setRewardAmount] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -107,9 +109,9 @@ export function CreateChoreScreen({
           style={({ pressed }) => ({
             alignItems: "center",
             backgroundColor: pressed
-              ? choreyTheme.colors.primaryPressed
-              : choreyTheme.colors.primary,
-            borderColor: choreyTheme.colors.primaryPressed,
+              ? palette.accent[800]
+              : palette.accent[600],
+            borderColor: palette.accent[800],
             borderRadius: choreyTheme.radii.pill,
             borderWidth: 1,
             opacity: isSubmitting ? 0.65 : 1,
@@ -119,7 +121,7 @@ export function CreateChoreScreen({
         >
           <Text
             style={{
-              color: choreyTheme.colors.cream1,
+              color: palette.cream[4],
               fontSize: 16,
               fontWeight: "800",
             }}
@@ -134,11 +136,11 @@ export function CreateChoreScreen({
       <Text
         style={{
           alignSelf: "flex-start",
-          backgroundColor: choreyTheme.colors.primarySoft,
-          borderColor: choreyTheme.colors.primary,
+          backgroundColor: scheme.tint.allowance,
+          borderColor: palette.accent[600],
           borderRadius: choreyTheme.radii.pill,
           borderWidth: 1,
-          color: choreyTheme.colors.ink1,
+          color: scheme.fg,
           fontSize: 15,
           fontWeight: "900",
           overflow: "hidden",
@@ -151,8 +153,8 @@ export function CreateChoreScreen({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.md,
@@ -163,7 +165,7 @@ export function CreateChoreScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 14,
             fontWeight: "800",
           }}
@@ -174,13 +176,13 @@ export function CreateChoreScreen({
           accessibilityLabel="Chore title"
           onChangeText={setTitle}
           placeholder="Load dishwasher"
-          placeholderTextColor={choreyTheme.colors.inkMuted}
+          placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
-            borderColor: choreyTheme.colors.borderSoft,
+            borderColor: scheme.border,
             borderWidth: 1,
-            backgroundColor: choreyTheme.colors.surface,
-            color: choreyTheme.colors.ink1,
+            backgroundColor: scheme.bgModal,
+            color: scheme.fg,
             fontSize: 16,
             paddingHorizontal: choreyTheme.spacing.lg,
             paddingVertical: 15,
@@ -190,8 +192,8 @@ export function CreateChoreScreen({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.md,
@@ -202,7 +204,7 @@ export function CreateChoreScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 14,
             fontWeight: "800",
           }}
@@ -214,13 +216,13 @@ export function CreateChoreScreen({
           keyboardType="decimal-pad"
           onChangeText={setRewardAmount}
           placeholder="2.50"
-          placeholderTextColor={choreyTheme.colors.inkMuted}
+          placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
-            borderColor: choreyTheme.colors.borderSoft,
+            borderColor: scheme.border,
             borderWidth: 1,
-            backgroundColor: choreyTheme.colors.surface,
-            color: choreyTheme.colors.ink1,
+            backgroundColor: scheme.bgModal,
+            color: scheme.fg,
             fontSize: 16,
             paddingHorizontal: choreyTheme.spacing.lg,
             paddingVertical: 15,
@@ -230,8 +232,8 @@ export function CreateChoreScreen({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surfaceWarm,
-          borderColor: choreyTheme.colors.borderMedium,
+          backgroundColor: scheme.bgRaised,
+          borderColor: scheme.borderHover,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.md,
@@ -241,7 +243,7 @@ export function CreateChoreScreen({
       >
         <Text
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 16,
             fontWeight: "900",
           }}
@@ -277,7 +279,7 @@ export function CreateChoreScreen({
                 />
                 <Text
                   style={{
-                    color: choreyTheme.colors.ink2,
+                    color: scheme.fgMuted,
                     fontSize: 14,
                     fontWeight: "900",
                   }}
@@ -295,7 +297,7 @@ export function CreateChoreScreen({
         <Text
           accessibilityRole="alert"
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 14,
             lineHeight: 20,
           }}

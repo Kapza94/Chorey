@@ -8,6 +8,7 @@ import type {
   SettlementFrequency,
 } from "@/features/household/household-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type Props = {
   onCreateHousehold?: (
@@ -44,6 +45,7 @@ export function HouseholdSetupScreen({
   onHouseholdCreated,
   onBack,
 }: Props) {
+  const { scheme, palette } = useChoreyTheme();
   const [name, setName] = useState("");
   const [settlementFrequency, setSettlementFrequency] =
     useState<SettlementFrequency>("weekly");
@@ -77,9 +79,9 @@ export function HouseholdSetupScreen({
           style={({ pressed }) => ({
             alignItems: "center",
             backgroundColor: pressed
-              ? choreyTheme.colors.primaryPressed
-              : choreyTheme.colors.primary,
-            borderColor: choreyTheme.colors.primaryPressed,
+              ? palette.accent[800]
+              : palette.accent[600],
+            borderColor: palette.accent[800],
             borderRadius: choreyTheme.radii.pill,
             borderWidth: 1,
             opacity: isSubmitting ? 0.65 : 1,
@@ -89,7 +91,7 @@ export function HouseholdSetupScreen({
         >
           <Text
             style={{
-              color: choreyTheme.colors.cream1,
+              color: palette.cream[4],
               fontSize: 16,
               fontWeight: "800",
             }}
@@ -103,8 +105,8 @@ export function HouseholdSetupScreen({
     >
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.md,
@@ -115,7 +117,7 @@ export function HouseholdSetupScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 14,
             fontWeight: "800",
           }}
@@ -126,13 +128,13 @@ export function HouseholdSetupScreen({
           accessibilityLabel="Household name"
           onChangeText={setName}
           placeholder="Kapza home"
-          placeholderTextColor={choreyTheme.colors.inkMuted}
+          placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
-            borderColor: choreyTheme.colors.borderSoft,
+            borderColor: scheme.border,
             borderWidth: 1,
-            backgroundColor: choreyTheme.colors.surface,
-            color: choreyTheme.colors.ink1,
+            backgroundColor: scheme.bgModal,
+            color: scheme.fg,
             fontSize: 16,
             paddingHorizontal: choreyTheme.spacing.lg,
             paddingVertical: 15,
@@ -142,8 +144,8 @@ export function HouseholdSetupScreen({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.surface,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgModal,
+          borderColor: scheme.border,
           borderRadius: choreyTheme.radii.lg,
           borderWidth: 1,
           gap: choreyTheme.spacing.md,
@@ -154,7 +156,7 @@ export function HouseholdSetupScreen({
         <Text
           selectable
           style={{
-            color: choreyTheme.colors.ink1,
+            color: scheme.fg,
             fontSize: 14,
             fontWeight: "800",
           }}
@@ -176,13 +178,13 @@ export function HouseholdSetupScreen({
                   alignItems: "center",
                   borderRadius: choreyTheme.radii.pill,
                   backgroundColor: selected
-                    ? choreyTheme.colors.primary
+                    ? palette.accent[600]
                     : pressed
-                      ? choreyTheme.colors.primarySoft
-                      : choreyTheme.colors.surfaceWarm,
+                      ? scheme.tint.allowance
+                      : scheme.bgRaised,
                   borderColor: selected
-                    ? choreyTheme.colors.primaryPressed
-                    : choreyTheme.colors.borderMedium,
+                    ? palette.accent[800]
+                    : scheme.borderHover,
                   borderWidth: 1,
                   paddingVertical: 14,
                 })}
@@ -190,8 +192,8 @@ export function HouseholdSetupScreen({
                 <Text
                   style={{
                     color: selected
-                      ? choreyTheme.colors.cream1
-                      : choreyTheme.colors.ink1,
+                      ? palette.cream[4]
+                      : scheme.fg,
                     fontSize: 15,
                     fontWeight: "800",
                   }}
@@ -208,7 +210,7 @@ export function HouseholdSetupScreen({
         <Text
           accessibilityRole="alert"
           style={{
-            color: choreyTheme.colors.inkMuted,
+            color: scheme.fgFaint,
             fontSize: 14,
             lineHeight: 20,
           }}
