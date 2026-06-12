@@ -4,6 +4,8 @@ import { View } from "react-native";
 import { KidHomeScreen, type KidChore } from "@/features/kid-home/kid-home-screen";
 import { KidChoreModal } from "@/features/kid-home/kid-chore-modal";
 import { LevelUpBurst } from "@/components/level-up-burst";
+import { KidJourneyScreen } from "@/features/kid-home/kid-journey-screen";
+import { levelForPoints } from "@/features/game/leveling";
 import { KidWishlistScreen, type KidWish } from "@/features/kid-home/kid-wishlist-screen";
 import { KidYouScreen, type KidSavingsGoal } from "@/features/kid-home/kid-you-screen";
 import { KidTabBar, type KidTab } from "@/features/kid-home/kid-tab-bar";
@@ -33,6 +35,10 @@ type Props = {
   /** when set, the full-screen level-up celebration shows for this level */
   celebrationLevel?: number | null;
   onCelebrationDone?: () => void;
+  /** where the journey car last parked; below the current level it drives */
+  journeyFromLevel?: number;
+  /** the journey car arrived at the current level — persist the parking spot */
+  onJourneyArrived?: () => void;
   // You
   savingsCents?: number;
   givingCents?: number;
@@ -64,6 +70,8 @@ export function KidApp({
   totalPoints,
   celebrationLevel,
   onCelebrationDone,
+  journeyFromLevel,
+  onJourneyArrived,
   savingsCents,
   givingCents,
   causeName,
@@ -76,6 +84,7 @@ export function KidApp({
   const { scheme } = useChoreyTheme();
   const [tab, setTab] = useState<KidTab>(initialTab);
   const [selectedChoreId, setSelectedChoreId] = useState<string | null>(null);
+  const [journeyOpen, setJourneyOpen] = useState(false);
   const selectedChore =
     chores?.find((chore) => chore.id === selectedChoreId) ?? null;
 
@@ -92,6 +101,7 @@ export function KidApp({
           givingCents={givingCents}
           totalPoints={totalPoints}
           onOpenChore={setSelectedChoreId}
+          onOpenJourney={() => setJourneyOpen(true)}
         />
       ) : tab === "wish" ? (
         <KidWishlistScreen
@@ -121,6 +131,13 @@ export function KidApp({
       {celebrationLevel ? (
         <LevelUpBurst level={celebrationLevel} onDone={onCelebrationDone} />
       ) : null}
+      <KidJourneyScreen
+        visible={journeyOpen}
+        level={levelForPoints(totalPoints ?? 0)}
+        fromLevel={journeyFromLevel}
+        onArrived={onJourneyArrived}
+        onClose={() => setJourneyOpen(false)}
+      />
       <KidChoreModal
         chore={selectedChore}
         currency={currency ?? DEFAULT_CURRENCY}

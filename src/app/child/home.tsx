@@ -29,7 +29,12 @@ import { resolveChildAccessCode } from "@/features/children/default-child-access
 import { getGameStatsForChild } from "@/features/game/default-game-actions";
 import type { ChildGameStats } from "@/features/game/game-actions";
 import { levelForPoints } from "@/features/game/leveling";
-import { getLastSeenLevel, setLastSeenLevel } from "@/features/game/level-memory";
+import {
+  getLastDrivenLevel,
+  getLastSeenLevel,
+  setLastDrivenLevel,
+  setLastSeenLevel,
+} from "@/features/game/level-memory";
 import {
   getSavingsGoalForChild,
   setSavingsGoalForChild,
@@ -312,6 +317,16 @@ export default function ChildHomeRoute() {
       chores={kidChores}
       totalPoints={gameStats.totalPoints}
       celebrationLevel={celebrationLevel}
+      journeyFromLevel={
+        getLastDrivenLevel(session?.childProfileId || accessCode || "") ||
+        levelForPoints(gameStats.totalPoints)
+      }
+      onJourneyArrived={() =>
+        setLastDrivenLevel(
+          session?.childProfileId || accessCode || "",
+          levelForPoints(gameStats.totalPoints),
+        )
+      }
       onCelebrationDone={() => {
         setLastSeenLevel(
           session?.childProfileId || accessCode || "",

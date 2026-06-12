@@ -45,6 +45,8 @@ type Props = {
   /** lifetime game points (every approved chore earns some) */
   totalPoints?: number;
   onOpenChore?: (id: string) => void;
+  /** tap the level row to open the journey map */
+  onOpenJourney?: () => void;
 };
 
 const WEEKDAYS = [
@@ -68,6 +70,7 @@ export function KidHomeScreen({
   givingCents = 0,
   totalPoints = 0,
   onOpenChore,
+  onOpenJourney,
 }: Props) {
   const theme = useChoreyTheme();
   const { scheme, typography, space, radius, toybox } = theme;
@@ -118,8 +121,13 @@ export function KidHomeScreen({
           </View>
         </View>
 
-        {/* Level + XP toward the next one */}
-        <View style={{ marginHorizontal: 18, marginTop: 6, gap: 8 }}>
+        {/* Level + XP toward the next one — tap to see the road */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open your level road"
+          onPress={onOpenJourney}
+          style={{ marginHorizontal: 18, marginTop: 6, gap: 8 }}
+        >
           <View
             style={{
               flexDirection: "row",
@@ -135,7 +143,7 @@ export function KidHomeScreen({
             </Text>
           </View>
           <ToyProgressBar ratio={game.ratio} tone="savings" height={12} />
-        </View>
+        </Pressable>
 
         {/* Hero balance card */}
         <View
