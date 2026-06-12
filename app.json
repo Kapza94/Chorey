@@ -13,7 +13,8 @@
     "android": {
       "package": "app.chorey.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#F6EFE3"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2A2018"
       }
     },
     "web": {
@@ -24,10 +25,25 @@
       "expo-font",
       "expo-web-browser",
       "expo-sqlite",
-      "expo-image"
+      "expo-image",
+      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 260,
+          "resizeMode": "contain",
+          "backgroundColor": "#F6EFE3",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#1C1814"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }
