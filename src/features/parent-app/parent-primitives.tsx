@@ -20,6 +20,8 @@ export type ParentKid = {
   choresDone: number;
   choresTotal: number;
   pendingApprovals: number;
+  /** lifetime game level (1..100), derived from approved chores */
+  level?: number;
   cadence: SettlementFrequency;
   budgetCents: number;
   /** total value of chores assigned this period (may exceed the budget) */

@@ -623,3 +623,10 @@ describe("ParentApp empty state", () => {
     expect(onAddKid).toHaveBeenCalled();
   });
 });
+
+describe("ParentApp kid levels", () => {
+  it("shows each kid's level sticker when provided", () => {
+    render(<ParentApp kids={[{ ...mia, level: 4 }]} />);
+    expect(screen.getByText("Lv 4")).toBeOnTheScreen();
+  });
+});

@@ -3,6 +3,8 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
+import { LevelUpBurst } from "@/components/level-up-burst";
+import { levelForPoints, pointsForChore } from "@/features/game/leveling";
 import type {
   KidPaymentSummary,
   PendingApproval,
@@ -93,6 +95,8 @@ export default function ParentHomeRoute() {
   // A lapsed household lands on the subscription screen first; dismissing it
   // leaves the parent in the read-only app (data stays readable by design).
   const [pausedTakeoverDismissed, setPausedTakeoverDismissed] = useState(false);
+  // A kid just crossed a level via an approval — celebrate for the parent too.
+  const [levelUp, setLevelUp] = useState<{ name: string; level: number } | null>(null);
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -148,6 +152,23 @@ export default function ParentHomeRoute() {
   );
 
   const kidsById = new Map(kids.map((kid) => [kid.id, kid]));
+
+  // Lifetime game points per kid, derived from the same chore list the rest
+  // of the screen uses — keeps parent-visible levels in lockstep with the
+  // kid app without extra queries.
+  const pointsByKid = new Map<string, number>();
+  for (const chore of chores) {
+    if (chore.status === "approved") {
+      pointsByKid.set(
+        chore.childProfileId,
+        (pointsByKid.get(chore.childProfileId) ?? 0) + pointsForChore(chore.rewardCents),
+      );
+    }
+  }
+  const leveledKids = kids.map((kid) => ({
+    ...kid,
+    level: levelForPoints(pointsByKid.get(kid.id) ?? 0),
+  }));
   const pendingApprovals: PendingApproval[] = chores
     .filter((chore) => chore.status === "submitted")
     .map((chore) => {
@@ -229,11 +250,12 @@ export default function ParentHomeRoute() {
   }
 
   return (
+    <>
     <ParentApp
       subtitle="This week"
       currency={currency}
       split={split}
-      kids={kids}
+      kids={leveledKids}
       pendingApprovals={pendingApprovals}
       purchaseRequests={purchaseRequests}
       givingSuggestions={givingSuggestions}
@@ -243,7 +265,21 @@ export default function ParentHomeRoute() {
           return;
         }
 
+        // Did this approval push the kid past a level threshold?
+        const chore = chores.find((c) => c.id === choreId);
+        const prePoints = chore ? (pointsByKid.get(chore.childProfileId) ?? 0) : 0;
+
         await approveChoreForHousehold({ householdId, choreId });
+
+        if (chore && chore.status !== "approved") {
+          const postLevel = levelForPoints(prePoints + pointsForChore(chore.rewardCents));
+          if (postLevel > levelForPoints(prePoints)) {
+            setLevelUp({
+              name: kidsById.get(chore.childProfileId)?.name ?? "Your kid",
+              level: postLevel,
+            });
+          }
+        }
         await reload();
       }}
       onSendBackChore={async (choreId, reason) => {
@@ -391,5 +427,13 @@ export default function ParentHomeRoute() {
         await reload();
       }}
     />
+    {levelUp ? (
+      <LevelUpBurst
+        level={levelUp.level}
+        kidName={levelUp.name}
+        onDone={() => setLevelUp(null)}
+      />
+    ) : null}
+    </>
   );
 }

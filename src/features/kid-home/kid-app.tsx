@@ -3,6 +3,7 @@ import { View } from "react-native";
 
 import { KidHomeScreen, type KidChore } from "@/features/kid-home/kid-home-screen";
 import { KidChoreModal } from "@/features/kid-home/kid-chore-modal";
+import { LevelUpBurst } from "@/components/level-up-burst";
 import { KidWishlistScreen, type KidWish } from "@/features/kid-home/kid-wishlist-screen";
 import { KidYouScreen, type KidSavingsGoal } from "@/features/kid-home/kid-you-screen";
 import { KidTabBar, type KidTab } from "@/features/kid-home/kid-tab-bar";
@@ -29,6 +30,9 @@ type Props = {
   onAddWish?: (input: { name: string; targetCents: number }) => void;
   /** lifetime game points (drives the level sticker + XP bar) */
   totalPoints?: number;
+  /** when set, the full-screen level-up celebration shows for this level */
+  celebrationLevel?: number | null;
+  onCelebrationDone?: () => void;
   // You
   savingsCents?: number;
   givingCents?: number;
@@ -58,6 +62,8 @@ export function KidApp({
   onRequestPurchase,
   onAddWish,
   totalPoints,
+  celebrationLevel,
+  onCelebrationDone,
   savingsCents,
   givingCents,
   causeName,
@@ -112,6 +118,9 @@ export function KidApp({
       )}
 
       <KidTabBar active={tab} onChange={setTab} />
+      {celebrationLevel ? (
+        <LevelUpBurst level={celebrationLevel} onDone={onCelebrationDone} />
+      ) : null}
       <KidChoreModal
         chore={selectedChore}
         currency={currency ?? DEFAULT_CURRENCY}

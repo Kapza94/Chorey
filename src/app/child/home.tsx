@@ -28,6 +28,8 @@ import type { GivingOption } from "@/features/giving/giving-actions";
 import { resolveChildAccessCode } from "@/features/children/default-child-access-actions";
 import { getGameStatsForChild } from "@/features/game/default-game-actions";
 import type { ChildGameStats } from "@/features/game/game-actions";
+import { levelForPoints } from "@/features/game/leveling";
+import { getLastSeenLevel, setLastSeenLevel } from "@/features/game/level-memory";
 import {
   getSavingsGoalForChild,
   setSavingsGoalForChild,
@@ -82,6 +84,7 @@ export default function ChildHomeRoute() {
     totalPoints: 0,
     approvedCount: 0,
   });
+  const [celebrationLevel, setCelebrationLevel] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -162,6 +165,17 @@ export default function ChildHomeRoute() {
             setPaused(resolved.paused);
             setSavingsGoal(nextGoal);
             setGameStats(nextGameStats);
+
+            // Celebrate levels gained since this device last saw them. First
+            // run just records the baseline — no celebration for old progress.
+            const level = levelForPoints(nextGameStats.totalPoints);
+            const kidKey = session?.childProfileId || accessCode;
+            const lastSeen = getLastSeenLevel(kidKey);
+            if (lastSeen > 0 && level > lastSeen) {
+              setCelebrationLevel(level);
+            } else if (lastSeen === 0) {
+              setLastSeenLevel(kidKey, level);
+            }
           }
         })
         .catch(() => {
@@ -174,7 +188,7 @@ export default function ChildHomeRoute() {
       return () => {
         mounted = false;
       };
-    }, [accessCode, loadAttempt]),
+    }, [accessCode, loadAttempt, session?.childProfileId]),
   );
 
   const kidChores = useMemo<KidChore[]>(
@@ -297,6 +311,14 @@ export default function ChildHomeRoute() {
       currency={session.currency}
       chores={kidChores}
       totalPoints={gameStats.totalPoints}
+      celebrationLevel={celebrationLevel}
+      onCelebrationDone={() => {
+        setLastSeenLevel(
+          session?.childProfileId || accessCode || "",
+          levelForPoints(gameStats.totalPoints),
+        );
+        setCelebrationLevel(null);
+      }}
       onSubmitChore={async (choreId) => {
         if (!accessCode) {
           throw new Error("Child access code is missing.");

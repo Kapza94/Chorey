@@ -60,6 +60,9 @@ export function KidCard({
             {kid.choresDone} of {kid.choresTotal} chores done
           </Text>
         </View>
+        {typeof kid.level === "number" ? (
+          <ToySticker label={`Lv ${kid.level}`} tone="savings" straight />
+        ) : null}
         <ChevronRight size={18} color={scheme.fgFaint} strokeWidth={2} />
       </View>
 
