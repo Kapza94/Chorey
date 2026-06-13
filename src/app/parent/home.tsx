@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
@@ -40,6 +40,11 @@ import {
 import { isEntitled } from "@/features/entitlements/entitlements";
 import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
+import {
+  getParentIdentity,
+  updateParentDisplayName,
+  type ParentIdentity,
+} from "@/features/auth/parent-identity-actions";
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
@@ -97,6 +102,13 @@ export default function ParentHomeRoute() {
   const [pausedTakeoverDismissed, setPausedTakeoverDismissed] = useState(false);
   // A kid just crossed a level via an approval — celebrate for the parent too.
   const [levelUp, setLevelUp] = useState<{ name: string; level: number } | null>(null);
+  // The signed-in parent's identity (header avatar + account sheet).
+  const [identity, setIdentity] = useState<ParentIdentity | null>(null);
+  const [householdName, setHouseholdName] = useState("");
+
+  useEffect(() => {
+    void getParentIdentity().then(setIdentity);
+  }, []);
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -131,6 +143,7 @@ export default function ParentHomeRoute() {
     setKids(nextKids);
     setCurrency(settings.currency);
     setSplit(settings.split);
+    setHouseholdName(settings.name);
     setPayouts(nextPayouts);
     setChores(nextChores);
     setPurchases(nextPurchases);
@@ -344,6 +357,21 @@ export default function ParentHomeRoute() {
       onLogOut={async () => {
         await createDefaultParentAuthActions().signOut();
         router.replace("/");
+      }}
+      account={
+        identity
+          ? {
+              name: identity.name,
+              email: identity.email,
+              provider: identity.provider,
+              avatarUrl: identity.avatarUrl,
+              householdName,
+            }
+          : undefined
+      }
+      onEditName={async (name) => {
+        setIdentity((prev) => (prev ? { ...prev, name } : prev));
+        await updateParentDisplayName(name);
       }}
       due={due}
       payoutHistory={toPayoutHistoryRows(payouts, kids)}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Check, ChevronRight, Plus, Sparkles, Undo2, Wallet } from "lucide-react-native";
 
@@ -93,6 +93,7 @@ type Props = {
   onSendBackChore?: (choreId: string, reason: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
+  headerRight?: ReactNode;
 };
 
 export function ParentKidsScreen({
@@ -110,6 +111,7 @@ export function ParentKidsScreen({
   onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
+  headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox, isDark, bucketInk } = useChoreyTheme();
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -128,29 +130,32 @@ export function ParentKidsScreen({
           subtitle={subtitle}
           title="Kids."
           action={
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Add kid"
-              onPress={onAddKid}
-              style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingLeft: 11,
-                paddingRight: 14,
-                paddingVertical: 8,
-                borderRadius: radius.pill,
-                backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
-                borderColor: scheme.toy.border,
-                borderWidth: toybox.borderWidth,
-                ...(pressed ? {} : scheme.toy.shadowSm),
-              })}
-            >
-              <Plus size={15} color={scheme.fg} strokeWidth={2.4} />
-              <Text style={[typography.text.label, { color: scheme.fg, fontSize: 13 }]}>
-                Add kid
-              </Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add kid"
+                onPress={onAddKid}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingLeft: 11,
+                  paddingRight: 14,
+                  paddingVertical: 8,
+                  borderRadius: radius.pill,
+                  backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+                  borderColor: scheme.toy.border,
+                  borderWidth: toybox.borderWidth,
+                  ...(pressed ? {} : scheme.toy.shadowSm),
+                })}
+              >
+                <Plus size={15} color={scheme.fg} strokeWidth={2.4} />
+                <Text style={[typography.text.label, { color: scheme.fg, fontSize: 13 }]}>
+                  Add kid
+                </Text>
+              </Pressable>
+              {headerRight}
+            </View>
           }
         />
 

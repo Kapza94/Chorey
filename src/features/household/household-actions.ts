@@ -8,6 +8,7 @@ type HouseholdClient = {
 };
 
 export type HouseholdSettings = {
+  name: string;
   currency: CurrencyCode;
   split: Split;
 };
@@ -109,7 +110,7 @@ export function createHouseholdReadActions(client: HouseholdClient) {
     async getHouseholdSettings(householdId: string): Promise<HouseholdSettings> {
       const result = await client
         .from("households")
-        .select("currency, split_spend, split_save, split_give")
+        .select("name, currency, split_spend, split_save, split_give")
         .eq("id", householdId)
         .single();
 
@@ -120,6 +121,7 @@ export function createHouseholdReadActions(client: HouseholdClient) {
       const row = result.data;
 
       return {
+        name: row?.name ?? "",
         currency: (row?.currency ?? "USD") as CurrencyCode,
         split: {
           spend: row?.split_spend ?? DEFAULT_SPLIT.spend,

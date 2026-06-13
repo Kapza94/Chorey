@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChevronRight, CreditCard, KeyRound, LogOut } from "lucide-react-native";
 
@@ -30,6 +30,7 @@ type Props = {
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onLogOut?: () => void;
+  headerRight?: ReactNode;
 };
 
 export function ParentSettingsScreen({
@@ -42,13 +43,14 @@ export function ParentSettingsScreen({
   onChangeBudget,
   onChangeCadence,
   onLogOut,
+  headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
-        <ParentHeader subtitle="Account" title="Settings." />
+        <ParentHeader subtitle="Account" title="Settings." action={headerRight} />
 
         <View style={{ paddingHorizontal: 18 }}>
           {/* Budget per kid */}

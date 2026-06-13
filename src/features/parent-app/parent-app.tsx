@@ -25,6 +25,11 @@ import {
   type ParentKid,
   type ParentTab,
 } from "@/features/parent-app/parent-primitives";
+import {
+  AccountAvatarButton,
+  ParentAccountSheet,
+  type ParentAccount,
+} from "@/features/parent-app/parent-account";
 import type { CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { Split } from "@/features/money/split";
@@ -77,6 +82,9 @@ type Props = {
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onLogOut?: () => void;
+  // Account
+  account?: ParentAccount;
+  onEditName?: (name: string) => void;
   initialTab?: ParentTab;
 };
 
@@ -116,10 +124,18 @@ export function ParentApp({
   onChangeBudget,
   onChangeCadence,
   onLogOut,
+  account,
+  onEditName,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
   const [tab, setTab] = useState<ParentTab>(initialTab);
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  // The same identity affordance rides the top-right of every tab's header.
+  const headerRight = account ? (
+    <AccountAvatarButton account={account} onPress={() => setAccountOpen(true)} />
+  ) : undefined;
 
   // Approving is the parent's most frequent job — surface what's waiting from
   // every tab, not just inside Kids.
@@ -146,6 +162,7 @@ export function ParentApp({
           onSendBackChore={onSendBackChore}
           onApprovePurchase={onApprovePurchase}
           onApproveGivingSuggestion={onApproveGivingSuggestion}
+          headerRight={headerRight}
         />
       ) : tab === "chores" ? (
         <ParentChoresScreen
@@ -156,6 +173,7 @@ export function ParentApp({
           assignees={assignees}
           recurringLocked={recurringLocked}
           onAddChore={onAddChore}
+          headerRight={headerRight}
         />
       ) : tab === "pay" ? (
         <ParentPaymentsScreen
@@ -166,6 +184,7 @@ export function ParentApp({
           settlementPeriod={settlementPeriod}
           onMarkPaid={onMarkPaid}
           onMarkAllSettled={onMarkAllSettled}
+          headerRight={headerRight}
         />
       ) : (
         <ParentSettingsScreen
@@ -178,10 +197,29 @@ export function ParentApp({
           onChangeBudget={onChangeBudget}
           onChangeCadence={onChangeCadence}
           onLogOut={onLogOut}
+          headerRight={headerRight}
         />
       )}
 
       <ParentTabBar active={tab} onChange={setTab} reviewCount={reviewCount} />
+
+      {account ? (
+        <ParentAccountSheet
+          visible={accountOpen}
+          account={account}
+          subscriptionLabel={subscriptionLabel}
+          onEditName={onEditName}
+          onManageSubscription={() => {
+            setAccountOpen(false);
+            onManageSubscription?.();
+          }}
+          onSignOut={() => {
+            setAccountOpen(false);
+            onLogOut?.();
+          }}
+          onClose={() => setAccountOpen(false)}
+        />
+      ) : null}
     </View>
   );
 }

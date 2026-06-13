@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Check, Sparkles, Wallet } from "lucide-react-native";
 
@@ -77,6 +77,7 @@ type Props = {
     detail?: string,
   ) => void;
   onMarkAllSettled?: () => void;
+  headerRight?: ReactNode;
 };
 
 export function ParentPaymentsScreen({
@@ -87,6 +88,7 @@ export function ParentPaymentsScreen({
   settlementPeriod,
   onMarkPaid,
   onMarkAllSettled,
+  headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, bucketInk, toybox } = useChoreyTheme();
   const [sheetKid, setSheetKid] = useState<DuePayout | null>(null);
@@ -98,7 +100,7 @@ export function ParentPaymentsScreen({
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
-        <ParentHeader subtitle="Off-app payouts" title="Payments." />
+        <ParentHeader subtitle="Off-app payouts" title="Payments." action={headerRight} />
 
         {/* Explainer */}
         <View

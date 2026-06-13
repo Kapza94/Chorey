@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChevronRight, Lock, Plus } from "lucide-react-native";
 
@@ -38,6 +38,7 @@ type Props = {
     assigneeId: string;
     recurrence?: Recurrence;
   }) => void;
+  headerRight?: ReactNode;
 };
 
 export function ParentChoresScreen({
@@ -48,6 +49,7 @@ export function ParentChoresScreen({
   assignees = [],
   recurringLocked = false,
   onAddChore,
+  headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const [showAdd, setShowAdd] = useState(false);
@@ -59,25 +61,28 @@ export function ParentChoresScreen({
           subtitle="Library"
           title="Chores."
           action={
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="New chore"
-              onPress={() => setShowAdd(true)}
-              style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: radius.pill,
-                backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
-              })}
-            >
-              <Plus size={14} color={palette.cream[4]} strokeWidth={2.6} />
-              <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 13 }]}>
-                New
-              </Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="New chore"
+                onPress={() => setShowAdd(true)}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: radius.pill,
+                  backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+                })}
+              >
+                <Plus size={14} color={palette.cream[4]} strokeWidth={2.6} />
+                <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 13 }]}>
+                  New
+                </Text>
+              </Pressable>
+              {headerRight}
+            </View>
           }
         />
 

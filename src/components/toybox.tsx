@@ -1,4 +1,11 @@
-import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  Image,
+  Pressable,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
 import { buckets as bucketTokens, type ChoreyBucket } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -133,10 +140,13 @@ export function ToyAvatar({
   name,
   tone = "spend",
   size = 44,
+  imageUrl,
 }: {
   name: string;
   tone?: ChoreyBucket;
   size?: number;
+  /** when set (e.g. a Google profile photo), shows the image instead of the initial */
+  imageUrl?: string | null;
 }) {
   const { scheme, typography, toybox, isDark, bucketInk } = useChoreyTheme();
   const ramp = bucketTokens[tone].ramp;
@@ -151,17 +161,26 @@ export function ToyAvatar({
         borderWidth: toybox.borderWidth,
         alignItems: "center",
         justifyContent: "center",
+        overflow: "hidden",
       }}
     >
-      <Text
-        style={{
-          fontFamily: typography.family.display.semibold,
-          fontSize: size * 0.45,
-          color: bucketInk(tone),
-        }}
-      >
-        {name.trim().charAt(0).toUpperCase() || "?"}
-      </Text>
+      {imageUrl ? (
+        <Image
+          accessibilityIgnoresInvertColors
+          source={{ uri: imageUrl }}
+          style={{ width: "100%", height: "100%" }}
+        />
+      ) : (
+        <Text
+          style={{
+            fontFamily: typography.family.display.semibold,
+            fontSize: size * 0.45,
+            color: bucketInk(tone),
+          }}
+        >
+          {name.trim().charAt(0).toUpperCase() || "?"}
+        </Text>
+      )}
     </View>
   );
 }
