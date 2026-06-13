@@ -1,5 +1,6 @@
 import {
   createChildAccessActions,
+  generateAccessCode,
   normalizeAccessCode,
 } from "@/features/children/child-access-actions";
 
@@ -51,8 +52,21 @@ function createClient() {
 }
 
 describe("child access actions", () => {
-  it("normalizes access codes to digits only", () => {
-    expect(normalizeAccessCode(" 123 456 ")).toBe("123456");
+  it("normalizes access codes: uppercase + strip whitespace (mirrors the DB)", () => {
+    expect(normalizeAccessCode(" chorey-ab12cd34 ")).toBe("CHOREY-AB12CD34");
+    expect(normalizeAccessCode("CHOREY-AB12CD34")).toBe("CHOREY-AB12CD34");
+  });
+
+  it("generates Chorey-XXXXXXXX codes with a guaranteed letter+digit mix", () => {
+    for (let i = 0; i < 200; i++) {
+      const code = generateAccessCode();
+      expect(code).toMatch(/^CHOREY-[A-Z0-9]{8}$/);
+      const body = code.slice("CHOREY-".length);
+      expect(body).toMatch(/[A-Z]/); // at least one letter
+      expect(body).toMatch(/[0-9]/); // at least one digit
+      // Unambiguous alphabet: never I, O, 0, or 1.
+      expect(body).not.toMatch(/[IO01]/);
+    }
   });
 
   it("creates a child access code", async () => {

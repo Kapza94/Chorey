@@ -168,9 +168,11 @@ export function ChildAccessScreen({
         </Text>
         <TextInput
           accessibilityLabel="Access code"
-          keyboardType="number-pad"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          autoComplete="off"
           onChangeText={setAccessCode}
-          placeholder="123456"
+          placeholder="CHOREY-XXXXXXXX"
           placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
@@ -179,7 +181,7 @@ export function ChildAccessScreen({
             backgroundColor: scheme.bgModal,
             color: scheme.fg,
             fontSize: 20,
-            fontVariant: ["tabular-nums"],
+            letterSpacing: 1,
             paddingHorizontal: choreyTheme.spacing.lg,
             paddingVertical: 15,
           }}

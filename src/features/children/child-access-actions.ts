@@ -26,12 +26,30 @@ export type ResolvedChildAccess = ChildAccessCode & {
   paused: boolean;
 };
 
+/** Mirror of the DB `normalize_access_code`: uppercase + strip whitespace. */
 export function normalizeAccessCode(value: string) {
-  return value.replace(/\D/g, "");
+  return value.replace(/\s/g, "").toUpperCase();
 }
 
-function createSixDigitCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+// Unambiguous alphabet (no I/O/0/1) so a code is easy to read aloud and type.
+const CODE_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const CODE_DIGITS = "23456789";
+const CODE_CHARS = CODE_LETTERS + CODE_DIGITS;
+
+/** `CHOREY-XXXXXXXX` — 8 alphanumerics, always a mix of letters and digits. */
+export function generateAccessCode() {
+  const pick = (set: string) => set[Math.floor(Math.random() * set.length)];
+  // Seed one letter + one digit so the code is never all-numeric/all-alpha.
+  const chars = [pick(CODE_LETTERS), pick(CODE_DIGITS)];
+  while (chars.length < 8) {
+    chars.push(pick(CODE_CHARS));
+  }
+  // Shuffle so the seeded letter/digit aren't pinned to the first two slots.
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return `CHOREY-${chars.join("")}`;
 }
 
 export function createChildAccessActions(client: ChildAccessClient) {
@@ -43,7 +61,7 @@ export function createChildAccessActions(client: ChildAccessClient) {
       const result = await client
         .from("child_access_codes")
         .insert({
-          access_code: createSixDigitCode(),
+          access_code: generateAccessCode(),
           child_profile_id: input.childProfileId,
           household_id: input.householdId,
         })
