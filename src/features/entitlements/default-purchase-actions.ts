@@ -1,0 +1,111 @@
+import { Platform } from "react-native";
+import Purchases, {
+  LOG_LEVEL,
+  type PurchasesPackage,
+} from "react-native-purchases";
+
+import { getRevenueCatConfig } from "@/lib/env";
+import type { SubscriptionPlan } from "@/features/entitlements/subscription-actions";
+import {
+  entitlementFromCustomerInfo,
+  toPlanOffers,
+  type PurchaseResult,
+  type PurchasesGateway,
+  type RcCustomerInfo,
+  type RcOffering,
+} from "@/features/entitlements/purchases";
+
+let configuredFor: string | null = null;
+
+/**
+ * Configure RevenueCat for a household. The household id is the RevenueCat
+ * appUserID, so the webhook can map a purchase straight back to the household.
+ * No-ops (returns false) when keys aren't set yet — the app stays usable. Safe
+ * to call repeatedly; only reconfigures when the household changes.
+ */
+export function configureRevenueCat(householdId: string): boolean {
+  const config = getRevenueCatConfig();
+  if (!config) {
+    return false;
+  }
+
+  if (configuredFor === householdId) {
+    return true;
+  }
+
+  const apiKey = Platform.OS === "ios" ? config.iosKey : config.androidKey;
+  Purchases.setLogLevel(LOG_LEVEL.WARN);
+  Purchases.configure({ apiKey, appUserID: householdId });
+  configuredFor = householdId;
+  return true;
+}
+
+/** Whether billing is configured (RevenueCat keys present). */
+export function isBillingConfigured(): boolean {
+  return getRevenueCatConfig() !== null;
+}
+
+const PLAN_TO_PACKAGE_TYPE: Record<SubscriptionPlan, string> = {
+  monthly: "MONTHLY",
+  yearly: "ANNUAL",
+};
+
+/** Real RevenueCat-backed gateway used by the subscription route. */
+export function createRevenueCatGateway(): PurchasesGateway {
+  async function currentPackages(): Promise<PurchasesPackage[]> {
+    const offerings = await Purchases.getOfferings();
+    return offerings.current?.availablePackages ?? [];
+  }
+
+  return {
+    async loadOffers() {
+      if (!isBillingConfigured()) {
+        return [];
+      }
+      const packages = await currentPackages();
+      const offering = { availablePackages: packages } as unknown as RcOffering;
+      return toPlanOffers(offering);
+    },
+
+    async purchase(plan: SubscriptionPlan): Promise<PurchaseResult> {
+      const wanted = PLAN_TO_PACKAGE_TYPE[plan];
+      const pkg = (await currentPackages()).find(
+        (candidate) => candidate.packageType === wanted,
+      );
+      if (!pkg) {
+        return { outcome: "error", isActive: false, plan: null, expiresAt: null };
+      }
+
+      try {
+        const { customerInfo } = await Purchases.purchasePackage(pkg);
+        const { isActive, expiresAt } = entitlementFromCustomerInfo(
+          customerInfo as unknown as RcCustomerInfo,
+        );
+        return { outcome: "purchased", isActive, plan: isActive ? plan : null, expiresAt };
+      } catch (error: unknown) {
+        const cancelled =
+          typeof error === "object" && error !== null && "userCancelled" in error
+            ? Boolean((error as { userCancelled?: boolean }).userCancelled)
+            : false;
+        return {
+          outcome: cancelled ? "cancelled" : "error",
+          isActive: false,
+          plan: null,
+          expiresAt: null,
+        };
+      }
+    },
+
+    async restore(): Promise<PurchaseResult> {
+      try {
+        const customerInfo = await Purchases.restorePurchases();
+        const { isActive, expiresAt } = entitlementFromCustomerInfo(
+          customerInfo as unknown as RcCustomerInfo,
+        );
+        return { outcome: "purchased", isActive, plan: null, expiresAt };
+      } catch {
+        return { outcome: "error", isActive: false, plan: null, expiresAt: null };
+      }
+    },
+  };
+}

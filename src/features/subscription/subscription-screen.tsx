@@ -16,10 +16,14 @@ import type {
   HouseholdSubscription,
   SubscriptionPlan,
 } from "@/features/entitlements/subscription-actions";
+import type { PlanOffer } from "@/features/entitlements/purchases";
 
 type Props = {
   subscription: HouseholdSubscription;
+  /** Live plans (with localized store prices) from RevenueCat. */
+  offers?: PlanOffer[];
   onChoosePlan?: (plan: SubscriptionPlan) => void;
+  onRestore?: () => void;
   onClose?: () => void;
 };
 
@@ -41,10 +45,18 @@ const PROMISE = [
   { Icon: PieChart, text: "40 / 40 / 20 tracked automatically" },
 ];
 
-export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Props) {
+export function SubscriptionScreen({
+  subscription,
+  offers,
+  onChoosePlan,
+  onRestore,
+  onClose,
+}: Props) {
   const { scheme, typography, palette, radius, toybox, bucketInk } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
   const lapsed = subscription.status === "lapsed";
+  const offerFor = (plan: SubscriptionPlan) =>
+    offers?.find((offer) => offer.plan === plan);
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -98,15 +110,19 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
               <PausedRow Icon={BellOff} tone={scheme.fgFaint} text="Reminders are paused" />
             </View>
 
-            <Text
-              style={[
-                typography.text.caption,
-                { color: scheme.fgFaint, textAlign: "center", marginTop: 4 },
-              ]}
-            >
-              Resuming opens with the App Store launch — your data is safe in the
-              meantime.
-            </Text>
+            {onChoosePlan
+              ? renderPlans("Resume anytime — you pick up right where you left off.")
+              : (
+                <Text
+                  style={[
+                    typography.text.caption,
+                    { color: scheme.fgFaint, textAlign: "center", marginTop: 4 },
+                  ]}
+                >
+                  Your data is safe. Resubscribe from Settings to pick up where you
+                  left off.
+                </Text>
+              )}
           </>
         ) : (
           <>
@@ -176,34 +192,9 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
               </View>
             </View>
 
-            <Text style={[typography.text.overline, { color: scheme.fgFaint, paddingHorizontal: 4 }]}>
-              Billing
-            </Text>
-
-            <PlanCard
-              plan="monthly"
-              label="Monthly"
-              caption="Simple, month to month"
-              selected={subscription.plan === "monthly"}
-              onPress={() => onChoosePlan?.("monthly")}
-            />
-            <PlanCard
-              plan="yearly"
-              label="Yearly"
-              caption="2 months free"
-              selected={subscription.plan === "yearly"}
-              onPress={() => onChoosePlan?.("yearly")}
-            />
-
-            <Text
-              style={[
-                typography.text.caption,
-                { color: scheme.fgFaint, textAlign: "center", marginTop: 4 },
-              ]}
-            >
-              You won&apos;t be charged during the trial. Pricing is confirmed in the
-              App Store before any charge.
-            </Text>
+            {renderPlans(
+              "You won't be charged during the trial. Pricing is confirmed in the App Store before any charge.",
+            )}
           </>
         )}
 
@@ -226,6 +217,58 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
       </ScrollView>
     </View>
   );
+
+  function renderPlans(fineprint: string) {
+    const monthly = offerFor("monthly");
+    const yearly = offerFor("yearly");
+
+    return (
+      <>
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, paddingHorizontal: 4 }]}>
+          Billing
+        </Text>
+
+        <PlanCard
+          plan="monthly"
+          label="Monthly"
+          caption="Simple, month to month"
+          priceString={monthly?.priceString}
+          selected={subscription.plan === "monthly"}
+          onPress={() => onChoosePlan?.("monthly")}
+        />
+        <PlanCard
+          plan="yearly"
+          label="Yearly"
+          caption="2 months free"
+          priceString={yearly?.priceString}
+          selected={subscription.plan === "yearly"}
+          onPress={() => onChoosePlan?.("yearly")}
+        />
+
+        {onRestore ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Restore purchases"
+            onPress={onRestore}
+            style={{ alignItems: "center", paddingVertical: 10 }}
+          >
+            <Text style={[typography.text.label, { color: palette.accent[600], fontSize: 14 }]}>
+              Restore purchases
+            </Text>
+          </Pressable>
+        ) : null}
+
+        <Text
+          style={[
+            typography.text.caption,
+            { color: scheme.fgFaint, textAlign: "center", marginTop: 4 },
+          ]}
+        >
+          {fineprint}
+        </Text>
+      </>
+    );
+  }
 
   function PausedRow({
     Icon,
@@ -250,12 +293,14 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
     plan,
     label,
     caption,
+    priceString,
     selected,
     onPress,
   }: {
     plan: SubscriptionPlan;
     label: string;
     caption: string;
+    priceString?: string;
     selected: boolean;
     onPress: () => void;
   }) {
@@ -290,6 +335,26 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
             >
               {label}
             </Text>
+            {priceString ? (
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4, marginTop: 2 }}>
+                <Text
+                  style={[
+                    typography.text.h3,
+                    { color: selected ? spend[800] : scheme.fg, fontSize: 17 },
+                  ]}
+                >
+                  {priceString}
+                </Text>
+                <Text
+                  style={[
+                    typography.text.caption,
+                    { color: selected ? spend[600] : scheme.fgFaint },
+                  ]}
+                >
+                  {plan === "yearly" ? "/ year" : "/ month"}
+                </Text>
+              </View>
+            ) : null}
             <Text
               style={[
                 typography.text.caption,

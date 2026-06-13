@@ -1,12 +1,14 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
 import type { HouseholdSubscription } from "@/features/entitlements/subscription-actions";
+import { getHouseholdSubscription } from "@/features/entitlements/default-subscription-actions";
 import {
-  chooseSubscriptionPlan,
-  getHouseholdSubscription,
-} from "@/features/entitlements/default-subscription-actions";
+  configureRevenueCat,
+  createRevenueCatGateway,
+} from "@/features/entitlements/default-purchase-actions";
+import type { PlanOffer } from "@/features/entitlements/purchases";
 
 const FALLBACK: HouseholdSubscription = {
   status: "trialing",
@@ -22,7 +24,9 @@ export default function ParentSubscriptionRoute() {
     ? params.householdId[0]
     : params.householdId;
 
+  const gateway = useMemo(() => createRevenueCatGateway(), []);
   const [subscription, setSubscription] = useState<HouseholdSubscription>(FALLBACK);
+  const [offers, setOffers] = useState<PlanOffer[]>([]);
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -31,6 +35,25 @@ export default function ParentSubscriptionRoute() {
 
     setSubscription(await getHouseholdSubscription(householdId));
   }, [householdId]);
+
+  // Configure RevenueCat for this household (its id is the appUserID) and pull
+  // the live store prices. Both no-op cleanly when billing isn't configured.
+  useEffect(() => {
+    if (!householdId) {
+      return;
+    }
+
+    configureRevenueCat(householdId);
+    let cancelled = false;
+    void gateway.loadOffers().then((loaded) => {
+      if (!cancelled) {
+        setOffers(loaded);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [gateway, householdId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,12 +64,27 @@ export default function ParentSubscriptionRoute() {
   return (
     <SubscriptionScreen
       subscription={subscription}
+      offers={offers}
       onChoosePlan={async (plan) => {
         if (!householdId) {
           return;
         }
 
-        await chooseSubscriptionPlan(householdId, plan);
+        const result = await gateway.purchase(plan);
+        // RevenueCat is the authority; reflect immediately, then let the
+        // webhook-updated Supabase row be the durable truth.
+        if (result.isActive) {
+          setSubscription((current) => ({
+            ...current,
+            status: "active",
+            plan: result.plan ?? current.plan,
+            currentPeriodEndsAt: result.expiresAt ?? current.currentPeriodEndsAt,
+          }));
+        }
+        await reload();
+      }}
+      onRestore={async () => {
+        await gateway.restore();
         await reload();
       }}
       onClose={() =>

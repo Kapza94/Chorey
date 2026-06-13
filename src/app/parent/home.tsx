@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
@@ -38,6 +38,11 @@ import {
   type HouseholdSubscription,
 } from "@/features/entitlements/subscription-actions";
 import { isEntitled } from "@/features/entitlements/entitlements";
+import {
+  configureRevenueCat,
+  createRevenueCatGateway,
+} from "@/features/entitlements/default-purchase-actions";
+import type { PlanOffer } from "@/features/entitlements/purchases";
 import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import {
@@ -99,6 +104,11 @@ export default function ParentHomeRoute() {
     trialEndsAt: null,
     currentPeriodEndsAt: null,
   });
+  // Billing: configure RevenueCat for this household and load live store prices
+  // so a lapsed parent can resubscribe right from the paused takeover. No-ops
+  // cleanly when billing isn't configured yet.
+  const billing = useMemo(() => createRevenueCatGateway(), []);
+  const [offers, setOffers] = useState<PlanOffer[]>([]);
   // A lapsed household lands on the subscription screen first; dismissing it
   // leaves the parent in the read-only app (data stays readable by design).
   const [pausedTakeoverDismissed, setPausedTakeoverDismissed] = useState(false);
@@ -111,6 +121,22 @@ export default function ParentHomeRoute() {
   useEffect(() => {
     void getParentIdentity().then(setIdentity);
   }, []);
+
+  useEffect(() => {
+    if (!householdId) {
+      return;
+    }
+    configureRevenueCat(householdId);
+    let cancelled = false;
+    void billing.loadOffers().then((loaded) => {
+      if (!cancelled) {
+        setOffers(loaded);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [billing, householdId]);
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -275,6 +301,15 @@ export default function ParentHomeRoute() {
     return (
       <SubscriptionScreen
         subscription={subscription}
+        offers={offers}
+        onChoosePlan={async (plan) => {
+          await billing.purchase(plan);
+          await reload();
+        }}
+        onRestore={async () => {
+          await billing.restore();
+          await reload();
+        }}
         onClose={() => setPausedTakeoverDismissed(true)}
       />
     );

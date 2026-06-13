@@ -90,4 +90,74 @@ describe("SubscriptionScreen", () => {
     expect(screen.queryByText(/\$\d/)).toBeNull();
     expect(screen.getByText(/confirmed in the App Store/)).toBeOnTheScreen();
   });
+
+  it("shows the live store prices when RevenueCat offers are provided", () => {
+    render(
+      <SubscriptionScreen
+        subscription={{
+          status: "trialing",
+          plan: null,
+          trialEndsAt: "2026-06-25T00:00:00Z",
+          currentPeriodEndsAt: null,
+        }}
+        offers={[
+          { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
+          { plan: "yearly", priceString: "$39.99", packageIdentifier: "y" },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("$4.99")).toBeOnTheScreen();
+    expect(screen.getByText("$39.99")).toBeOnTheScreen();
+  });
+
+  it("purchases the tapped plan and can restore prior purchases", () => {
+    const onChoosePlan = jest.fn();
+    const onRestore = jest.fn();
+    render(
+      <SubscriptionScreen
+        subscription={{
+          status: "trialing",
+          plan: null,
+          trialEndsAt: "2026-06-25T00:00:00Z",
+          currentPeriodEndsAt: null,
+        }}
+        offers={[
+          { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
+          { plan: "yearly", priceString: "$39.99", packageIdentifier: "y" },
+        ]}
+        onChoosePlan={onChoosePlan}
+        onRestore={onRestore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Choose monthly billing"));
+    expect(onChoosePlan).toHaveBeenCalledWith("monthly");
+
+    fireEvent.press(screen.getByLabelText("Restore purchases"));
+    expect(onRestore).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a lapsed household resubscribe when billing is wired", () => {
+    const onChoosePlan = jest.fn();
+    render(
+      <SubscriptionScreen
+        subscription={{
+          status: "lapsed",
+          plan: "monthly",
+          trialEndsAt: null,
+          currentPeriodEndsAt: null,
+        }}
+        offers={[
+          { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
+          { plan: "yearly", priceString: "$39.99", packageIdentifier: "y" },
+        ]}
+        onChoosePlan={onChoosePlan}
+      />,
+    );
+
+    expect(screen.getByText("Your subscription has ended")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Choose yearly billing"));
+    expect(onChoosePlan).toHaveBeenCalledWith("yearly");
+  });
 });
