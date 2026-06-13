@@ -128,6 +128,22 @@ never commit/push to `dev`; stay on the feature branch.
   Idempotent (late_notified_at) so low risk; consider a shared-secret header.
 - ⚪ OPTIONAL: enable auth leaked-password protection (moot — no password auth).
 
+### A2. Billing / RevenueCat — CODE WIRED, dashboards NOT set up
+- ✅ react-native-purchases installed; pure purchases.ts (offering->price mapping,
+  entitlement check) + default-purchase-actions.ts (real gateway, appUserID =
+  household id). SubscriptionScreen shows live store prices + Restore + lapsed
+  resubscribe. subscription route + parent/home takeover wired.
+- ✅ revenuecat-webhook edge function = server-side source of truth (client never
+  self-grants 'active'). Shared-secret auth.
+- ✅ household_entitlements already had every needed column (no migration).
+- [ ] DO THE DASHBOARDS: see BILLING_SETUP.md — App Store + Play subscription
+  products & prices, RevenueCat project/offerings/entitlement `chorey_family`,
+  public SDK keys into EXPO_PUBLIC_REVENUECAT_IOS_KEY / _ANDROID_KEY.
+- [ ] Deploy webhook: `supabase functions deploy revenuecat-webhook --no-verify-jwt`
+  + `supabase secrets set REVENUECAT_WEBHOOK_AUTH=...` + set the same header in RC.
+- [ ] Sandbox-test a purchase on a real device build (needs EAS dev/store build).
+- Until keys exist the screen shows NO prices (by design — never invents a price).
+
 ### B. Push notifications — built, NOT live
 - [ ] `eas init` (no extra.eas.projectId → token registration is a silent no-op)
 - [ ] iOS APNs + Android FCM credentials in EAS
