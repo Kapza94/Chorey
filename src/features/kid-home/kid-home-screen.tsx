@@ -29,6 +29,8 @@ export type KidChore = {
   valueCents: number;
   state: KidChoreState;
   note?: string;
+  /** an overdue recurring chore — the kid still needs to do it. */
+  late?: boolean;
 };
 
 type Props = {
@@ -84,6 +86,8 @@ export function KidHomeScreen({
   const waiting = chores.filter((chore) => chore.state === "waiting");
   const pendingCents = waiting.reduce((total, chore) => total + chore.valueCents, 0);
   const remaining = chores.filter((chore) => chore.state === "todo").length;
+  // Overdue recurring chores the kid still hasn't done.
+  const lateCount = chores.filter((chore) => chore.late && chore.state === "todo").length;
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -222,6 +226,36 @@ export function KidHomeScreen({
               <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
                 {waiting.length} {waiting.length === 1 ? "chore is" : "chores are"} done — a parent
                 approves before it counts.
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Late — overdue chores that still need doing */}
+        {lateCount > 0 ? (
+          <View
+            style={{
+              marginHorizontal: 18,
+              marginTop: 14,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              backgroundColor: scheme.tint.warning,
+              borderColor: theme.palette.semantic.warning[600],
+              borderWidth: toybox.borderWidth,
+              borderRadius: radius.md,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              ...scheme.toy.shadowSm,
+            }}
+          >
+            <Clock size={20} color={theme.palette.semantic.warning[600]} strokeWidth={2.4} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 13 }]}>
+                {lateCount} {lateCount === 1 ? "chore is" : "chores are"} late
+              </Text>
+              <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+                Do {lateCount === 1 ? "it" : "them"} now so you don&apos;t miss out.
               </Text>
             </View>
           </View>
@@ -411,11 +445,12 @@ function ChoreRow({
 
   const approved = chore.state === "approved";
   const waiting = chore.state === "waiting";
+  const late = !!chore.late && chore.state === "todo";
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={chore.name}
+      accessibilityLabel={late ? `${chore.name} (late)` : chore.name}
       onPress={() => onOpen?.(chore.id)}
       style={{
         flexDirection: "row",
@@ -444,21 +479,51 @@ function ChoreRow({
         <SpringCheckbox done={approved} />
       )}
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          style={[
-            typography.text.label,
-            {
-              fontSize: 15,
-              color: approved ? scheme.fgFaint : scheme.fg,
-              textDecorationLine: approved ? "line-through" : "none",
-            },
-          ]}
-        >
-          {chore.name}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+          <Text
+            style={[
+              typography.text.label,
+              {
+                fontSize: 15,
+                color: approved ? scheme.fgFaint : scheme.fg,
+                textDecorationLine: approved ? "line-through" : "none",
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {chore.name}
+          </Text>
+          {late ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 3,
+                paddingHorizontal: 7,
+                paddingVertical: 2,
+                borderRadius: 999,
+                backgroundColor: scheme.tint.warning,
+              }}
+            >
+              <Clock size={10} color={palette.semantic.warning[600]} strokeWidth={2.6} />
+              <Text
+                style={[
+                  typography.text.caption,
+                  { color: palette.semantic.warning[600], fontWeight: "700", fontSize: 10 },
+                ]}
+              >
+                Late
+              </Text>
+            </View>
+          ) : null}
+        </View>
         {waiting ? (
           <Text style={[typography.text.caption, { color: palette.semantic.warning[600], marginTop: 1 }]}>
             Waiting for a parent
+          </Text>
+        ) : late ? (
+          <Text style={[typography.text.caption, { color: palette.semantic.warning[600], marginTop: 1 }]}>
+            Late — do this now
           </Text>
         ) : chore.note ? (
           <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>

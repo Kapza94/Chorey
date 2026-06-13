@@ -58,6 +58,9 @@ describe("parent chore actions", () => {
         title: "Load dishwasher",
         rewardCents: 250,
         status: "submitted",
+        sentBackReason: null,
+        recurrence: null,
+        periodKey: null,
       },
     ]);
     expect(client.from).toHaveBeenCalledWith("chore_instances");

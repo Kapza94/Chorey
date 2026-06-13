@@ -128,12 +128,12 @@ export function ParentKidsScreen({
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
         <ParentHeader
           subtitle={subtitle}
-          title="Kids."
+          title="Children."
           action={
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Add kid"
+                accessibilityLabel="Add child"
                 onPress={onAddKid}
                 style={({ pressed }) => ({
                   flexDirection: "row",
@@ -151,7 +151,7 @@ export function ParentKidsScreen({
               >
                 <Plus size={15} color={scheme.fg} strokeWidth={2.4} />
                 <Text style={[typography.text.label, { color: scheme.fg, fontSize: 13 }]}>
-                  Add kid
+                  Add child
                 </Text>
               </Pressable>
               {headerRight}
@@ -211,14 +211,14 @@ export function ParentKidsScreen({
                 color: scheme.fg,
               }}
             >
-              No kids yet.
+              No children yet.
             </Text>
             <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: -6 }]}>
-              Add your first kid and these three buckets start filling — 40% to
+              Add your first child and these three buckets start filling — 40% to
               spend, 40% to save, 20% to give.
             </Text>
-            <ToyButton onPress={onAddKid} accessibilityLabel="Add your first kid">
-              Add your first kid
+            <ToyButton onPress={onAddKid} accessibilityLabel="Add your first child">
+              Add your first child
             </ToyButton>
           </View>
         ) : (
@@ -244,7 +244,7 @@ export function ParentKidsScreen({
                 { color: scheme.fgFaint, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 8 },
               ]}
             >
-              This week, all kids
+              This week, all children
             </Text>
             <View
               style={{

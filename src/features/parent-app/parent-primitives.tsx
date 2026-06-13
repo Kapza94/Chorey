@@ -86,7 +86,7 @@ export function ParentTabBar({
   const { scheme, typography, palette, toybox, radius, isDark } = useChoreyTheme();
   const spendRamp = palette.allowance;
   const tabs: { id: ParentTab; label: string; Icon: typeof Home }[] = [
-    { id: "kids", label: "Kids", Icon: User },
+    { id: "kids", label: "Children", Icon: User },
     { id: "chores", label: "Chores", Icon: Home },
     { id: "pay", label: "Pay", Icon: Wallet },
     { id: "settings", label: "Settings", Icon: Settings2 },

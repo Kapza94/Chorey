@@ -257,7 +257,7 @@ export function OBDemoKid({ onNext, onBack }: { onNext: () => void; onBack: () =
     >
       <OBTitle
         title="Here's what Mia sees."
-        subtitle="Her own app — today's chores, her three buckets, and goals to save for. Kids join with a code; no email, no billing."
+        subtitle="Her own app — today's chores, her three buckets, and goals to save for. Children join with a code; no email, no billing."
       />
       <View
         pointerEvents="none"

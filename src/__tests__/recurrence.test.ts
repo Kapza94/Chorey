@@ -1,4 +1,9 @@
-import { periodKey, periodStart, type Recurrence } from "@/features/chores/recurrence";
+import {
+  isRecurringChoreLate,
+  periodKey,
+  periodStart,
+  type Recurrence,
+} from "@/features/chores/recurrence";
 
 const at = (iso: string) => new Date(`${iso}T12:00:00.000Z`);
 
@@ -31,5 +36,74 @@ describe("periodStart", () => {
   it("returns a Date at UTC midnight of the period start", () => {
     const start = periodStart("monthly" as Recurrence, at("2026-06-15"));
     expect(start.toISOString()).toBe("2026-06-01T00:00:00.000Z");
+  });
+});
+
+describe("isRecurringChoreLate", () => {
+  const today = at("2026-06-13");
+
+  it("flags an undone daily chore from a past day as late", () => {
+    expect(
+      isRecurringChoreLate(
+        { recurrence: "daily", periodKey: "2026-06-12", status: "assigned" },
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it("does not flag today's daily chore as late", () => {
+    expect(
+      isRecurringChoreLate(
+        { recurrence: "daily", periodKey: "2026-06-13", status: "assigned" },
+        today,
+      ),
+    ).toBe(false);
+  });
+
+  it("flags a sent-back overdue chore (the child still owes it)", () => {
+    expect(
+      isRecurringChoreLate(
+        { recurrence: "daily", periodKey: "2026-06-10", status: "sent_back" },
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it("never flags submitted or approved chores — the child did their part", () => {
+    expect(
+      isRecurringChoreLate(
+        { recurrence: "daily", periodKey: "2026-06-01", status: "submitted" },
+        today,
+      ),
+    ).toBe(false);
+    expect(
+      isRecurringChoreLate(
+        { recurrence: "daily", periodKey: "2026-06-01", status: "approved" },
+        today,
+      ),
+    ).toBe(false);
+  });
+
+  it("ignores one-off chores (no recurrence or period)", () => {
+    expect(
+      isRecurringChoreLate({ recurrence: null, periodKey: null, status: "assigned" }, today),
+    ).toBe(false);
+  });
+
+  it("flags a weekly chore only once its week has fully passed", () => {
+    // The week of 2026-06-08 (Mon) is still current on 2026-06-13 (Sat).
+    expect(
+      isRecurringChoreLate(
+        { recurrence: "weekly", periodKey: "2026-06-08", status: "assigned" },
+        today,
+      ),
+    ).toBe(false);
+    // The previous week is overdue.
+    expect(
+      isRecurringChoreLate(
+        { recurrence: "weekly", periodKey: "2026-06-01", status: "assigned" },
+        today,
+      ),
+    ).toBe(true);
   });
 });

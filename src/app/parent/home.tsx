@@ -3,7 +3,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
-import { LevelUpBurst } from "@/components/level-up-burst";
+import { LevelUpToast } from "@/components/level-up-toast";
 import { levelForPoints, pointsForChore } from "@/features/game/leveling";
 import type {
   KidPaymentSummary,
@@ -52,6 +52,8 @@ import {
   sendBackChoreForHousehold,
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
+import { isRecurringChoreLate } from "@/features/chores/recurrence";
+import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen";
 import {
   createChoreTemplateForHousehold,
   ensureRecurringInstancesForHousehold,
@@ -195,6 +197,22 @@ export default function ParentHomeRoute() {
       };
     });
 
+  // The Chores-tab board: every live instance, grouped by status downstream,
+  // with overdue recurring chores flagged late.
+  const choreBoard: ChoreBoardItem[] = chores.map((chore) => {
+    const kid = kidsById.get(chore.childProfileId);
+    return {
+      id: chore.id,
+      title: chore.title,
+      childName: kid?.name ?? "",
+      rewardCents: chore.rewardCents,
+      tone: kid?.tone ?? "allowance",
+      status: chore.status,
+      late: isRecurringChoreLate(chore),
+      sentBackReason: chore.sentBackReason,
+    };
+  });
+
   const purchaseRequests: PendingPurchase[] = purchases
     .filter((request) => request.status === "pending")
     .map((request) => ({
@@ -288,7 +306,7 @@ export default function ParentHomeRoute() {
           const postLevel = levelForPoints(prePoints + pointsForChore(chore.rewardCents));
           if (postLevel > levelForPoints(prePoints)) {
             setLevelUp({
-              name: kidsById.get(chore.childProfileId)?.name ?? "Your kid",
+              name: kidsById.get(chore.childProfileId)?.name ?? "Your child",
               level: postLevel,
             });
           }
@@ -401,13 +419,9 @@ export default function ParentHomeRoute() {
         });
         setPayouts(await listPayoutsForHousehold(householdId));
       }}
-      chores={chores.map((chore) => ({
-        id: chore.id,
-        name: chore.title,
-        valueCents: chore.rewardCents,
-        freq: "One-off",
-        assignedTo: kidsById.get(chore.childProfileId)?.name ?? "",
-      }))}
+      // The board (To do / Needs you / Done) is the live chores view; the flat
+      // library would just duplicate the same instances, so it's left empty.
+      choreBoard={choreBoard}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
       recurringLocked={!isEntitled(subscription.status)}
       onAddChore={async ({ name, rewardCents, assigneeId, recurrence }) => {
@@ -456,7 +470,8 @@ export default function ParentHomeRoute() {
       }}
     />
     {levelUp ? (
-      <LevelUpBurst
+      <LevelUpToast
+        key={`${levelUp.name}-${levelUp.level}`}
         level={levelUp.level}
         kidName={levelUp.name}
         onDone={() => setLevelUp(null)}

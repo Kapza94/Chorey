@@ -125,15 +125,15 @@ describe("OnboardingFlow", () => {
   it("commits a kid and offers adding another (no add-kid button)", () => {
     render(<OnboardingFlow initialStep="p_addkid" />);
 
-    // No standalone "Add kid" affordance; the bottom button is just Continue.
-    expect(screen.queryByLabelText("Add kid")).toBeNull();
+    // No standalone "Add child" affordance; the bottom button is just Continue.
+    expect(screen.queryByLabelText("Add child")).toBeNull();
 
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
     // "Add another kid" appears once a name is entered
-    fireEvent.press(screen.getByText("+ Add another kid"));
+    fireEvent.press(screen.getByText("+ Add another child"));
 
     // Mia is committed (shows in the list) and the form resets for the next kid
-    expect(screen.getByText("Add another kid.")).toBeOnTheScreen();
+    expect(screen.getByText("Add another child.")).toBeOnTheScreen();
     expect(screen.getByText("Mia")).toBeOnTheScreen();
   });
 
@@ -141,11 +141,11 @@ describe("OnboardingFlow", () => {
     render(<OnboardingFlow initialStep="p_addkid" />);
 
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
-    fireEvent.press(screen.getByText("+ Add another kid"));
+    fireEvent.press(screen.getByText("+ Add another child"));
     fireEvent.changeText(screen.getByLabelText("Age"), "8");
     fireEvent.press(screen.getByText("Continue"));
 
-    expect(screen.getByText("Add another kid.")).toBeOnTheScreen();
+    expect(screen.getByText("Add another child.")).toBeOnTheScreen();
     expect(screen.getByText("Enter a name for this child.")).toBeOnTheScreen();
     expect(screen.queryByText("Budget & split.")).toBeNull();
   });
@@ -202,7 +202,7 @@ describe("OnboardingFlow", () => {
 
     // Add two kids — Chorey Family covers every kid in the household.
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
-    fireEvent.press(screen.getByText("+ Add another kid"));
+    fireEvent.press(screen.getByText("+ Add another child"));
     fireEvent.changeText(screen.getByLabelText("Name"), "Eli");
     fireEvent.press(screen.getByText("Continue")); // commits Eli → split
 

@@ -38,7 +38,7 @@ describe("ParentApp · Kids", () => {
   it("shows the kids, household total, and an approvals banner", () => {
     render(<ParentApp subtitle="Saturday · This week" kids={[mia, eli]} />);
 
-    expect(screen.getByText("Kids.")).toBeOnTheScreen();
+    expect(screen.getByText("Children.")).toBeOnTheScreen();
     expect(screen.getByText("Mia")).toBeOnTheScreen();
     expect(screen.getByText("Eli")).toBeOnTheScreen();
     // 2 + 0 pending across kids
@@ -67,10 +67,10 @@ describe("ParentApp · Kids", () => {
     render(<ParentApp kids={[mia]} />);
 
     fireEvent.press(screen.getByLabelText("Pay tab"));
-    expect(screen.queryByText("Kids.")).toBeNull();
+    expect(screen.queryByText("Children.")).toBeNull();
   });
 
-  it("badges the Kids tab with everything waiting for review", () => {
+  it("badges the Children tab with everything waiting for review", () => {
     render(
       <ParentApp
         initialTab="chores"
@@ -86,14 +86,14 @@ describe("ParentApp · Kids", () => {
     );
 
     // 2 chores + 1 purchase await review, visible from any tab.
-    expect(screen.getByLabelText("Kids tab, 3 waiting for review")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Children tab, 3 waiting for review")).toBeOnTheScreen();
     expect(screen.getByText("3")).toBeOnTheScreen();
   });
 
   it("shows no review badge when nothing is waiting", () => {
     render(<ParentApp initialTab="chores" kids={[{ ...mia, pendingApprovals: 0 }]} />);
 
-    expect(screen.getByLabelText("Kids tab")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Children tab")).toBeOnTheScreen();
     expect(screen.queryByLabelText(/waiting for review/)).toBeNull();
   });
 
@@ -102,8 +102,8 @@ describe("ParentApp · Kids", () => {
     render(<ParentApp kids={[mia]} onAddKid={onAddKid} />);
 
     // The affordance reads as text, not just a bare plus.
-    expect(screen.getByText("Add kid")).toBeOnTheScreen();
-    fireEvent.press(screen.getByLabelText("Add kid"));
+    expect(screen.getByText("Add child")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Add child"));
     expect(onAddKid).toHaveBeenCalledTimes(1);
   });
 
@@ -525,7 +525,7 @@ describe("ParentApp · Chores", () => {
     expect(screen.getByLabelText("Assign to Mia")).toBeOnTheScreen();
     expect(screen.queryByLabelText("Assign to Zoe")).toBeNull();
 
-    fireEvent.press(screen.getByLabelText("Show more kids"));
+    fireEvent.press(screen.getByLabelText("Show more children"));
     expect(screen.getByLabelText("Assign to Zoe")).toBeOnTheScreen();
   });
 });
@@ -595,7 +595,7 @@ describe("ParentApp · Settings", () => {
       />,
     );
 
-    expect(screen.getByText("Kid sign-in codes")).toBeOnTheScreen();
+    expect(screen.getByText("Child sign-in codes")).toBeOnTheScreen();
     expect(screen.getByText("482913")).toBeOnTheScreen();
   });
 
@@ -615,11 +615,11 @@ describe("ParentApp empty state", () => {
     const onAddKid = jest.fn();
     render(<ParentApp kids={[]} onAddKid={onAddKid} />);
 
-    expect(screen.getByText("No kids yet.")).toBeOnTheScreen();
+    expect(screen.getByText("No children yet.")).toBeOnTheScreen();
     // No wall of zeros: the household total card is replaced entirely.
-    expect(screen.queryByText("This week, all kids")).toBeNull();
+    expect(screen.queryByText("This week, all children")).toBeNull();
 
-    fireEvent.press(screen.getByLabelText("Add your first kid"));
+    fireEvent.press(screen.getByLabelText("Add your first child"));
     expect(onAddKid).toHaveBeenCalled();
   });
 });
@@ -628,5 +628,78 @@ describe("ParentApp kid levels", () => {
   it("shows each kid's level sticker when provided", () => {
     render(<ParentApp kids={[{ ...mia, level: 4 }]} />);
     expect(screen.getByText("Lv 4")).toBeOnTheScreen();
+  });
+});
+
+describe("ParentApp · Chores board", () => {
+  const board = [
+    {
+      id: "b1",
+      title: "Wash dishes",
+      childName: "Mia",
+      rewardCents: 200,
+      tone: "allowance" as const,
+      status: "submitted" as const,
+    },
+    {
+      id: "b2",
+      title: "Feed cat",
+      childName: "Mia",
+      rewardCents: 100,
+      tone: "allowance" as const,
+      status: "assigned" as const,
+      late: true,
+    },
+    {
+      id: "b3",
+      title: "Make bed",
+      childName: "Mia",
+      rewardCents: 100,
+      tone: "allowance" as const,
+      status: "approved" as const,
+    },
+  ];
+
+  it("groups chores into Needs approval / To do / Done", () => {
+    render(<ParentApp initialTab="chores" kids={[mia]} choreBoard={board} />);
+
+    expect(screen.getByText("Needs your approval · 1")).toBeOnTheScreen();
+    expect(screen.getByText("To do · 1")).toBeOnTheScreen();
+    expect(screen.getByText("Done · 1")).toBeOnTheScreen();
+    // The overdue daily chore is flagged late, in the row and the section badge.
+    expect(screen.getByText("Late")).toBeOnTheScreen();
+    expect(screen.getByText("1 late")).toBeOnTheScreen();
+  });
+
+  it("approves a submitted chore straight from the Chores tab", () => {
+    const onApproveChore = jest.fn();
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        choreBoard={board}
+        onApproveChore={onApproveChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Approve Wash dishes"));
+    expect(onApproveChore).toHaveBeenCalledWith("b1");
+  });
+
+  it("sends a submitted chore back with a reason from the Chores tab", () => {
+    const onSendBackChore = jest.fn();
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        choreBoard={board}
+        onSendBackChore={onSendBackChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Send back Wash dishes"));
+    fireEvent.changeText(screen.getByLabelText("Send-back reason"), "Do it again");
+    fireEvent.press(screen.getByLabelText("Confirm send back"));
+    expect(onSendBackChore).toHaveBeenCalledWith("b1", "Do it again");
   });
 });

@@ -43,6 +43,8 @@ describe("child chore actions", () => {
       rewardCents: 250,
       status: "assigned",
       sentBackReason: null,
+      recurrence: null,
+      periodKey: null,
     });
     const actions = createChildChoreActions(client);
 
@@ -55,6 +57,8 @@ describe("child chore actions", () => {
         rewardCents: 250,
         status: "assigned",
         sentBackReason: null,
+        recurrence: null,
+        periodKey: null,
       },
     ]);
     expect(client.rpc).toHaveBeenCalledWith("list_child_chores", {
@@ -69,6 +73,8 @@ describe("child chore actions", () => {
       rewardCents: 250,
       status: "assigned",
       sentBackReason: null,
+      recurrence: null,
+      periodKey: null,
     });
     const actions = createChildChoreActions(client);
 
@@ -125,6 +131,32 @@ describe("child chore actions", () => {
         choreId: "chore-1",
       }),
     ).rejects.toThrow("Chore can no longer be moved back to To do.");
+  });
+
+  it("maps recurrence and period from the chore row", async () => {
+    const client = {
+      rpc: jest.fn(() =>
+        Promise.resolve({
+          data: [
+            {
+              id: "chore-1",
+              title: "Wash dishes",
+              reward_cents: 200,
+              status: "assigned",
+              sent_back_reason: null,
+              recurrence: "daily",
+              period_key: "2026-06-12",
+            },
+          ],
+          error: null,
+        }),
+      ),
+    };
+
+    const [chore] = await createChildChoreActions(client as any).listChores("123456");
+
+    expect(chore.recurrence).toBe("daily");
+    expect(chore.periodKey).toBe("2026-06-12");
   });
 
   it("maps a sent-back reason from the chore row", async () => {

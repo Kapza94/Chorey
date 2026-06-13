@@ -40,6 +40,9 @@ describe("chore creation actions", () => {
       title: "Load dishwasher",
       rewardCents: 250,
       status: "assigned",
+      sentBackReason: null,
+      recurrence: null,
+      periodKey: null,
     });
     expect(client.from).toHaveBeenCalledWith("chore_instances");
     expect(client.from.mock.results[0]?.value.insert).toHaveBeenCalledWith({

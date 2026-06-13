@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, Lock, Plus } from "lucide-react-native";
+import { Check, ChevronRight, Clock, Lock, Plus, Undo2 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -11,6 +11,7 @@ import {
 } from "@/features/money/currency";
 import { parseRewardCents } from "@/features/chores/money";
 import type { Recurrence } from "@/features/chores/recurrence";
+import type { ChoreStatus } from "@/features/chores/chore-actions";
 import { DEFAULT_SPLIT, splitCents, type Split } from "@/features/money/split";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
 
@@ -22,6 +23,19 @@ export type ChoreLibraryItem = {
   assignedTo: string;
 };
 
+/** A live chore instance for the Chores-tab board (To do / Needs you / Done). */
+export type ChoreBoardItem = {
+  id: string;
+  title: string;
+  childName: string;
+  rewardCents: number;
+  tone: ParentKid["tone"];
+  status: ChoreStatus;
+  /** an overdue recurring chore the child still hasn't done. */
+  late?: boolean;
+  sentBackReason?: string | null;
+};
+
 export type ChoreAssignee = { id: string; name: string };
 
 type Props = {
@@ -29,6 +43,8 @@ type Props = {
   split?: Split;
   kids?: ParentKid[];
   chores?: ChoreLibraryItem[];
+  /** live chore instances grouped into the To do / Needs you / Done board. */
+  board?: ChoreBoardItem[];
   assignees?: ChoreAssignee[];
   /** when true, recurring options are paused (the household is lapsed). */
   recurringLocked?: boolean;
@@ -38,6 +54,8 @@ type Props = {
     assigneeId: string;
     recurrence?: Recurrence;
   }) => void;
+  onApproveChore?: (choreId: string) => void;
+  onSendBackChore?: (choreId: string, reason: string) => void;
   headerRight?: ReactNode;
 };
 
@@ -46,19 +64,30 @@ export function ParentChoresScreen({
   split = DEFAULT_SPLIT,
   kids = [],
   chores = [],
+  board = [],
   assignees = [],
   recurringLocked = false,
   onAddChore,
+  onApproveChore,
+  onSendBackChore,
   headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const [showAdd, setShowAdd] = useState(false);
 
+  // The board: what's waiting on the parent, what kids still owe, what's done.
+  const needsApproval = board.filter((item) => item.status === "submitted");
+  const todo = board.filter(
+    (item) => item.status === "assigned" || item.status === "sent_back",
+  );
+  const done = board.filter((item) => item.status === "approved");
+  const lateCount = todo.filter((item) => item.late).length;
+
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
         <ParentHeader
-          subtitle="Library"
+          subtitle="This week"
           title="Chores."
           action={
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -95,46 +124,117 @@ export function ParentChoresScreen({
           </View>
         ) : null}
 
-        {/* Library */}
-        <View
-          style={{
-            marginHorizontal: 18,
-            backgroundColor: scheme.bgModal,
-            borderColor: scheme.toy.border,
-            borderWidth: toybox.borderWidth,
-            ...scheme.toy.shadowSm,
-            borderRadius: 16,
-            overflow: "hidden",
-          }}
-        >
-          {chores.map((chore, index) => (
-            <View
-              key={chore.id}
+        {/* Board: Needs you → To do → Done */}
+        {board.length > 0 ? (
+          <View style={{ paddingHorizontal: 18, gap: 10, marginBottom: 18 }}>
+            {needsApproval.length > 0 ? (
+              <BoardSection title="Needs your approval" count={needsApproval.length}>
+                {needsApproval.map((item) => (
+                  <ChoreBoardRow
+                    key={item.id}
+                    item={item}
+                    currency={currency}
+                    onApprove={() => onApproveChore?.(item.id)}
+                    onSendBack={(reason) => onSendBackChore?.(item.id, reason)}
+                  />
+                ))}
+              </BoardSection>
+            ) : null}
+
+            {todo.length > 0 ? (
+              <BoardSection
+                title="To do"
+                count={todo.length}
+                badge={lateCount > 0 ? `${lateCount} late` : undefined}
+              >
+                {todo.map((item) => (
+                  <ChoreBoardRow key={item.id} item={item} currency={currency} />
+                ))}
+              </BoardSection>
+            ) : null}
+
+            {done.length > 0 ? (
+              <BoardSection title="Done" count={done.length} muted>
+                {done.map((item) => (
+                  <ChoreBoardRow key={item.id} item={item} currency={currency} />
+                ))}
+              </BoardSection>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* Empty state — no live chores and no library to show. */}
+        {board.length === 0 && chores.length === 0 ? (
+          <View style={{ paddingHorizontal: 18, paddingTop: 8, gap: 8 }}>
+            <Text
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                borderBottomWidth: index < chores.length - 1 ? 1 : 0,
-                borderBottomColor: scheme.border,
+                fontFamily: typography.family.display.extra,
+                fontSize: 24,
+                letterSpacing: -0.5,
+                color: scheme.fg,
               }}
             >
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
-                  {chore.name}
-                </Text>
-                <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
-                  {chore.freq} · {chore.assignedTo}
-                </Text>
-              </View>
-              <Text style={[typography.text.money, { fontSize: 15, color: scheme.fg }]}>
-                {formatMoney(chore.valueCents, currency)}
-              </Text>
-              <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
+              No chores yet.
+            </Text>
+            <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
+              Tap New to add the first chore. As kids finish them, they show up
+              here to approve.
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Library (the flat catalog) — only when explicitly provided. */}
+        {chores.length > 0 ? (
+          <>
+            <Text
+              style={[
+                typography.text.overline,
+                { color: scheme.fgFaint, paddingHorizontal: 22, paddingBottom: 8 },
+              ]}
+            >
+              Library
+            </Text>
+            <View
+              style={{
+                marginHorizontal: 18,
+                backgroundColor: scheme.bgModal,
+                borderColor: scheme.toy.border,
+                borderWidth: toybox.borderWidth,
+                ...scheme.toy.shadowSm,
+                borderRadius: 16,
+                overflow: "hidden",
+              }}
+            >
+              {chores.map((chore, index) => (
+                <View
+                  key={chore.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderBottomWidth: index < chores.length - 1 ? 1 : 0,
+                    borderBottomColor: scheme.border,
+                  }}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
+                      {chore.name}
+                    </Text>
+                    <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
+                      {chore.freq} · {chore.assignedTo}
+                    </Text>
+                  </View>
+                  <Text style={[typography.text.money, { fontSize: 15, color: scheme.fg }]}>
+                    {formatMoney(chore.valueCents, currency)}
+                  </Text>
+                  <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </>
+        ) : null}
       </ScrollView>
 
       <AddChoreSheet
@@ -149,6 +249,256 @@ export function ParentChoresScreen({
           setShowAdd(false);
         }}
       />
+    </View>
+  );
+}
+
+function BoardSection({
+  title,
+  count,
+  badge,
+  muted = false,
+  children,
+}: {
+  title: string;
+  count: number;
+  badge?: string;
+  muted?: boolean;
+  children: ReactNode;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  return (
+    <View>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          paddingHorizontal: 4,
+          paddingBottom: 8,
+          paddingTop: 4,
+        }}
+      >
+        <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
+          {title} · {count}
+        </Text>
+        {badge ? (
+          <View
+            style={{
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: radius.pill,
+              backgroundColor: scheme.tint.warning,
+            }}
+          >
+            <Text
+              style={[
+                typography.text.caption,
+                { color: palette.semantic.warning[600], fontWeight: "700", fontSize: 11 },
+              ]}
+            >
+              {badge}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+      <View style={{ gap: 8, opacity: muted ? 0.7 : 1 }}>{children}</View>
+    </View>
+  );
+}
+
+function ChoreBoardRow({
+  item,
+  currency,
+  onApprove,
+  onSendBack,
+}: {
+  item: ChoreBoardItem;
+  currency: CurrencyCode;
+  onApprove?: () => void;
+  onSendBack?: (reason: string) => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const ramp = bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp;
+  const [back, setBack] = useState(false);
+  const [reason, setReason] = useState("");
+  const canSend = reason.trim().length > 0;
+  const submitted = item.status === "submitted";
+  const approved = item.status === "approved";
+
+  return (
+    <View
+      style={{
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        backgroundColor: scheme.bgRaised,
+        borderColor: item.late ? palette.semantic.warning[600] : scheme.border,
+        borderWidth: item.late ? 1.5 : 1,
+        borderRadius: radius.md,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text
+              style={[
+                typography.text.h3,
+                {
+                  color: scheme.fg,
+                  fontSize: 15,
+                  textDecorationLine: approved ? "line-through" : "none",
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            {item.late ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 3,
+                  paddingHorizontal: 7,
+                  paddingVertical: 2,
+                  borderRadius: radius.pill,
+                  backgroundColor: scheme.tint.warning,
+                }}
+              >
+                <Clock size={10} color={palette.semantic.warning[600]} strokeWidth={2.6} />
+                <Text
+                  style={[
+                    typography.text.caption,
+                    { color: palette.semantic.warning[600], fontWeight: "700", fontSize: 10 },
+                  ]}
+                >
+                  Late
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+            {item.childName} · {formatMoney(item.rewardCents, currency)}
+          </Text>
+          {item.status === "sent_back" && item.sentBackReason ? (
+            <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 3 }]}>
+              Sent back: {item.sentBackReason}
+            </Text>
+          ) : null}
+        </View>
+
+        {submitted && !back ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Send back ${item.title}`}
+              onPress={() => setBack(true)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: radius.pill,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: scheme.bgSunken,
+              }}
+            >
+              <Undo2 size={15} color={scheme.fgMuted} strokeWidth={2.2} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Approve ${item.title}`}
+              onPress={onApprove}
+              style={({ pressed }) => ({
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: radius.pill,
+                backgroundColor: pressed ? ramp[400] : ramp[200],
+              })}
+            >
+              <Check size={14} color={ramp[800]} strokeWidth={3} />
+              <Text style={[typography.text.label, { color: ramp[800], fontSize: 13 }]}>Approve</Text>
+            </Pressable>
+          </View>
+        ) : approved ? (
+          <Check size={18} color={ramp[600]} strokeWidth={3} />
+        ) : null}
+      </View>
+
+      {submitted && back ? (
+        <View style={{ marginTop: 10 }}>
+          <TextInput
+            accessibilityLabel="Send-back reason"
+            value={reason}
+            onChangeText={setReason}
+            placeholder="What needs fixing?"
+            placeholderTextColor={scheme.fgFaint}
+            autoFocus
+            style={{
+              backgroundColor: scheme.bgPage,
+              borderColor: palette.border.mid,
+              borderWidth: 1,
+              borderRadius: radius.sm,
+              paddingHorizontal: 12,
+              paddingVertical: 9,
+              fontFamily: typography.family.body.regular,
+              fontSize: 14,
+              color: scheme.fg,
+            }}
+          />
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancel send back"
+              onPress={() => {
+                setBack(false);
+                setReason("");
+              }}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: radius.pill,
+                backgroundColor: scheme.bgSunken,
+              }}
+            >
+              <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 13 }]}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Confirm send back"
+              accessibilityState={{ disabled: !canSend }}
+              disabled={!canSend}
+              onPress={() => {
+                onSendBack?.(reason.trim());
+                setBack(false);
+                setReason("");
+              }}
+              style={({ pressed }) => ({
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: radius.pill,
+                backgroundColor: canSend
+                  ? pressed
+                    ? palette.semantic.warning[600]
+                    : scheme.tint.warning
+                  : scheme.bgSunken,
+                opacity: canSend ? 1 : 0.6,
+              })}
+            >
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: canSend ? palette.semantic.warning[600] : scheme.fgFaint, fontSize: 13 },
+                ]}
+              >
+                Send back
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -257,6 +607,10 @@ function AddChoreSheet({
     rewardCents = 0;
   }
   const preview = splitCents(rewardCents, split);
+
+  // A chore must be named and carry a reward — a blank reward silently creates
+  // a $0 chore whose approval never reaches a wallet, which reads as a bug.
+  const canAdd = name.trim().length > 0 && rewardCents > 0;
 
   const reset = () => {
     setName("");
@@ -398,7 +752,7 @@ function AddChoreSheet({
           {hasMoreKids ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Show more kids"
+              accessibilityLabel="Show more children"
               onPress={() => setShowAllAssignees(true)}
               style={{
                 paddingHorizontal: 14,
@@ -515,7 +869,12 @@ function AddChoreSheet({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add chore"
+          accessibilityState={{ disabled: !canAdd }}
+          disabled={!canAdd}
           onPress={() => {
+            if (!canAdd) {
+              return;
+            }
             onConfirm({
               name: name.trim(),
               rewardCents,
@@ -529,12 +888,23 @@ function AddChoreSheet({
             paddingVertical: 14,
             borderRadius: radius.pill,
             backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+            opacity: canAdd ? 1 : 0.45,
           })}
         >
           <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 15 }]}>
             Add chore
           </Text>
         </Pressable>
+        {!canAdd ? (
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, textAlign: "center", marginTop: 10 },
+            ]}
+          >
+            Add a name and a reward to continue.
+          </Text>
+        ) : null}
       </View>
     </Modal>
   );

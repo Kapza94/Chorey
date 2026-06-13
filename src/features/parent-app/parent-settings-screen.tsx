@@ -60,7 +60,7 @@ export function ParentSettingsScreen({
               { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
             ]}
           >
-            Budget per kid
+            Budget per child
           </Text>
           <View style={{ gap: 10, marginBottom: 20 }}>
             {kids.map((kid) => (
@@ -112,7 +112,7 @@ export function ParentSettingsScreen({
               {split.spend} / {split.save} / {split.give}
             </Text>
             <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: 4 }]}>
-              Every dollar your kids earn splits into three buckets — the same for every
+              Every dollar your children earn splits into three buckets — the same for every
               Chorey family, always. Spend a little, save a little more, always give some.
             </Text>
 
@@ -188,7 +188,7 @@ export function ParentSettingsScreen({
               { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
             ]}
           >
-            Kid sign-in codes
+            Child sign-in codes
           </Text>
           <View
             style={{
@@ -207,7 +207,7 @@ export function ParentSettingsScreen({
                   { color: scheme.fgFaint, paddingHorizontal: 16, paddingVertical: 14 },
                 ]}
               >
-                Codes appear here once a kid has one.
+                Codes appear here once a child has one.
               </Text>
             ) : (
               accessCodes.map((entry, index) => {
@@ -228,7 +228,7 @@ export function ParentSettingsScreen({
                   >
                     <KeyRound size={16} color={scheme.fgMuted} strokeWidth={2} />
                     <Text style={[typography.text.label, { flex: 1, color: scheme.fg }]}>
-                      {kid?.name ?? "Kid"}
+                      {kid?.name ?? "Child"}
                     </Text>
                     <Text
                       selectable
@@ -254,7 +254,7 @@ export function ParentSettingsScreen({
                 },
               ]}
             >
-              Kids use their code to sign in on their own device.
+              Children use their code to sign in on their own device.
             </Text>
           </View>
 

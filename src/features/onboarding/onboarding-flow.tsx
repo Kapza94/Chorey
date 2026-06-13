@@ -88,7 +88,7 @@ const CAUSE_PICKS = [
   { name: "Animals", desc: "Shelters & rescue pets", Icon: PawPrint },
   { name: "Hunger", desc: "Food for families nearby", Icon: Apple },
   { name: "The planet", desc: "Oceans, parks & wildlife", Icon: Globe },
-  { name: "Helping kids", desc: "Health & a fair start", Icon: HandHeart },
+  { name: "Helping children", desc: "Health & a fair start", Icon: HandHeart },
 ];
 
 /** Resolve a kid tone to concrete colors (sky maps onto the info palette). */
@@ -429,7 +429,7 @@ function OBIdea({ onNext, onBack }: { onNext: () => void; onBack: () => void }) 
     >
       <OBTitle
         title="Every dollar splits three ways."
-        subtitle="When a kid earns $10, here's where it goes — automatically, every time."
+        subtitle="When a child earns $10, here's where it goes — automatically, every time."
       />
       {bars.map((bar) => {
         const ramp = bucketTokens[bar.tone].ramp;
@@ -498,7 +498,7 @@ function OBRole({
     <OBShell onBack={onBack} progress={{ index: 1, total: 4 }}>
       <OBTitle
         title="Who's setting up?"
-        subtitle="Parents set up the family first, then kids join with a code."
+        subtitle="Parents set up the family first, then children join with a code."
       />
       <RoleCard
         tone="allowance"
@@ -510,7 +510,7 @@ function OBRole({
       <RoleCard
         tone="savings"
         Icon={Sparkles}
-        title="Join as a kid"
+        title="Join as a child"
         body="Got a code from a parent? Hop in here."
         onPress={onKid}
       />
@@ -770,13 +770,13 @@ function OBAddKid({
             Continue
           </OBPrimary>
           {hasDraft ? (
-            <OBSecondary onPress={handleAddAnother}>+ Add another kid</OBSecondary>
+            <OBSecondary onPress={handleAddAnother}>+ Add another child</OBSecondary>
           ) : null}
         </>
       }
     >
       <OBTitle
-        title={data.kids.length ? "Add another kid." : "Add your kid."}
+        title={data.kids.length ? "Add another child." : "Add your child."}
         subtitle={
           data.kids.length
             ? "Fill in their details, then Continue — or add one more."
@@ -803,7 +803,7 @@ function OBAddKid({
       >
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
           <View style={{ flex: 2 }}>
-            <OBField label="Name" value={name} onChange={setName} placeholder="Kid's name" />
+            <OBField label="Name" value={name} onChange={setName} placeholder="Child's name" />
           </View>
           <View style={{ flex: 1 }}>
             <OBField
@@ -1032,7 +1032,7 @@ function OBBudgetSplit({
     >
       <OBTitle
         title="Budget & split."
-        subtitle="Set how much each kid can earn. Every dollar they earn divides the same way."
+        subtitle="Set how much each child can earn. Every dollar they earn divides the same way."
       />
 
       {/* budget cap + cadence */}
@@ -1494,7 +1494,7 @@ function OBCauses({
     >
       <OBTitle
         title="What matters to your family?"
-        subtitle="Pick a cause your kids care about. You'll give the giving pile in real life — Chorey just remembers where they wanted it to go."
+        subtitle="Pick a cause your children care about. You'll give the giving pile in real life — Chorey just remembers where they wanted it to go."
       />
       <View style={{ gap: 10 }}>
         {CAUSE_PICKS.map((c) => {
@@ -1820,12 +1820,12 @@ function OBPlanChoice({
       {/* Sticker shelf — the honest perks, worn like badges. */}
       <View style={{ flexDirection: "row", gap: 12, marginTop: 4, marginBottom: 14 }}>
         <ToySticker label="14 days free" />
-        <ToySticker label="Every kid included" tone="giving" straight />
+        <ToySticker label="Every child included" tone="giving" straight />
       </View>
 
       <OBTitle
         title="Try Chorey Family."
-        subtitle="Everything free for 14 days — every kid, every parent, every chore."
+        subtitle="Everything free for 14 days — every child, every parent, every chore."
       />
 
       {data.kids.length > 0 ? (
@@ -2002,7 +2002,7 @@ function OBParentDone({
           You&apos;re all set.
         </Text>
         <Text style={[typography.text.body, { color: scheme.fgMuted, marginTop: 10 }]}>
-          {data.kids.length} {data.kids.length === 1 ? "kid" : "kids"} · {data.chores.length} chores · up to{" "}
+          {data.kids.length} {data.kids.length === 1 ? "child" : "children"} · {data.chores.length} chores · up to{" "}
           {formatMoney(totalCents, currency)}/day.
         </Text>
 
@@ -2016,7 +2016,7 @@ function OBParentDone({
             borderWidth: 1,
           }}
         >
-          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>Kid join code</Text>
+          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>Child join code</Text>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
             <Text style={{ fontFamily: typography.family.display.bold, fontSize: 34, letterSpacing: 4, color: scheme.fg }}>
               {code}

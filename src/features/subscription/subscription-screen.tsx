@@ -36,7 +36,7 @@ function formatDay(iso: string): string {
 // The paid promise: automation, coordination, proof, less mental load.
 // Low-leverage features never headline.
 const PROMISE = [
-  { Icon: Users, text: "Covers every kid and parent in your household" },
+  { Icon: Users, text: "Covers every child and parent in your household" },
   { Icon: RefreshCw, text: "Recurring chores and reminders run themselves" },
   { Icon: PieChart, text: "40 / 40 / 20 tracked automatically" },
 ];
@@ -153,7 +153,7 @@ export function SubscriptionScreen({ subscription, onChoosePlan, onClose }: Prop
                   ? subscription.plan
                     ? `Your trial ends ${formatDay(subscription.trialEndsAt)}. Billed ${subscription.plan} after the trial — cancel anytime before then.`
                     : `Your trial ends ${formatDay(subscription.trialEndsAt)}. Pick how you'd like to be billed after it.`
-                  : "One plan runs the whole household — every kid, every parent, every chore."}
+                  : "One plan runs the whole household — every child, every parent, every chore."}
               </Text>
 
               <View

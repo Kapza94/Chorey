@@ -39,3 +39,28 @@ export function periodStart(recurrence: Recurrence, date: Date): Date {
 export function periodKey(recurrence: Recurrence, date: Date): string {
   return toIsoDate(periodStart(recurrence, date));
 }
+
+/**
+ * A recurring chore is *late* when the period it belongs to has fully elapsed
+ * and the child still hasn't done it. A daily chore from yesterday that's still
+ * `assigned` or `sent_back` is late; today's is merely to-do. Period keys are
+ * lexicographically ordered ISO dates, so a plain string compare works for
+ * daily, weekly, and monthly alike. Submitted/approved chores are never late —
+ * the child has done their part.
+ */
+export function isRecurringChoreLate(
+  chore: {
+    recurrence?: Recurrence | null;
+    periodKey?: string | null;
+    status: "assigned" | "submitted" | "approved" | "sent_back";
+  },
+  now: Date = new Date(),
+): boolean {
+  if (!chore.recurrence || !chore.periodKey) {
+    return false;
+  }
+  if (chore.status === "approved" || chore.status === "submitted") {
+    return false;
+  }
+  return chore.periodKey < periodKey(chore.recurrence, now);
+}

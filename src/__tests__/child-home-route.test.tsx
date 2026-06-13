@@ -107,6 +107,10 @@ jest.mock("@/features/giving/default-giving-actions", () => ({
   suggestGivingOptionForChild: jest.fn(),
 }));
 
+jest.mock("@/features/notifications/default-notification-actions", () => ({
+  registerChildForPushNotifications: jest.fn(),
+}));
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockListChoresForChild.mockResolvedValue([

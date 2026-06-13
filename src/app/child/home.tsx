@@ -7,6 +7,7 @@ import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import type { KidChore } from "@/features/kid-home/kid-home-screen";
 import type { KidWish } from "@/features/kid-home/kid-wishlist-screen";
 import type { ChildChore } from "@/features/chores/child-chore-actions";
+import { isRecurringChoreLate } from "@/features/chores/recurrence";
 import type { BucketBalances } from "@/features/chores/money";
 import {
   listChoresForChild,
@@ -26,6 +27,7 @@ import {
 } from "@/features/giving/default-giving-actions";
 import type { GivingOption } from "@/features/giving/giving-actions";
 import { resolveChildAccessCode } from "@/features/children/default-child-access-actions";
+import { registerChildForPushNotifications } from "@/features/notifications/default-notification-actions";
 import { getGameStatsForChild } from "@/features/game/default-game-actions";
 import type { ChildGameStats } from "@/features/game/game-actions";
 import { levelForPoints } from "@/features/game/leveling";
@@ -139,6 +141,14 @@ export default function ChildHomeRoute() {
 
   const accessCode = session?.accessCode;
 
+  // Register this device for push once we know the child — so a late daily
+  // chore can nudge them. Best-effort and idempotent (no-op without EAS/perms).
+  useEffect(() => {
+    if (accessCode) {
+      void registerChildForPushNotifications(accessCode);
+    }
+  }, [accessCode]);
+
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
@@ -208,6 +218,7 @@ export default function ChildHomeRoute() {
             : chore.status === "submitted"
               ? ("waiting" as const)
               : ("todo" as const),
+        late: isRecurringChoreLate(chore),
         note:
           chore.status === "sent_back" && chore.sentBackReason
             ? `Sent back: ${chore.sentBackReason}`

@@ -78,6 +78,21 @@ describe("KidHomeScreen", () => {
 
     expect(onOpenChore).toHaveBeenCalledWith(id);
   });
+
+  it("flags an overdue chore as late and tells the kid to do it now", () => {
+    renderHome({
+      chores: [
+        { id: "c1", name: "Wash dishes", valueCents: 200, state: "todo", late: true },
+      ],
+    });
+
+    // A banner counts the late chores, and the row carries a Late badge.
+    expect(screen.getByText("1 chore is late")).toBeOnTheScreen();
+    expect(screen.getByText("Late")).toBeOnTheScreen();
+    expect(screen.getByText("Late — do this now")).toBeOnTheScreen();
+    // The row's accessibility label marks it late for screen readers.
+    expect(screen.getByLabelText("Wash dishes (late)")).toBeOnTheScreen();
+  });
 });
 
 describe("KidHomeScreen gamification", () => {

@@ -1,3 +1,5 @@
+import type { Recurrence } from "@/features/chores/recurrence";
+
 export type ChoreStatus = "assigned" | "submitted" | "approved" | "sent_back";
 
 type ChoreClient = {
@@ -17,9 +19,23 @@ export type CreatedChore = {
   title: string;
   rewardCents: number;
   status: ChoreStatus;
+  /** present when the chore was sent back, so the parent/child can see why. */
+  sentBackReason?: string | null;
+  /** the recurrence of the template this instance was generated from, if any. */
+  recurrence?: Recurrence | null;
+  /** the period this recurring instance belongs to (YYYY-MM-DD), if any. */
+  periodKey?: string | null;
 };
 
+const CHORE_COLUMNS =
+  "id, household_id, child_profile_id, title, reward_cents, status, sent_back_reason, period_key, chore_templates(recurrence)";
+
 function mapChore(row: any): CreatedChore {
+  // The joined template (if any) carries the recurrence; one-off chores have none.
+  const template = Array.isArray(row.chore_templates)
+    ? row.chore_templates[0]
+    : row.chore_templates;
+
   return {
     id: row.id,
     householdId: row.household_id,
@@ -27,6 +43,9 @@ function mapChore(row: any): CreatedChore {
     title: row.title,
     rewardCents: row.reward_cents,
     status: row.status,
+    sentBackReason: row.sent_back_reason ?? null,
+    recurrence: template?.recurrence ?? null,
+    periodKey: row.period_key ?? null,
   };
 }
 
@@ -35,7 +54,7 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
     async listChores(): Promise<CreatedChore[]> {
       const result = await client
         .from("chore_instances")
-        .select("id, household_id, child_profile_id, title, reward_cents, status")
+        .select(CHORE_COLUMNS)
         .eq("household_id", householdId)
         .order("created_at", { ascending: false });
 
@@ -52,7 +71,7 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
         .update({ status: "approved" })
         .eq("id", choreId)
         .eq("status", "submitted")
-        .select("id, household_id, child_profile_id, title, reward_cents, status")
+        .select(CHORE_COLUMNS)
         .single();
 
       if (result.error) {
@@ -81,7 +100,7 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
         .update({ status: "sent_back", sent_back_reason: reason })
         .eq("id", input.choreId)
         .eq("status", "submitted")
-        .select("id, household_id, child_profile_id, title, reward_cents, status")
+        .select(CHORE_COLUMNS)
         .single();
 
       if (result.error) {
@@ -115,7 +134,7 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
           reward_cents: input.rewardCents,
           status: "assigned",
         })
-        .select("id, household_id, child_profile_id, title, reward_cents, status")
+        .select(CHORE_COLUMNS)
         .single();
 
       if (result.error) {

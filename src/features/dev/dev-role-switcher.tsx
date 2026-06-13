@@ -94,11 +94,11 @@ export function DevRoleSwitcher() {
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Dev view as kid"
+        accessibilityLabel="Dev view as child"
         onPress={goKid}
         style={{ paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, backgroundColor: "#3a2f26" }}
       >
-        <Text style={{ color: "#f4ede4", fontSize: 12, fontWeight: "700" }}>Kid</Text>
+        <Text style={{ color: "#f4ede4", fontSize: 12, fontWeight: "700" }}>Child</Text>
       </Pressable>
     </View>
   );

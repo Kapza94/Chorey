@@ -26,6 +26,7 @@
       "expo-web-browser",
       "expo-sqlite",
       "expo-image",
+      "expo-notifications",
       "expo-splash-screen",
       [
         "expo-splash-screen",

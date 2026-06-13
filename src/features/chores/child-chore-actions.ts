@@ -1,4 +1,5 @@
 import type { ChoreStatus } from "@/features/chores/chore-actions";
+import type { Recurrence } from "@/features/chores/recurrence";
 
 type RpcClient = {
   rpc(fn: string, args: Record<string, unknown>): PromiseLike<{
@@ -14,6 +15,10 @@ export type ChildChore = {
   status: ChoreStatus;
   /** why a parent sent it back (when status is sent_back); null otherwise. */
   sentBackReason: string | null;
+  /** recurrence of the template behind this instance, if any. */
+  recurrence: Recurrence | null;
+  /** the period this recurring instance belongs to (YYYY-MM-DD), if any. */
+  periodKey: string | null;
 };
 
 function mapChore(row: any): ChildChore {
@@ -23,6 +28,8 @@ function mapChore(row: any): ChildChore {
     rewardCents: row.reward_cents,
     status: row.status,
     sentBackReason: row.sent_back_reason ?? null,
+    recurrence: row.recurrence ?? null,
+    periodKey: row.period_key ?? null,
   };
 }
 

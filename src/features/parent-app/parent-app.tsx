@@ -17,6 +17,7 @@ import {
 import {
   ParentChoresScreen,
   type ChoreAssignee,
+  type ChoreBoardItem,
   type ChoreLibraryItem,
 } from "@/features/parent-app/parent-chores-screen";
 import { ParentSettingsScreen } from "@/features/parent-app/parent-settings-screen";
@@ -67,6 +68,7 @@ type Props = {
   onMarkAllSettled?: () => void;
   // Chores
   chores?: ChoreLibraryItem[];
+  choreBoard?: ChoreBoardItem[];
   assignees?: ChoreAssignee[];
   recurringLocked?: boolean;
   onAddChore?: (input: {
@@ -115,6 +117,7 @@ export function ParentApp({
   onMarkPaid,
   onMarkAllSettled,
   chores,
+  choreBoard,
   assignees,
   recurringLocked,
   onAddChore,
@@ -170,9 +173,12 @@ export function ParentApp({
           split={split}
           kids={kids}
           chores={chores}
+          board={choreBoard}
           assignees={assignees}
           recurringLocked={recurringLocked}
           onAddChore={onAddChore}
+          onApproveChore={onApproveChore}
+          onSendBackChore={onSendBackChore}
           headerRight={headerRight}
         />
       ) : tab === "pay" ? (
