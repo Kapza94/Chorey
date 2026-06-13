@@ -41,6 +41,31 @@ describe("ParentSignInScreen", () => {
     expect(actions.signInWithGoogle).toHaveBeenCalledTimes(1);
   });
 
+  it("advances only when a provider sign-in established a session", async () => {
+    const actions = createActions();
+    actions.signInWithGoogle.mockResolvedValue(true);
+    const onSignedIn = jest.fn();
+
+    render(<ParentSignInScreen actions={actions} onSignedIn={onSignedIn} />);
+
+    fireEvent.press(screen.getByText("Continue with Google"));
+
+    await waitFor(() => expect(onSignedIn).toHaveBeenCalledTimes(1));
+  });
+
+  it("does NOT advance when the user cancels the provider browser", async () => {
+    const actions = createActions();
+    actions.signInWithApple.mockResolvedValue(false); // cancelled
+    const onSignedIn = jest.fn();
+
+    render(<ParentSignInScreen actions={actions} onSignedIn={onSignedIn} />);
+
+    fireEvent.press(screen.getByText("Continue with Apple"));
+
+    await waitFor(() => expect(actions.signInWithApple).toHaveBeenCalled());
+    expect(onSignedIn).not.toHaveBeenCalled();
+  });
+
   it("sends the entered email for magic link sign-in", async () => {
     const actions = createActions();
 

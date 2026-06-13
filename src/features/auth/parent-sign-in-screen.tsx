@@ -6,8 +6,9 @@ import { choreyTheme } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 export type ParentSignInActions = {
-  signInWithApple(): void;
-  signInWithGoogle(): void;
+  /** resolves true only when a session was established (false = cancelled) */
+  signInWithApple(): boolean | void | Promise<boolean | void>;
+  signInWithGoogle(): boolean | void | Promise<boolean | void>;
   sendMagicLink(email: string): void | Promise<void>;
   verifyEmailOtp(email: string, token: string): void | Promise<void>;
 };
@@ -84,6 +85,28 @@ export function ParentSignInScreen({
     "idle" | "sending" | "sent" | "verifying" | "verified" | "error"
   >("idle");
   const [magicLinkMessage, setMagicLinkMessage] = useState("");
+
+  async function handleOAuth(provider: "apple" | "google") {
+    setMagicLinkStatus("verifying");
+    setMagicLinkMessage("");
+
+    try {
+      const signedIn = await (provider === "apple"
+        ? actions.signInWithApple()
+        : actions.signInWithGoogle());
+      setMagicLinkStatus("idle");
+      // Only advance when a session was actually created. Cancelling the
+      // browser must leave the parent right here, not fake a login.
+      if (signedIn) {
+        onSignedIn?.();
+      }
+    } catch (error) {
+      setMagicLinkStatus("error");
+      setMagicLinkMessage(
+        error instanceof Error ? error.message : "Could not sign in.",
+      );
+    }
+  }
 
   async function handleSendMagicLink() {
     setMagicLinkStatus("sending");
@@ -189,12 +212,12 @@ export function ParentSignInScreen({
           <AuthButton
             label="Continue with Apple"
             variant="apple"
-            onPress={actions.signInWithApple}
+            onPress={() => handleOAuth("apple")}
           />
           <AuthButton
             label="Continue with Google"
             variant="google"
-            onPress={actions.signInWithGoogle}
+            onPress={() => handleOAuth("google")}
           />
         </View>
 
