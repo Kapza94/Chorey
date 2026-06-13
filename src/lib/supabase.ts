@@ -15,6 +15,10 @@ export const supabase = createClient(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // PKCE returns `?code=` to exchange for a session (what our OAuth handler
+      // expects). The default implicit flow returns tokens in the URL fragment
+      // instead, which the callback can't read — and is less secure on mobile.
+      flowType: "pkce",
     },
   },
 );
