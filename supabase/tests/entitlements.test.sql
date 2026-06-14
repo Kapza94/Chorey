@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(15);
 
 select has_table('public', 'household_entitlements', 'household entitlements table exists');
 select has_column('public', 'household_entitlements', 'status', 'entitlement has status');
@@ -99,6 +99,12 @@ select ok(
 select ok(
   not has_table_privilege('authenticated', 'public.household_entitlements', 'INSERT'),
   'authenticated clients cannot write entitlements directly'
+);
+
+-- Weekly is a first-class plan (added after the initial monthly/yearly enum).
+select ok(
+  'weekly' = any (enum_range(null::public.subscription_plan)::text[]),
+  'weekly is a valid subscription plan'
 );
 
 select * from finish();

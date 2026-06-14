@@ -35,11 +35,14 @@ const ACTIVE_EVENTS = new Set([
 const LAPSED_EVENTS = new Set(["EXPIRATION", "SUBSCRIPTION_PAUSED"]);
 
 /** Best-effort plan from the store product id; null when undeterminable. */
-function planFromProductId(productId: string | undefined): "monthly" | "yearly" | null {
+function planFromProductId(
+  productId: string | undefined,
+): "weekly" | "monthly" | "yearly" | null {
   if (!productId) return null;
   const id = productId.toLowerCase();
   if (id.includes("year") || id.includes("annual")) return "yearly";
   if (id.includes("month")) return "monthly";
+  if (id.includes("week")) return "weekly";
   return null;
 }
 

@@ -36,5 +36,5 @@ Then in RevenueCat → Project → Integrations → Webhooks:
 | CANCELLATION | ignored — auto-renew off but access continues until EXPIRATION |
 | anything else | acknowledged, no change |
 
-`plan` is inferred from the store product id (must contain `month` or
+`plan` is inferred from the store product id (must contain `week`, `month`, or
 `year`/`annual`); if it can't be determined the existing plan is left as-is.
