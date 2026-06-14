@@ -7,7 +7,7 @@ import {
 } from "@/features/entitlements/purchases";
 
 describe("toPlanOffers", () => {
-  it("maps a RevenueCat offering to monthly+yearly offers with store prices, monthly first", () => {
+  it("maps a RevenueCat offering to weekly+monthly+yearly offers with store prices, weekly first", () => {
     const offering: RcOffering = {
       availablePackages: [
         {
@@ -20,19 +20,25 @@ describe("toPlanOffers", () => {
           packageType: "MONTHLY",
           product: { priceString: "$4.99" },
         },
+        {
+          identifier: "$rc_weekly",
+          packageType: "WEEKLY",
+          product: { priceString: "$1.99" },
+        },
       ],
     };
 
     expect(toPlanOffers(offering)).toEqual([
+      { plan: "weekly", priceString: "$1.99", packageIdentifier: "$rc_weekly" },
       { plan: "monthly", priceString: "$4.99", packageIdentifier: "$rc_monthly" },
       { plan: "yearly", priceString: "$39.99", packageIdentifier: "$rc_annual" },
     ]);
   });
 
-  it("ignores package types we don't sell (weekly, lifetime, ...)", () => {
+  it("ignores package types we don't sell (lifetime, ...)", () => {
     const offering: RcOffering = {
       availablePackages: [
-        { identifier: "w", packageType: "WEEKLY", product: { priceString: "$1.99" } },
+        { identifier: "l", packageType: "LIFETIME", product: { priceString: "$99.99" } },
         { identifier: "m", packageType: "MONTHLY", product: { priceString: "$4.99" } },
       ],
     };

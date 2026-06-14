@@ -31,14 +31,16 @@ export type RcCustomerInfo = {
 } | null;
 
 const PACKAGE_TYPE_TO_PLAN: Record<string, SubscriptionPlan> = {
+  WEEKLY: "weekly",
   MONTHLY: "monthly",
   ANNUAL: "yearly",
 };
 
-const PLAN_ORDER: SubscriptionPlan[] = ["monthly", "yearly"];
+const PLAN_ORDER: SubscriptionPlan[] = ["weekly", "monthly", "yearly"];
 
 /**
- * Map RevenueCat's current offering to our plan offers (monthly first). Unknown
+ * Map RevenueCat's current offering to our plan offers (weekly first, then
+ * monthly, then yearly). Unknown
  * package types are ignored; the first package wins if a plan appears twice.
  * A null offering (RevenueCat not configured yet) yields no offers.
  */

@@ -45,7 +45,33 @@ export function isBillingConfigured(): boolean {
   return getRevenueCatConfig() !== null;
 }
 
+/**
+ * The URL where the user manages (cancels, changes, refunds) their subscription.
+ * RevenueCat returns the correct App Store / Play Store deep link per platform;
+ * we fall back to the store's generic subscriptions page when billing isn't
+ * configured or the lookup fails. Apple requires apps with auto-renewing
+ * subscriptions to surface this, so it never throws — it always resolves a URL.
+ */
+export async function getStoreManagementUrl(): Promise<string> {
+  const fallback =
+    Platform.OS === "ios"
+      ? "https://apps.apple.com/account/subscriptions"
+      : "https://play.google.com/store/account/subscriptions";
+
+  if (!isBillingConfigured()) {
+    return fallback;
+  }
+
+  try {
+    const info = await Purchases.getCustomerInfo();
+    return info.managementURL ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const PLAN_TO_PACKAGE_TYPE: Record<SubscriptionPlan, string> = {
+  weekly: "WEEKLY",
   monthly: "MONTHLY",
   yearly: "ANNUAL",
 };

@@ -87,6 +87,7 @@ type Props = {
   // Account
   account?: ParentAccount;
   onEditName?: (name: string) => void;
+  onManageStoreSubscription?: () => void;
   initialTab?: ParentTab;
 };
 
@@ -129,6 +130,7 @@ export function ParentApp({
   onLogOut,
   account,
   onEditName,
+  onManageStoreSubscription,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -219,6 +221,14 @@ export function ParentApp({
             setAccountOpen(false);
             onManageSubscription?.();
           }}
+          onManageStoreSubscription={
+            onManageStoreSubscription
+              ? () => {
+                  setAccountOpen(false);
+                  onManageStoreSubscription();
+                }
+              : undefined
+          }
           onSignOut={() => {
             setAccountOpen(false);
             onLogOut?.();

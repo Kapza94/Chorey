@@ -3,7 +3,7 @@ import {
   type SubscriptionStatus,
 } from "@/features/entitlements/entitlements";
 
-export type SubscriptionPlan = "monthly" | "yearly";
+export type SubscriptionPlan = "weekly" | "monthly" | "yearly";
 
 /**
  * The household's Chorey Family subscription as the parent app sees it.

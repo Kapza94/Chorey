@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
-import { ChevronRight, LogOut, Pencil, Settings2 } from "lucide-react-native";
+import {
+  ChevronRight,
+  CreditCard,
+  LogOut,
+  Pencil,
+  Settings2,
+} from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { ToyAvatar, ToySticker } from "@/components/toybox";
@@ -48,6 +54,7 @@ export function ParentAccountSheet({
   subscriptionLabel,
   onEditName,
   onManageSubscription,
+  onManageStoreSubscription,
   onSignOut,
   onClose,
 }: {
@@ -56,6 +63,8 @@ export function ParentAccountSheet({
   subscriptionLabel?: string;
   onEditName?: (name: string) => void;
   onManageSubscription?: () => void;
+  /** Opens the App Store / Play Store page to cancel or change billing. */
+  onManageStoreSubscription?: () => void;
   onSignOut?: () => void;
   onClose: () => void;
 }) {
@@ -193,6 +202,13 @@ export function ParentAccountSheet({
             label="Account & subscription"
             onPress={onManageSubscription}
           />
+          {onManageStoreSubscription ? (
+            <AccountRow
+              Icon={CreditCard}
+              label="Cancel or manage billing"
+              onPress={onManageStoreSubscription}
+            />
+          ) : null}
           <AccountRow Icon={LogOut} label="Sign out" tone="danger" onPress={onSignOut} />
         </View>
       </View>

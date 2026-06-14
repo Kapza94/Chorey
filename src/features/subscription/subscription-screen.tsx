@@ -219,6 +219,7 @@ export function SubscriptionScreen({
   );
 
   function renderPlans(fineprint: string) {
+    const weekly = offerFor("weekly");
     const monthly = offerFor("monthly");
     const yearly = offerFor("yearly");
 
@@ -228,6 +229,16 @@ export function SubscriptionScreen({
           Billing
         </Text>
 
+        {weekly ? (
+          <PlanCard
+            plan="weekly"
+            label="Weekly"
+            caption="Try it week to week"
+            priceString={weekly.priceString}
+            selected={subscription.plan === "weekly"}
+            onPress={() => onChoosePlan?.("weekly")}
+          />
+        ) : null}
         <PlanCard
           plan="monthly"
           label="Monthly"
@@ -351,7 +362,7 @@ export function SubscriptionScreen({
                     { color: selected ? spend[600] : scheme.fgFaint },
                   ]}
                 >
-                  {plan === "yearly" ? "/ year" : "/ month"}
+                  {plan === "yearly" ? "/ year" : plan === "weekly" ? "/ week" : "/ month"}
                 </Text>
               </View>
             ) : null}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Linking } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
@@ -41,6 +42,7 @@ import { isEntitled } from "@/features/entitlements/entitlements";
 import {
   configureRevenueCat,
   createRevenueCatGateway,
+  getStoreManagementUrl,
 } from "@/features/entitlements/default-purchase-actions";
 import type { PlanOffer } from "@/features/entitlements/purchases";
 import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
@@ -425,6 +427,10 @@ export default function ParentHomeRoute() {
       onEditName={async (name) => {
         setIdentity((prev) => (prev ? { ...prev, name } : prev));
         await updateParentDisplayName(name);
+      }}
+      onManageStoreSubscription={async () => {
+        const url = await getStoreManagementUrl();
+        await Linking.openURL(url);
       }}
       due={due}
       payoutHistory={toPayoutHistoryRows(payouts, kids)}
