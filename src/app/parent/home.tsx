@@ -45,6 +45,7 @@ import {
   getStoreManagementUrl,
 } from "@/features/entitlements/default-purchase-actions";
 import type { PlanOffer } from "@/features/entitlements/purchases";
+import { submitAppFeedback } from "@/features/feedback/default-feedback-actions";
 import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import {
@@ -432,6 +433,8 @@ export default function ParentHomeRoute() {
         const url = await getStoreManagementUrl();
         await Linking.openURL(url);
       }}
+      onSubmitContact={(message) => submitAppFeedback("contact", message, householdId)}
+      onSubmitFeedback={(message) => submitAppFeedback("feedback", message, householdId)}
       due={due}
       payoutHistory={toPayoutHistoryRows(payouts, kids)}
       paidThisMonthCents={payoutsThisMonthCents(payouts)}

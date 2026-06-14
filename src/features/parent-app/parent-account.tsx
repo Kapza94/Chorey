@@ -3,13 +3,16 @@ import { Modal, Pressable, Text, TextInput, View } from "react-native";
 import {
   ChevronRight,
   CreditCard,
+  LifeBuoy,
   LogOut,
+  MessageSquarePlus,
   Pencil,
   Settings2,
 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { ToyAvatar, ToySticker } from "@/components/toybox";
+import { FeedbackForm } from "@/features/feedback/feedback-form";
 
 export type ParentAccount = {
   name: string;
@@ -55,6 +58,8 @@ export function ParentAccountSheet({
   onEditName,
   onManageSubscription,
   onManageStoreSubscription,
+  onSubmitContact,
+  onSubmitFeedback,
   onSignOut,
   onClose,
 }: {
@@ -65,6 +70,10 @@ export function ParentAccountSheet({
   onManageSubscription?: () => void;
   /** Opens the App Store / Play Store page to cancel or change billing. */
   onManageStoreSubscription?: () => void;
+  /** Persists a "Contact us" support request. Shows the form row when set. */
+  onSubmitContact?: (message: string) => Promise<void>;
+  /** Persists a "Send feedback" note. Shows the form row when set. */
+  onSubmitFeedback?: (message: string) => Promise<void>;
   onSignOut?: () => void;
   onClose: () => void;
 }) {
@@ -72,6 +81,8 @@ export function ParentAccountSheet({
   const peach = palette.allowance;
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(account.name);
+  // 'menu' is the account list; 'contact'/'feedback' swap in the message form.
+  const [view, setView] = useState<"menu" | "contact" | "feedback">("menu");
 
   const providerLabel = PROVIDER_LABEL[account.provider] ?? "Account";
 
@@ -83,12 +94,18 @@ export function ParentAccountSheet({
     setEditing(false);
   }
 
+  // Always reopen on the menu, never mid-form.
+  function close() {
+    setView("menu");
+    onClose();
+  }
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close account"
-        onPress={onClose}
+        onPress={close}
         style={{ flex: 1, backgroundColor: "rgba(42,32,24,0.45)" }}
       />
       <View
@@ -114,6 +131,14 @@ export function ParentAccountSheet({
           }}
         />
 
+        {view !== "menu" ? (
+          <FeedbackForm
+            kind={view}
+            onSubmit={view === "contact" ? onSubmitContact! : onSubmitFeedback!}
+            onBack={() => setView("menu")}
+          />
+        ) : (
+          <>
         {/* Identity */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 13 }}>
           <ToyAvatar name={account.name} tone="savings" size={58} imageUrl={account.avatarUrl} />
@@ -209,8 +234,24 @@ export function ParentAccountSheet({
               onPress={onManageStoreSubscription}
             />
           ) : null}
+          {onSubmitContact ? (
+            <AccountRow
+              Icon={LifeBuoy}
+              label="Contact us"
+              onPress={() => setView("contact")}
+            />
+          ) : null}
+          {onSubmitFeedback ? (
+            <AccountRow
+              Icon={MessageSquarePlus}
+              label="Send feedback"
+              onPress={() => setView("feedback")}
+            />
+          ) : null}
           <AccountRow Icon={LogOut} label="Sign out" tone="danger" onPress={onSignOut} />
         </View>
+          </>
+        )}
       </View>
     </Modal>
   );

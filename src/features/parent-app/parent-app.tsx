@@ -88,6 +88,8 @@ type Props = {
   account?: ParentAccount;
   onEditName?: (name: string) => void;
   onManageStoreSubscription?: () => void;
+  onSubmitContact?: (message: string) => Promise<void>;
+  onSubmitFeedback?: (message: string) => Promise<void>;
   initialTab?: ParentTab;
 };
 
@@ -131,6 +133,8 @@ export function ParentApp({
   account,
   onEditName,
   onManageStoreSubscription,
+  onSubmitContact,
+  onSubmitFeedback,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -229,6 +233,8 @@ export function ParentApp({
                 }
               : undefined
           }
+          onSubmitContact={onSubmitContact}
+          onSubmitFeedback={onSubmitFeedback}
           onSignOut={() => {
             setAccountOpen(false);
             onLogOut?.();
