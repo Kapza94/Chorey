@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Image, Modal, Pressable, Text, TextInput, View } from "react-native";
 import {
   Apple,
   Check,
@@ -377,11 +377,12 @@ function OBWelcome({ onNext }: { onNext: () => void }) {
       }
     >
       <View style={{ alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 22 }}>
-          <Dot color={bucketTokens.spend.ramp[400]} />
-          <Dot color={bucketTokens.savings.ramp[400]} />
-          <Dot color={bucketTokens.giving.ramp[400]} />
-        </View>
+        <Image
+          source={require("../../../assets/c-mark.png")}
+          style={{ width: 72, height: 72, marginBottom: 18 }}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
         <Text
           style={{
             fontFamily: typography.family.display.extra,
@@ -406,10 +407,6 @@ function OBWelcome({ onNext }: { onNext: () => void }) {
       </View>
     </OBShell>
   );
-}
-
-function Dot({ color }: { color: string }) {
-  return <View style={{ width: 20, height: 20, borderRadius: 999, backgroundColor: color }} />;
 }
 
 /* ---------- 2. The big idea ---------- */
