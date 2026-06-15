@@ -46,6 +46,7 @@ import {
 } from "@/features/entitlements/default-purchase-actions";
 import type { PlanOffer } from "@/features/entitlements/purchases";
 import { submitAppFeedback } from "@/features/feedback/default-feedback-actions";
+import { deleteParentAccount } from "@/features/account/default-account-actions";
 import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import {
@@ -411,6 +412,11 @@ export default function ParentHomeRoute() {
         })
       }
       onLogOut={async () => {
+        await createDefaultParentAuthActions().signOut();
+        router.replace("/");
+      }}
+      onDeleteAccount={async () => {
+        await deleteParentAccount();
         await createDefaultParentAuthActions().signOut();
         router.replace("/");
       }}

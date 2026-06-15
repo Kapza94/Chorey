@@ -90,6 +90,7 @@ type Props = {
   onManageStoreSubscription?: () => void;
   onSubmitContact?: (message: string) => Promise<void>;
   onSubmitFeedback?: (message: string) => Promise<void>;
+  onDeleteAccount?: () => Promise<void> | void;
   initialTab?: ParentTab;
 };
 
@@ -135,6 +136,7 @@ export function ParentApp({
   onManageStoreSubscription,
   onSubmitContact,
   onSubmitFeedback,
+  onDeleteAccount,
   initialTab = "kids",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -235,6 +237,7 @@ export function ParentApp({
           }
           onSubmitContact={onSubmitContact}
           onSubmitFeedback={onSubmitFeedback}
+          onDeleteAccount={onDeleteAccount}
           onSignOut={() => {
             setAccountOpen(false);
             onLogOut?.();

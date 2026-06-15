@@ -8,11 +8,13 @@ import {
   MessageSquarePlus,
   Pencil,
   Settings2,
+  Trash2,
 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { ToyAvatar, ToySticker } from "@/components/toybox";
 import { FeedbackForm } from "@/features/feedback/feedback-form";
+import { DeleteAccountConfirm } from "@/features/account/delete-account-confirm";
 
 export type ParentAccount = {
   name: string;
@@ -60,6 +62,7 @@ export function ParentAccountSheet({
   onManageStoreSubscription,
   onSubmitContact,
   onSubmitFeedback,
+  onDeleteAccount,
   onSignOut,
   onClose,
 }: {
@@ -74,6 +77,8 @@ export function ParentAccountSheet({
   onSubmitContact?: (message: string) => Promise<void>;
   /** Persists a "Send feedback" note. Shows the form row when set. */
   onSubmitFeedback?: (message: string) => Promise<void>;
+  /** Permanently deletes the account. Shows the danger row when set. */
+  onDeleteAccount?: () => Promise<void> | void;
   onSignOut?: () => void;
   onClose: () => void;
 }) {
@@ -81,8 +86,8 @@ export function ParentAccountSheet({
   const peach = palette.allowance;
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(account.name);
-  // 'menu' is the account list; 'contact'/'feedback' swap in the message form.
-  const [view, setView] = useState<"menu" | "contact" | "feedback">("menu");
+  // 'menu' is the account list; the others swap in a focused sub-view.
+  const [view, setView] = useState<"menu" | "contact" | "feedback" | "delete">("menu");
 
   const providerLabel = PROVIDER_LABEL[account.provider] ?? "Account";
 
@@ -131,10 +136,15 @@ export function ParentAccountSheet({
           }}
         />
 
-        {view !== "menu" ? (
+        {view === "contact" || view === "feedback" ? (
           <FeedbackForm
             kind={view}
             onSubmit={view === "contact" ? onSubmitContact! : onSubmitFeedback!}
+            onBack={() => setView("menu")}
+          />
+        ) : view === "delete" ? (
+          <DeleteAccountConfirm
+            onConfirm={() => onDeleteAccount!()}
             onBack={() => setView("menu")}
           />
         ) : (
@@ -249,6 +259,14 @@ export function ParentAccountSheet({
             />
           ) : null}
           <AccountRow Icon={LogOut} label="Sign out" tone="danger" onPress={onSignOut} />
+          {onDeleteAccount ? (
+            <AccountRow
+              Icon={Trash2}
+              label="Delete account"
+              tone="danger"
+              onPress={() => setView("delete")}
+            />
+          ) : null}
         </View>
           </>
         )}
