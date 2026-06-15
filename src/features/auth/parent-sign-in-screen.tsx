@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { AppleIcon, GoogleIcon } from "@/components/brand-icons";
 import { choreyTheme } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
+import { LegalConsent } from "@/features/legal/legal-consent";
 
 export type ParentSignInActions = {
   /** resolves true only when a session was established (false = cancelled) */
@@ -355,17 +356,20 @@ export function ParentSignInScreen({
         </View>
       </View>
 
-      <Text
-        selectable
-        style={{
-          color: scheme.fgFaint,
-          fontSize: 13,
-          lineHeight: 19,
-          textAlign: "center",
-        }}
-      >
-        Children use a parent-linked profile.
-      </Text>
+      <View style={{ gap: choreyTheme.spacing.md }}>
+        <LegalConsent />
+        <Text
+          selectable
+          style={{
+            color: scheme.fgFaint,
+            fontSize: 13,
+            lineHeight: 19,
+            textAlign: "center",
+          }}
+        >
+          Children use a parent-linked profile.
+        </Text>
+      </View>
     </ScrollView>
   );
 }
