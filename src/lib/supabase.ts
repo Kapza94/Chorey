@@ -2,13 +2,21 @@ import { createClient } from "@supabase/supabase-js";
 import "expo-sqlite/localStorage/install";
 import "react-native-url-polyfill/auto";
 
-import { getChoreyEnv } from "@/lib/env";
+import { getChoreyEnvOrNull } from "@/lib/env";
 
-const env = getChoreyEnv();
+const env = getChoreyEnvOrNull();
+
+/**
+ * Whether the Supabase config was present at startup. The root layout renders a
+ * readable "not configured" screen when this is false, instead of letting the
+ * app hard-crash at import time. The placeholder values below only exist so
+ * `createClient` doesn't throw before that screen can render.
+ */
+export const isSupabaseConfigured = env !== null;
 
 export const supabase = createClient(
-  env.supabaseUrl,
-  env.supabasePublishableKey,
+  env?.supabaseUrl ?? "https://unconfigured.supabase.co",
+  env?.supabasePublishableKey ?? "unconfigured",
   {
     auth: {
       storage: localStorage,

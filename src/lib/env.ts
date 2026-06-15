@@ -3,20 +3,45 @@ export type ChoreyEnv = {
   supabasePublishableKey: string;
 };
 
-export function getChoreyEnv(): ChoreyEnv {
+/**
+ * Reads the Supabase config, or returns null when it isn't set. Use this on the
+ * startup path so a misconfigured build shows a readable screen instead of
+ * throwing at import time and hard-crashing on launch (see `isSupabaseConfigured`).
+ */
+export function getChoreyEnvOrNull(): ChoreyEnv | null {
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!supabaseUrl || !supabasePublishableKey) {
-    throw new Error(
-      "Missing Supabase config. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
-    );
+    return null;
   }
 
   return {
     supabaseUrl,
     supabasePublishableKey,
   };
+}
+
+export function getChoreyEnv(): ChoreyEnv {
+  const env = getChoreyEnvOrNull();
+
+  if (!env) {
+    throw new Error(
+      "Missing Supabase config. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+    );
+  }
+
+  return env;
+}
+
+/**
+ * Sentry DSN, or null when error reporting isn't configured. The app runs
+ * without it — Sentry simply stays disabled until the DSN is set (mirrors the
+ * RevenueCat / push-notifications no-op approach).
+ */
+export function getSentryDsn(): string | null {
+  const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+  return dsn && dsn.length > 0 ? dsn : null;
 }
 
 export type RevenueCatConfig = {
