@@ -17,6 +17,7 @@ import type {
   SubscriptionPlan,
 } from "@/features/entitlements/subscription-actions";
 import type { PlanOffer } from "@/features/entitlements/purchases";
+import { LegalConsent } from "@/features/legal/legal-consent";
 
 type Props = {
   subscription: HouseholdSubscription;
@@ -277,6 +278,8 @@ export function SubscriptionScreen({
         >
           {fineprint}
         </Text>
+
+        <LegalConsent action="subscribing" />
       </>
     );
   }
