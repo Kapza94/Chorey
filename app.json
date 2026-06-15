@@ -45,6 +45,13 @@
     "experiments": {
       "typedRoutes": true
     },
-    "icon": "./assets/icon.png"
+    "icon": "./assets/icon.png",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "494d42c8-d6de-4714-92d5-11ca151071fa"
+      }
+    },
+    "owner": "kapza94"
   }
 }
