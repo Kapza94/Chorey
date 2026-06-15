@@ -22,11 +22,29 @@ Last updated: 2026-06-15. Forward-looking checklist of remaining pre-launch work
 - [x] **Startup config guard** — app no longer hard-crashes when Supabase env
   vars are missing; shows `ConfigErrorScreen` instead (`src/lib/supabase.ts`
   `isSupabaseConfigured`, `src/lib/env.ts` `getChoreyEnvOrNull`).
-- [ ] **Add PostHog** — product analytics.
-  - Use `posthog-react-native`. Init with project API key via env
-    (`EXPO_PUBLIC_POSTHOG_KEY` + host). Capture key funnels: onboarding
-    completion, chore created/approved, paywall view/purchase.
-  - ⚠️ No hard-coded keys/values — flow config through env, per repo convention.
+- [x] **Add PostHog** — product analytics (`feat/posthog-analytics`).
+  - `posthog-react-native@^4.47` + expo deps (file-system/application/device/
+    localization) installed. `AnalyticsProvider` wraps the root in `_layout.tsx`,
+    guarded by `getPostHogConfig()` — no-op until `EXPO_PUBLIC_POSTHOG_KEY` set.
+  - Touch autocapture on; **screen autocapture off** (Expo Router = RN Nav v7).
+  - **Remaining to activate / extend:**
+    - [ ] Get the PostHog project key; set `EXPO_PUBLIC_POSTHOG_KEY`
+          (+ optional `EXPO_PUBLIC_POSTHOG_HOST`) in `.env.local` AND EAS.
+    - [ ] Wire manual screen views via Expo Router `usePathname`.
+    - [ ] Capture key funnels: onboarding completion, chore created/approved,
+          paywall view/purchase.
+
+## ⚖️ Privacy / compliance (REQUIRED before these ship live)
+
+- [ ] **Update the privacy policy** at `https://chorey.co/privacy` (hosted off-repo;
+      linked via `PRIVACY_URL` in `src/features/legal/legal.ts`) to disclose the
+      third-party data processors we now use:
+  - **PostHog** — product analytics (usage events, device/app info, IP-derived
+    location). Note data sharing + region (US/EU cloud).
+  - **Sentry** — crash/error reporting (device info, stack traces, may include
+    contextual user/session data).
+- [ ] Reflect both in the **App Store privacy "nutrition label"** (App Privacy in
+      App Store Connect) and the **Play Data safety** form — required to match.
 
 ## 🎨 App Store assets (to create)
 

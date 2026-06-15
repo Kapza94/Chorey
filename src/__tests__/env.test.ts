@@ -1,6 +1,7 @@
 import {
   getChoreyEnv,
   getChoreyEnvOrNull,
+  getPostHogConfig,
   getSentryDsn,
 } from "@/lib/env";
 
@@ -8,6 +9,8 @@ const KEYS = [
   "EXPO_PUBLIC_SUPABASE_URL",
   "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "EXPO_PUBLIC_SENTRY_DSN",
+  "EXPO_PUBLIC_POSTHOG_KEY",
+  "EXPO_PUBLIC_POSTHOG_HOST",
 ] as const;
 
 describe("env config", () => {
@@ -76,6 +79,29 @@ describe("env config", () => {
       process.env.EXPO_PUBLIC_SENTRY_DSN =
         "https://key@org.ingest.sentry.io/123";
       expect(getSentryDsn()).toBe("https://key@org.ingest.sentry.io/123");
+    });
+  });
+
+  describe("getPostHogConfig", () => {
+    it("returns null when the API key is unset", () => {
+      expect(getPostHogConfig()).toBeNull();
+    });
+
+    it("defaults the host to PostHog US cloud when only the key is set", () => {
+      process.env.EXPO_PUBLIC_POSTHOG_KEY = "phc_test";
+      expect(getPostHogConfig()).toEqual({
+        apiKey: "phc_test",
+        host: "https://us.i.posthog.com",
+      });
+    });
+
+    it("uses the configured host when set", () => {
+      process.env.EXPO_PUBLIC_POSTHOG_KEY = "phc_test";
+      process.env.EXPO_PUBLIC_POSTHOG_HOST = "https://eu.i.posthog.com";
+      expect(getPostHogConfig()).toEqual({
+        apiKey: "phc_test",
+        host: "https://eu.i.posthog.com",
+      });
     });
   });
 });

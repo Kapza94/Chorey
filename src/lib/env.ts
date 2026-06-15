@@ -44,6 +44,31 @@ export function getSentryDsn(): string | null {
   return dsn && dsn.length > 0 ? dsn : null;
 }
 
+export type PostHogConfig = {
+  apiKey: string;
+  host: string;
+};
+
+/**
+ * PostHog analytics config, or null when it isn't set. Analytics stays disabled
+ * until `EXPO_PUBLIC_POSTHOG_KEY` is provided (no-op like Sentry/billing). Host
+ * defaults to PostHog US cloud when not specified.
+ */
+export function getPostHogConfig(): PostHogConfig | null {
+  const apiKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
+
+  return {
+    apiKey,
+    host: host && host.length > 0 ? host : "https://us.i.posthog.com",
+  };
+}
+
 export type RevenueCatConfig = {
   iosKey: string;
   androidKey: string;

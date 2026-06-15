@@ -7,6 +7,7 @@ import * as Sentry from "@sentry/react-native";
 import { getSentryDsn } from "@/lib/env";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { ConfigErrorScreen } from "@/features/system/config-error-screen";
+import { AnalyticsProvider } from "@/features/analytics/analytics-provider";
 import { useChoreyFonts } from "@/theme/use-chorey-fonts";
 import { DevRoleSwitcher } from "@/features/dev/dev-role-switcher";
 
@@ -55,11 +56,11 @@ function RootLayout() {
   }
 
   return (
-    <>
+    <AnalyticsProvider>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }} />
       {__DEV__ ? <DevRoleSwitcher /> : null}
-    </>
+    </AnalyticsProvider>
   );
 }
 
