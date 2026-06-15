@@ -1,0 +1,75 @@
+<!--
+  Chorey — branded auth email.
+  Paste into Supabase → Authentication → Email Templates for BOTH
+  "Confirm signup" and "Magic Link" (they share these template variables).
+
+  Supabase variables used:
+    {{ .Token }}            6-digit code (the onboarding screen asks for this)
+    {{ .ConfirmationURL }}  tap-to-finish link (deep-links to chorey://auth/callback)
+
+  Notes:
+  - Email clients ignore <style>/web fonts, so everything is table-based with
+    inline styles and a system font stack.
+  - Brand: cream #F6EFE3 page, ink #2A2018 text, peach #F3B58E / lavender
+    #C9B7E8 / sage #A9CDB0 accents (the 40/40/20 buckets).
+  - To add the logo image, host c-mark.png somewhere public and drop an <img>
+    into the header where noted.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F6EFE3;margin:0;padding:32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#FFFCF6;border-radius:20px;border:1px solid #ECE3D1;overflow:hidden;">
+        <!-- accent stripe: the 40 / 40 / 20 buckets -->
+        <tr>
+          <td style="height:6px;background-color:#F3B58E;" width="40%"></td>
+          <td style="height:6px;background-color:#C9B7E8;" width="40%"></td>
+          <td style="height:6px;background-color:#A9CDB0;" width="20%"></td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:36px 36px 8px 36px;" align="center">
+            <!-- Logo: <img src="https://YOUR-DOMAIN/c-mark.png" width="56" height="56" alt="Chorey" style="display:block;margin-bottom:14px;"> -->
+            <div style="font-size:34px;font-weight:800;letter-spacing:-1px;color:#2A2018;">chorey</div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:8px 36px 0 36px;" align="center">
+            <h1 style="margin:0;font-size:22px;font-weight:800;color:#2A2018;">Confirm your email</h1>
+            <p style="margin:12px 0 0 0;font-size:15px;line-height:23px;color:#6B5E4E;">
+              Enter this code in the app to finish signing in:
+            </p>
+          </td>
+        </tr>
+        <!-- the 6-digit code -->
+        <tr>
+          <td colspan="3" style="padding:24px 36px 8px 36px;" align="center">
+            <div style="display:inline-block;background-color:#F6EFE3;border:1px solid #ECE3D1;border-radius:14px;padding:16px 28px;font-size:34px;font-weight:800;letter-spacing:8px;color:#2A2018;">
+              {{ .Token }}
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:16px 36px 4px 36px;" align="center">
+            <p style="margin:0;font-size:14px;color:#6B5E4E;">…or just tap the button on your phone:</p>
+          </td>
+        </tr>
+        <!-- tap-to-finish button -->
+        <tr>
+          <td colspan="3" style="padding:12px 36px 8px 36px;" align="center">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;background-color:#E8965E;color:#FFFFFF;text-decoration:none;font-size:16px;font-weight:700;padding:14px 32px;border-radius:999px;">
+              Confirm &amp; sign in
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:20px 36px 36px 36px;" align="center">
+            <p style="margin:0;font-size:12px;line-height:18px;color:#9B8E7C;">
+              This code expires shortly and can only be used once. If you didn't
+              request it, you can safely ignore this email.
+            </p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:18px 0 0 0;font-size:12px;color:#9B8E7C;">Chorey — chores that teach kids to spend, save &amp; give.</p>
+    </td>
+  </tr>
+</table>

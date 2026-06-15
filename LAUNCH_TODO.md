@@ -34,6 +34,26 @@ Last updated: 2026-06-15. Forward-looking checklist of remaining pre-launch work
     - [ ] Capture key funnels: onboarding completion, chore created/approved,
           paywall view/purchase.
 
+## ✉️ Auth email (branding + deliverability)
+
+- [ ] **Apply the branded template** at `docs/email-templates/auth-magic-link.html`
+      in Supabase → Authentication → Email Templates, for **both** "Confirm
+      signup" and "Magic Link". (Shows the 6-digit `{{ .Token }}` + a
+      `{{ .ConfirmationURL }}` button. Make sure the template includes
+      `{{ .Token }}` — the onboarding screen asks for the code.)
+  - [ ] Host `c-mark.png` publicly and drop the logo `<img>` into the header.
+- [ ] **Custom "from" address + production deliverability — set up custom SMTP.**
+      Supabase's built-in email is rate-limited (~a few/hour) and NOT for
+      production, and it always sends from a Supabase address. To send from e.g.
+      `help@chorey.co` you need, in order:
+  1. **A domain you own** — app currently uses **chorey.co** (see `PRIVACY_URL`),
+     not chorey.com. Buy/confirm the domain first; keep it consistent.
+  2. **An email provider** (Resend / Postmark / SendGrid / AWS SES / Mailgun).
+  3. **Verify the domain** there (SPF, DKIM, DMARC DNS records) — required or
+     mail lands in spam.
+  4. Enter the provider's SMTP host/port/user/pass + sender `help@chorey.co` in
+     Supabase → Authentication → SMTP Settings.
+
 ## ⚖️ Privacy / compliance (REQUIRED before these ship live)
 
 - [ ] **Update the privacy policy** at `https://chorey.co/privacy` (hosted off-repo;
