@@ -417,7 +417,14 @@ export default function ParentHomeRoute() {
       }}
       onDeleteAccount={async () => {
         await deleteParentAccount();
-        await createDefaultParentAuthActions().signOut();
+        // The account is already gone; a failed sign-out (e.g. offline) must not
+        // strand the user on a now-invalid session — sign out best-effort, then
+        // always return to the welcome screen.
+        try {
+          await createDefaultParentAuthActions().signOut();
+        } catch {
+          // ignore — the session is already invalid server-side
+        }
         router.replace("/");
       }}
       account={

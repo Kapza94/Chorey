@@ -128,6 +128,9 @@ export function createRevenueCatGateway(): PurchasesGateway {
         const { isActive, expiresAt } = entitlementFromCustomerInfo(
           customerInfo as unknown as RcCustomerInfo,
         );
+        // plan is intentionally null here: the entitlement tells us access is
+        // restored, but the authoritative plan comes from Supabase (kept in sync
+        // by the RevenueCat webhook). The screen reloads it from the server.
         return { outcome: "purchased", isActive, plan: null, expiresAt };
       } catch {
         return { outcome: "error", isActive: false, plan: null, expiresAt: null };
