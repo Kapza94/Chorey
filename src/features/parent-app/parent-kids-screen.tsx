@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { Check, ChevronRight, Plus, Sparkles, Undo2, Wallet } from "lucide-react-native";
+import { Check, ChevronRight, Plus, Share2, Sparkles, Undo2, Wallet } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -13,6 +13,9 @@ import type { PayoutMethod } from "@/features/payments/payment-actions";
 import { KidCard } from "@/features/parent-app/kid-card";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
 import { ToyButton } from "@/components/toybox";
+import { aggregateShareStats } from "@/features/parent-app/share-stats";
+import { ShareStatsSheet, hasShareableWeek } from "@/features/parent-app/share-card";
+import type { ShareStatsActions } from "@/features/parent-app/share-actions";
 
 /** A dashed, waiting-to-be-filled bucket for the empty state. */
 function EmptyBucket({ bucket, offset = false }: { bucket: "spend" | "savings" | "giving"; offset?: boolean }) {
@@ -93,6 +96,8 @@ type Props = {
   onSendBackChore?: (choreId: string, reason: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
+  /** when set, the household total offers a "Share this week" card */
+  shareStats?: ShareStatsActions;
   headerRight?: ReactNode;
 };
 
@@ -111,11 +116,16 @@ export function ParentKidsScreen({
   onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
+  shareStats,
   headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox, isDark, bucketInk } = useChoreyTheme();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [paymentsKid, setPaymentsKid] = useState<ParentKid | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const stats = aggregateShareStats(kids);
+  const canShare = shareStats != null && hasShareableWeek(stats);
 
   const totalPending = kids.reduce((sum, kid) => sum + kid.pendingApprovals, 0);
   const reviewCount =
@@ -238,14 +248,45 @@ export function ParentKidsScreen({
             </View>
 
             {/* Household total */}
-            <Text
-              style={[
-                typography.text.overline,
-                { color: scheme.fgFaint, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 8 },
-              ]}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 22,
+                paddingTop: 24,
+                paddingBottom: 8,
+              }}
             >
-              This week, all children
-            </Text>
+              <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
+                This week, all children
+              </Text>
+              {canShare ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share this week"
+                  onPress={() => setShareOpen(true)}
+                  style={({ pressed }) => ({
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    paddingLeft: 10,
+                    paddingRight: 13,
+                    paddingVertical: 6,
+                    borderRadius: radius.pill,
+                    backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+                    borderColor: scheme.toy.border,
+                    borderWidth: toybox.borderWidth,
+                    ...(pressed ? {} : scheme.toy.shadowSm),
+                  })}
+                >
+                  <Share2 size={13} color={scheme.fg} strokeWidth={2.4} />
+                  <Text style={[typography.text.label, { color: scheme.fg, fontSize: 12 }]}>
+                    Share
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
             <View
               style={{
                 marginHorizontal: 18,
@@ -302,6 +343,16 @@ export function ParentKidsScreen({
         currency={currency}
         onClose={() => setPaymentsKid(null)}
       />
+
+      {shareStats ? (
+        <ShareStatsSheet
+          visible={shareOpen}
+          stats={stats}
+          currency={currency}
+          actions={shareStats}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
     </View>
   );
 }

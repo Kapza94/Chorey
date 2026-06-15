@@ -46,6 +46,7 @@ import {
 } from "@/features/entitlements/default-purchase-actions";
 import type { PlanOffer } from "@/features/entitlements/purchases";
 import { submitAppFeedback } from "@/features/feedback/default-feedback-actions";
+import { shareStatsActions } from "@/features/parent-app/default-share-actions";
 import { deleteParentAccount } from "@/features/account/default-account-actions";
 import { SubscriptionScreen } from "@/features/subscription/subscription-screen";
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
@@ -376,6 +377,7 @@ export default function ParentHomeRoute() {
         await approveGivingSuggestionForHousehold({ householdId, suggestionId });
         await reload();
       }}
+      shareStats={shareStatsActions}
       accessCodes={accessCodes}
       subscriptionLabel={describeSubscription(subscription)}
       onManageSubscription={() =>

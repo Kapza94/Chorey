@@ -31,6 +31,7 @@ import {
   ParentAccountSheet,
   type ParentAccount,
 } from "@/features/parent-app/parent-account";
+import type { ShareStatsActions } from "@/features/parent-app/share-actions";
 import type { CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { Split } from "@/features/money/split";
@@ -54,6 +55,8 @@ type Props = {
   onSendBackChore?: (choreId: string, reason: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
+  /** when set, the Kids tab offers a shareable weekly stats card */
+  shareStats?: ShareStatsActions;
   // Payments
   due?: DuePayout[];
   payoutHistory?: PayoutHistoryRow[];
@@ -114,6 +117,7 @@ export function ParentApp({
   onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
+  shareStats,
   due,
   payoutHistory,
   paidThisMonthCents,
@@ -173,6 +177,7 @@ export function ParentApp({
           onSendBackChore={onSendBackChore}
           onApprovePurchase={onApprovePurchase}
           onApproveGivingSuggestion={onApproveGivingSuggestion}
+          shareStats={shareStats}
           headerRight={headerRight}
         />
       ) : tab === "chores" ? (
