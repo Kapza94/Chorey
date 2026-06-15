@@ -134,6 +134,16 @@ export function createParentAuthActions(
         throw error;
       }
     },
+    /** Trade the `code` from an email magic-link callback for a session. Used by
+     *  the `/auth/callback` deep-link route when the parent taps the link in the
+     *  confirmation email (rather than typing the OTP code). */
+    async exchangeCode(code: string) {
+      const { error } = await client.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        throw error;
+      }
+    },
     async signOut() {
       const { error } = await client.auth.signOut();
 

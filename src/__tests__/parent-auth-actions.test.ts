@@ -117,6 +117,27 @@ describe("parent auth actions", () => {
     });
   });
 
+  it("exchanges a magic-link code for a session", async () => {
+    const client = createAuthClient();
+    const actions = createParentAuthActions(client, REDIRECT, browserReturning(""));
+
+    await actions.exchangeCode("link-code-123");
+
+    expect(client.auth.exchangeCodeForSession).toHaveBeenCalledWith(
+      "link-code-123",
+    );
+  });
+
+  it("throws when the magic-link code exchange fails", async () => {
+    const client = createAuthClient();
+    client.auth.exchangeCodeForSession.mockResolvedValueOnce({
+      error: new Error("code expired"),
+    });
+    const actions = createParentAuthActions(client, REDIRECT, browserReturning(""));
+
+    await expect(actions.exchangeCode("stale")).rejects.toThrow("code expired");
+  });
+
   it("signs the parent out", async () => {
     const client = createAuthClient();
     const actions = createParentAuthActions(client, REDIRECT, browserReturning(""));
