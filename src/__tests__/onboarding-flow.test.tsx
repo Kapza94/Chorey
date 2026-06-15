@@ -15,6 +15,17 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText("Who's setting up?")).toBeOnTheScreen();
   });
 
+  it("sends returning parents to sign-in instead of the setup wizard", () => {
+    const onSignIn = jest.fn();
+    render(<OnboardingFlow onSignIn={onSignIn} />);
+
+    fireEvent.press(screen.getByText("I already have an account"));
+
+    expect(onSignIn).toHaveBeenCalledTimes(1);
+    // Must NOT advance into onboarding setup.
+    expect(screen.queryByText("Every dollar splits three ways.")).toBeNull();
+  });
+
   it("completes the parent branch, creates an account, persists and reports the setup", async () => {
     const onComplete = jest.fn();
     const persist = jest.fn().mockResolvedValue({

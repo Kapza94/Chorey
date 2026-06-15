@@ -151,6 +151,7 @@ export default function IndexRoute() {
       auth={auth}
       persist={persistOnboardingForSignedInParent}
       choosePlan={chooseSubscriptionPlan}
+      onSignIn={() => router.push("/parent/sign-in")}
       onComplete={(result, persisted) => {
         if (result.role === "parent") {
           router.push({

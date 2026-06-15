@@ -198,6 +198,7 @@ export function OnboardingFlow({
   auth,
   persist,
   choosePlan,
+  onSignIn,
 }: {
   onComplete?: (
     result: OnboardingResult,
@@ -210,6 +211,8 @@ export function OnboardingFlow({
   persist?: (result: ParentResult) => Promise<OnboardingPersistResult | void>;
   /** Record the chosen billing plan for the new household's trial. */
   choosePlan?: (householdId: string, plan: "monthly" | "yearly") => Promise<void>;
+  /** Returning parents: send them to sign-in instead of the setup wizard. */
+  onSignIn?: () => void;
 }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
@@ -248,7 +251,7 @@ export function OnboardingFlow({
 
   switch (step) {
     case "welcome":
-      return <OBWelcome onNext={() => setStep("idea")} />;
+      return <OBWelcome onNext={() => setStep("idea")} onSignIn={onSignIn} />;
     case "idea":
       return <OBIdea onNext={() => setStep("role")} onBack={() => setStep("welcome")} />;
     case "role":
@@ -365,14 +368,22 @@ export function OnboardingFlow({
 
 /* ---------- 1. Welcome ---------- */
 
-function OBWelcome({ onNext }: { onNext: () => void }) {
+function OBWelcome({
+  onNext,
+  onSignIn,
+}: {
+  onNext: () => void;
+  onSignIn?: () => void;
+}) {
   const { scheme, typography, palette } = useChoreyTheme();
   return (
     <OBShell
       footer={
         <>
           <OBPrimary onPress={onNext}>Get started</OBPrimary>
-          <OBSecondary onPress={onNext}>I already have an account</OBSecondary>
+          <OBSecondary onPress={onSignIn ?? onNext}>
+            I already have an account
+          </OBSecondary>
         </>
       }
     >
