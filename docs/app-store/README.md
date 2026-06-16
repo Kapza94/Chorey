@@ -7,18 +7,27 @@ Branded, on-brand marketing screenshot panels for the store listings.
   (App Store 6.7"). Uses the Chorey palette + Bricolage / Plus Jakarta fonts.
 - `preview-*.png` — rendered previews of each panel (for quick review).
 
+## Style
+Built in the app's **toybox** language — outlined tiles (`2–3px` ink `#2A2018`
+borders), **hard offset shadows** (`0 Npx 0`, no blur), rotated **stickers**, the
+real bucket ramps (Spend `#F4CDB9` / Save `#D9CDEC` / Give `#C9DDCD`), squircle
+avatars and the giving-green Approve button — matching `src/components/toybox.tsx`
+and the real kid-home / parent-chores screens.
+
+Each panel poses a **question** that the app screen answers.
+
 ## The 5 panels
-1. **Hero** — "Chores that actually pay off."
-2. **The split** — "Every reward splits three ways." (40/40/20)
-3. **Kid view** — "Kids watch their money grow."
-4. **Parent approve** — "Approve great work in a tap."
-5. **Brand close** — Spend · Save · Give.
+1. **Kid home** — "Chore done. So… now what?" → real home: balance, bucket triple, chore list.
+2. **The split** — "Where does every dollar go?" → the 40/40/20 split + giving note.
+3. **Parent approve** — "Stay in control — without the nagging." → Needs-approval board.
+4. **Levels** — "Why do kids keep coming back?" → level road, points, streak.
+5. **Brand close** — chorey · Spend / Save / Give stickers.
 
 ## ⚠️ Before submitting: swap in real app captures
-The phone content in each panel is an **on-brand mock**, not the real UI. Apple/
-Google want screenshots that reflect the actual app, so replace the mock inside
-each `.screen` with a **real screenshot** of the corresponding app screen before
-uploading. (The headline + frame + background stay.)
+The phone content is a **faithful recreation** of the real screens, but Apple/
+Google want screenshots of the actual running app. Replace each phone's `.scr`
+content with a **real screen capture** before uploading (headline + frame +
+stickers stay). The recreation mirrors the real screens, so the swap is 1:1.
 
 ## Exporting exact-size PNGs
 Open `screenshots.html` over a local server and capture each panel at its exact
