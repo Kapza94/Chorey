@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Chorey — App Store screenshots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cream:#F6EFE3; --cream-deep:#ECE3D1; --surface:#FFFCF6;
+    --ink:#2A2018; --ink-soft:#6B5E4E; --ink-faint:#9B8E7C;
+    --spend:#F3B58E; --savings:#C9B7E8; --giving:#A9CDB0;
+    --accent:#E8965E; --dark:#1C1814;
+    --disp:"Bricolage Grotesque",system-ui,sans-serif;
+    --body:"Plus Jakarta Sans",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#222;display:flex;flex-wrap:wrap;gap:40px;padding:40px;font-family:var(--body);}
+
+  /* Each panel is an exact App Store 6.7" frame: 1290 x 2796 */
+  .panel{
+    width:1290px;height:2796px;position:relative;overflow:hidden;
+    background:var(--cream);display:flex;flex-direction:column;align-items:center;
+  }
+  .panel .stripe{position:absolute;top:0;left:0;right:0;height:14px;display:flex;}
+  .stripe i{height:100%;}
+  .stripe .s{flex:40;background:var(--spend);}
+  .stripe .v{flex:40;background:var(--savings);}
+  .stripe .g{flex:20;background:var(--giving);}
+
+  .headline{padding:140px 110px 0;text-align:center;}
+  .headline h1{font-family:var(--disp);font-weight:800;font-size:118px;line-height:1.02;letter-spacing:-3px;color:var(--ink);}
+  .headline p{font-family:var(--body);font-weight:600;font-size:46px;line-height:1.35;color:var(--ink-soft);margin-top:34px;}
+  .headline .hl-spend{color:#C9743F;} .headline .hl-save{color:#7E63B8;} .headline .hl-give{color:#5E8C6A;}
+
+  /* blobs */
+  .blob{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55;}
+
+  /* phone */
+  .phone{margin-top:auto;margin-bottom:-90px;width:880px;height:1760px;background:var(--dark);
+    border-radius:96px;padding:22px;box-shadow:0 50px 120px rgba(42,32,24,.28);position:relative;}
+  .screen{width:100%;height:100%;background:var(--cream);border-radius:76px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:26px;left:50%;transform:translateX(-50%);width:230px;height:34px;background:var(--dark);border-radius:20px;z-index:5;}
+  .sbar{display:flex;justify-content:space-between;padding:30px 54px 0;font-family:var(--body);font-weight:700;font-size:30px;color:var(--ink);}
+  .app{padding:54px;display:flex;flex-direction:column;gap:30px;flex:1;}
+  .app h3{font-family:var(--disp);font-weight:800;font-size:52px;color:var(--ink);}
+  .app .sub{font-family:var(--body);font-weight:600;font-size:30px;color:var(--ink-faint);margin-top:-18px;}
+
+  .card{background:var(--surface);border:1px solid var(--cream-deep);border-radius:40px;padding:40px;box-shadow:0 14px 30px rgba(42,32,24,.06);}
+  .row{display:flex;align-items:center;gap:28px;}
+  .av{width:90px;height:90px;border-radius:28px;background:var(--savings);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;font-size:44px;color:#3c2f5a;}
+  .grow{flex:1;}
+  .t1{font-family:var(--body);font-weight:800;font-size:38px;color:var(--ink);}
+  .t2{font-family:var(--body);font-weight:600;font-size:28px;color:var(--ink-faint);}
+  .pill{font-family:var(--body);font-weight:800;font-size:30px;padding:16px 30px;border-radius:999px;background:var(--accent);color:#fff;}
+  .pill.ghost{background:var(--cream);color:var(--ink-soft);border:1px solid var(--cream-deep);}
+
+  /* bucket bars */
+  .buckets{display:flex;flex-direction:column;gap:34px;}
+  .bk{display:flex;flex-direction:column;gap:14px;}
+  .bk .lab{display:flex;justify-content:space-between;font-family:var(--body);font-weight:800;font-size:34px;color:var(--ink);}
+  .bk .bar{height:46px;border-radius:999px;background:var(--cream-deep);overflow:hidden;}
+  .bk .fill{height:100%;border-radius:999px;}
+  .fill.spend{width:40%;background:var(--spend);} .fill.save{width:40%;background:var(--savings);} .fill.give{width:20%;background:var(--giving);}
+
+  .coin{position:absolute;width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:60px;box-shadow:0 16px 30px rgba(42,32,24,.12);}
+
+  /* closing panel */
+  .close{justify-content:center;gap:50px;padding:0 120px;}
+  .close .mark{font-family:var(--disp);font-weight:800;font-size:150px;letter-spacing:-5px;color:var(--ink);}
+  .close .three{display:flex;gap:30px;margin-top:20px;}
+  .chip{font-family:var(--disp);font-weight:800;font-size:62px;padding:30px 54px;border-radius:40px;color:#3a2c1e;}
+</style>
+</head>
+<body>
+
+<!-- 1. HERO -->
+<section class="panel" id="p1">
+  <div class="stripe"><i class="s"></i><i class="v"></i><i class="g"></i></div>
+  <div class="blob" style="width:420px;height:420px;background:var(--spend);top:340px;left:-120px;"></div>
+  <div class="blob" style="width:300px;height:300px;background:var(--giving);top:220px;right:-80px;"></div>
+  <div class="headline">
+    <h1>Chores that<br>actually pay off.</h1>
+    <p>Real rewards. Real money habits.<br>For the whole family.</p>
+  </div>
+  <div class="coin" style="background:var(--spend);top:880px;left:180px;">🪙</div>
+  <div class="coin" style="background:var(--giving);top:980px;right:170px;">💚</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="sbar"><span>9:41</span><span>▮▮▮</span></div>
+      <div class="app">
+        <h3>This week</h3>
+        <div class="card row"><div class="av">M</div><div class="grow"><div class="t1">Make your bed</div><div class="t2">Mia · $2.00</div></div><div class="pill">Approve</div></div>
+        <div class="card row"><div class="av" style="background:var(--giving);color:#2f4a39;">L</div><div class="grow"><div class="t1">Walk the dog</div><div class="t2">Leo · $3.00</div></div><div class="pill ghost">Pending</div></div>
+        <div class="card row"><div class="av" style="background:var(--spend);color:#7a4322;">M</div><div class="grow"><div class="t1">Tidy room</div><div class="t2">Mia · $1.50</div></div><div class="pill">Approve</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. THE SPLIT -->
+<section class="panel" id="p2">
+  <div class="stripe"><i class="s"></i><i class="v"></i><i class="g"></i></div>
+  <div class="headline">
+    <h1>Every reward<br>splits three ways.</h1>
+    <p><span class="hl-spend">40% Spend</span> · <span class="hl-save">40% Save</span> · <span class="hl-give">20% Give</span></p>
+  </div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="sbar"><span>9:41</span><span>▮▮▮</span></div>
+      <div class="app">
+        <h3>$10.00 earned</h3>
+        <div class="sub">Automatically split, every time</div>
+        <div class="card buckets">
+          <div class="bk"><div class="lab"><span>Spend</span><span>$4.00</span></div><div class="bar"><div class="fill spend"></div></div></div>
+          <div class="bk"><div class="lab"><span>Save</span><span>$4.00</span></div><div class="bar"><div class="fill save"></div></div></div>
+          <div class="bk"><div class="lab"><span>Give</span><span>$2.00</span></div><div class="bar"><div class="fill give"></div></div></div>
+        </div>
+        <div class="card row"><div class="grow"><div class="t1">Why it matters</div><div class="t2">Kids learn to balance every dollar</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. KID VIEW -->
+<section class="panel" id="p3">
+  <div class="stripe"><i class="s"></i><i class="v"></i><i class="g"></i></div>
+  <div class="blob" style="width:360px;height:360px;background:var(--savings);top:300px;right:-110px;"></div>
+  <div class="headline">
+    <h1>Kids watch<br>their money grow.</h1>
+    <p>Their own simple, joyful money home.</p>
+  </div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="sbar"><span>9:41</span><span>▮▮▮</span></div>
+      <div class="app">
+        <div class="row"><div class="av">M</div><div class="grow"><div class="t1">Hi, Mia!</div><div class="t2">You have $24.50</div></div></div>
+        <div class="card" style="background:var(--spend);border:none;"><div class="t2" style="color:#7a4322;">Spend</div><div class="t1" style="font-size:64px;color:#5e3115;">$9.80</div></div>
+        <div class="card" style="background:var(--savings);border:none;"><div class="t2" style="color:#4a3a70;">Save</div><div class="t1" style="font-size:64px;color:#3c2f5a;">$9.80</div></div>
+        <div class="card" style="background:var(--giving);border:none;"><div class="t2" style="color:#2f4a39;">Give</div><div class="t1" style="font-size:64px;color:#244534;">$4.90</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. PARENT APPROVE -->
+<section class="panel" id="p4">
+  <div class="stripe"><i class="s"></i><i class="v"></i><i class="g"></i></div>
+  <div class="headline">
+    <h1>Approve great<br>work in a tap.</h1>
+    <p>Review, send back, or reward — fast.</p>
+  </div>
+  <div class="coin" style="background:var(--savings);top:840px;left:150px;">✨</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="sbar"><span>9:41</span><span>▮▮▮</span></div>
+      <div class="app">
+        <h3>Needs review</h3>
+        <div class="card"><div class="row"><div class="av" style="background:var(--giving);color:#2f4a39;">L</div><div class="grow"><div class="t1">Take out trash</div><div class="t2">Leo · submitted 2h ago</div></div></div>
+          <div class="row" style="margin-top:34px;"><div class="pill" style="flex:1;text-align:center;">Approve $3.00</div><div class="pill ghost" style="flex:1;text-align:center;">Send back</div></div></div>
+        <div class="card row"><div class="av">M</div><div class="grow"><div class="t1">Practice piano</div><div class="t2">Mia · submitted 5h ago</div></div><div class="pill">Approve</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. CLOSING -->
+<section class="panel close" id="p5">
+  <div class="stripe"><i class="s"></i><i class="v"></i><i class="g"></i></div>
+  <div class="blob" style="width:520px;height:520px;background:var(--spend);top:520px;left:-160px;"></div>
+  <div class="blob" style="width:420px;height:420px;background:var(--giving);bottom:420px;right:-150px;"></div>
+  <div class="mark">chorey</div>
+  <div class="three">
+    <span class="chip" style="background:var(--spend);">Spend</span>
+    <span class="chip" style="background:var(--savings);">Save</span>
+    <span class="chip" style="background:var(--giving);">Give</span>
+  </div>
+  <p style="font-family:var(--body);font-weight:600;font-size:48px;color:var(--ink-soft);text-align:center;max-width:900px;">Chores that teach kids to spend, save, and give — from day one.</p>
+</section>
+
+</body>
+</html>
