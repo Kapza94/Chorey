@@ -8,26 +8,29 @@ Branded, on-brand marketing screenshot panels for the store listings.
 - `preview-*.png` — rendered previews of each panel (for quick review).
 
 ## Style
-Built in the app's **toybox** language — outlined tiles (`2–3px` ink `#2A2018`
-borders), **hard offset shadows** (`0 Npx 0`, no blur), rotated **stickers**, the
-real bucket ramps (Spend `#F4CDB9` / Save `#D9CDEC` / Give `#C9DDCD`), squircle
-avatars and the giving-green Approve button — matching `src/components/toybox.tsx`
-and the real kid-home / parent-chores screens.
+Toybox-branded marketing frames: a tinted "stage" fills the upper area (no dead
+white space), the **question** sits in a speech bubble, rotated **stickers** +
+confetti shapes add play, and a large phone holds the **real app screenshot**.
+Colors are the real bucket ramps (Spend `#F4CDB9` / Save `#D9CDEC` / Give
+`#C9DDCD`), clay accent `#C58A72`, ink `#2A2018`.
 
-Each panel poses a **question** that the app screen answers.
+Each panel poses a **question** that the real screenshot answers.
 
-## The 5 panels
-1. **Kid home** — "Chore done. So… now what?" → real home: balance, bucket triple, chore list.
-2. **The split** — "Where does every dollar go?" → the 40/40/20 split + giving note.
-3. **Parent approve** — "Stay in control — without the nagging." → Needs-approval board.
-4. **Levels** — "Why do kids keep coming back?" → level road, points, streak.
-5. **Brand close** — chorey · Spend / Save / Give stickers.
+## The 5 panels (question → screen)
+1. **"Chore done. So… now what?"** → Kid home (balance, buckets, chores) → `raw/shot-1.png`
+2. **"Where does every dollar go?"** → the 40/40/20 split → `raw/shot-2.png`
+3. **"Stay in control — no nagging."** → Parent approvals board → `raw/shot-3.png`
+4. **"Why do kids keep coming back?"** → Levels / journey → `raw/shot-4.png`
+5. **Brand close** → chorey · Spend / Save / Give
 
-## ⚠️ Before submitting: swap in real app captures
-The phone content is a **faithful recreation** of the real screens, but Apple/
-Google want screenshots of the actual running app. Replace each phone's `.scr`
-content with a **real screen capture** before uploading (headline + frame +
-stickers stay). The recreation mirrors the real screens, so the swap is 1:1.
+## ➜ Workflow: add the REAL screenshots
+The phone in each panel currently shows a **placeholder** with a striped slot.
+Apple/Google require the *actual app*, so:
+1. Capture the 5 screens on your phone — see `raw/README.md` for exactly which.
+2. Save them as `raw/shot-1.png` … `raw/shot-5.png`.
+3. In `screenshots.html`, un-comment the `<img src="raw/shot-N.png">` line in each
+   panel (and delete the `.ph` placeholder). The frame/headline/stickers stay.
+4. Re-export each `#p1`…`#p5` at its exact 1290×2796 box.
 
 ## Exporting exact-size PNGs
 Open `screenshots.html` over a local server and capture each panel at its exact

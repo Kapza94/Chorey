@@ -2,242 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Chorey — App Store screenshots (toybox)</title>
+<title>Chorey — App Store screenshots</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --cream:#F6EFE3; --raised:#FBF7EE; --modal:#FFFCF5; --sunken:#F1E9D9; --deepest:#ECE3D1;
-    --ink:#2A2018; --ink2:#5C4E3F; --ink3:#8A7B6A;
+    --cream:#F6EFE3; --modal:#FFFCF5; --ink:#2A2018; --ink2:#5C4E3F; --ink3:#8A7B6A;
     --spend2:#F4CDB9; --spend4:#E8B4A0; --spend8:#7E4F3A;
     --save2:#D9CDEC; --save4:#C8B8E0; --save8:#4F4078;
-    --give2:#C9DDCD; --give4:#A8C9B5; --give6:#6F9881; --give8:#3F5E4C;
-    --accent:#C58A72; --warn-t:#FAEEDC; --warn:#C28F3F; --info-t:#DEE9EE; --info:#6E8E9D;
-    --disp:"Bricolage Grotesque",system-ui,sans-serif;
-    --body:"Plus Jakarta Sans",system-ui,sans-serif;
+    --give2:#C9DDCD; --give4:#A8C9B5; --give8:#3F5E4C;
+    --accent:#C58A72; --warn-t:#FAEEDC; --warn:#C28F3F;
+    --disp:"Bricolage Grotesque",system-ui,sans-serif; --body:"Plus Jakarta Sans",system-ui,sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:#2a2a2a;display:flex;flex-wrap:wrap;gap:40px;padding:40px;}
+  body{background:#2a2a2a;display:flex;flex-wrap:wrap;gap:40px;padding:40px;font-family:var(--body);}
+  .panel{width:1290px;height:2796px;position:relative;overflow:hidden;background:var(--cream);}
 
-  .panel{width:1290px;height:2796px;position:relative;overflow:hidden;background:var(--cream);
-    font-family:var(--body);display:flex;flex-direction:column;align-items:center;}
+  /* big tinted "stage" fills the top ~58% so there's no dead cream */
+  .stage{position:absolute;top:-160px;left:-80px;right:-80px;height:1740px;border-radius:0 0 220px 220px;border-bottom:6px solid var(--ink);}
+  .stage.spend{background:var(--spend2);} .stage.save{background:var(--save2);}
+  .stage.give{background:var(--give2);} .stage.warm{background:var(--warn-t);}
 
-  /* question headline */
-  .q{padding:130px 100px 0;text-align:center;z-index:3;}
-  .q h1{font-family:var(--disp);font-weight:800;font-size:104px;line-height:1.0;letter-spacing:-2.5px;color:var(--ink);}
-  .q p{font-family:var(--body);font-weight:600;font-size:42px;color:var(--ink2);margin-top:26px;}
+  /* decorative confetti shapes to fill space */
+  .dot{position:absolute;border:5px solid var(--ink);border-radius:50%;}
+  .sq{position:absolute;border:5px solid var(--ink);border-radius:30px;}
 
-  /* toybox sticker */
-  .stk{display:inline-block;font-family:var(--disp);font-weight:700;font-size:34px;color:var(--ink);
-    border:3px solid var(--ink);border-radius:18px;padding:14px 28px;box-shadow:0 6px 0 var(--ink);
-    transform:rotate(-2deg);background:var(--warn-t);}
-  .stk.spend{background:var(--spend2);color:var(--spend8);} .stk.save{background:var(--save2);color:var(--save8);}
-  .stk.give{background:var(--give2);color:var(--give8);} .stk.rot{transform:rotate(2.5deg);}
-  .float{position:absolute;z-index:4;}
+  /* speech bubble holding the question */
+  .bubble{position:absolute;left:90px;right:90px;top:150px;background:var(--modal);border:6px solid var(--ink);
+    border-radius:60px;box-shadow:0 14px 0 var(--ink);padding:64px 72px;z-index:5;}
+  .bubble:after{content:"";position:absolute;bottom:-46px;left:140px;width:70px;height:70px;background:var(--modal);
+    border-right:6px solid var(--ink);border-bottom:6px solid var(--ink);transform:rotate(35deg);border-bottom-right-radius:14px;}
+  .bubble h1{font-family:var(--disp);font-weight:800;font-size:96px;line-height:1.0;letter-spacing:-2.5px;color:var(--ink);}
+  .bubble p{font-family:var(--body);font-weight:600;font-size:40px;color:var(--ink2);margin-top:22px;}
 
-  /* phone */
-  .phone{margin-top:auto;width:1040px;height:1880px;background:var(--ink);border-radius:120px;
-    padding:26px;box-shadow:0 18px 0 #1a130d;position:relative;margin-bottom:-150px;}
-  .scr{width:100%;height:100%;background:var(--cream);border-radius:96px;overflow:hidden;position:relative;}
-  .notch{position:absolute;top:30px;left:50%;transform:translateX(-50%);width:300px;height:42px;background:var(--ink);border-radius:24px;z-index:6;}
-  .sb{display:flex;justify-content:space-between;padding:38px 60px 0;font-family:var(--body);font-weight:800;font-size:34px;color:var(--ink);}
-  .app{padding:30px 44px;display:flex;flex-direction:column;}
+  /* sticker */
+  .stk{position:absolute;z-index:6;font-family:var(--disp);font-weight:700;font-size:42px;color:var(--ink);
+    border:5px solid var(--ink);border-radius:24px;padding:18px 34px;box-shadow:0 9px 0 var(--ink);background:var(--modal);}
+  .stk.spend{background:var(--spend4);color:var(--spend8);} .stk.save{background:var(--save4);color:var(--save8);}
+  .stk.give{background:var(--give4);color:var(--give8);} .stk.warm{background:var(--warn-t);color:var(--warn);}
 
-  .over{font-family:var(--body);font-weight:800;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);}
-  .greet{font-family:var(--disp);font-weight:800;font-size:74px;letter-spacing:-2px;color:var(--ink);margin-top:6px;}
-
-  /* toy tile */
-  .tile{background:var(--modal);border:3px solid var(--ink);border-radius:36px;box-shadow:0 7px 0 var(--ink);}
-  .tile.sm{box-shadow:0 5px 0 var(--ink);}
-
-  .lvlrow{display:flex;align-items:center;justify-content:space-between;margin-top:34px;}
-  .chip{font-family:var(--disp);font-weight:700;font-size:30px;border:3px solid var(--ink);border-radius:14px;padding:8px 22px;box-shadow:0 5px 0 var(--ink);}
-  .chip.save{background:var(--save2);color:var(--save8);}
-  .cap{font-family:var(--body);font-weight:600;font-size:28px;color:var(--ink2);}
-  .bar{height:26px;background:var(--sunken);border:3px solid var(--ink);border-radius:999px;overflow:hidden;margin-top:18px;}
-  .bar i{display:block;height:100%;background:var(--save4);}
-
-  .hero{margin-top:34px;padding:40px 44px;}
-  .money{font-family:var(--disp);font-weight:800;color:var(--ink);}
-  .triple{display:flex;gap:18px;margin-top:30px;}
-  .bk{flex:1;border:3px solid var(--ink);border-radius:26px;box-shadow:0 5px 0 var(--ink);padding:22px 24px;}
-  .bk .bl{font-family:var(--body);font-weight:800;font-size:24px;letter-spacing:1px;text-transform:uppercase;}
-  .bk .bv{font-family:var(--disp);font-weight:800;font-size:46px;margin-top:6px;}
-  .bk.spend{background:var(--spend2);} .bk.spend .bl,.bk.spend .bv{color:var(--spend8);}
-  .bk.save{background:var(--save2);} .bk.save .bl,.bk.save .bv{color:var(--save8);}
-  .bk.give{background:var(--give2);} .bk.give .bl,.bk.give .bv{color:var(--give8);}
-
-  .sec{margin-top:46px;}
-  .sec .h{font-family:var(--disp);font-weight:800;font-size:52px;color:var(--ink);margin-top:6px;}
-  .sec .h .mut{color:var(--ink3);}
-
-  .list{margin-top:24px;}
-  .crow{display:flex;align-items:center;gap:28px;padding:30px 40px;border-bottom:2px solid var(--deepest);}
-  .crow:last-child{border-bottom:none;}
-  .cb{width:54px;height:54px;border:3px solid var(--ink);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:34px;flex:none;}
-  .cb.done{background:var(--give4);color:var(--give8);} .cb.todo{background:var(--cream);}
-  .cb.wait{background:var(--warn-t);color:var(--warn);border-radius:999px;}
-  .cgrow{flex:1;min-width:0;}
-  .ct{font-family:var(--body);font-weight:800;font-size:36px;color:var(--ink);}
-  .ct.done{color:var(--ink3);text-decoration:line-through;}
-  .csub{font-family:var(--body);font-weight:600;font-size:26px;margin-top:2px;}
-  .cmoney{font-family:var(--disp);font-weight:800;font-size:36px;text-align:right;}
-  .cpts{font-family:var(--body);font-weight:700;font-size:24px;color:var(--save8);text-align:right;margin-top:2px;}
-
-  .note{margin-top:34px;padding:30px 36px;display:flex;gap:22px;align-items:flex-start;background:var(--info-t);border:3px solid var(--ink);border-radius:30px;box-shadow:0 5px 0 var(--ink);}
-  .note .nt{font-family:var(--disp);font-weight:800;font-size:34px;color:var(--ink);}
-  .note .nc{font-family:var(--body);font-weight:600;font-size:28px;color:var(--ink2);margin-top:6px;}
-  .spark{font-size:42px;}
-
-  /* parent approve buttons */
-  .btn{font-family:var(--disp);font-weight:700;font-size:32px;border:3px solid var(--ink);border-radius:999px;padding:18px 0;text-align:center;box-shadow:0 6px 0 var(--ink);}
-  .btn.approve{background:var(--give4);color:var(--give8);flex:1.4;}
-  .btn.back{background:var(--cream);color:var(--ink2);flex:1;}
+  /* phone, large, overlapping the stage bottom */
+  .phone{position:absolute;left:50%;transform:translateX(-50%);bottom:-120px;width:1000px;height:1820px;
+    background:var(--ink);border-radius:120px;padding:24px;box-shadow:0 0 0 6px #120d09, 0 26px 0 #120d09;z-index:4;}
+  .scr{width:100%;height:100%;border-radius:98px;overflow:hidden;position:relative;background:var(--cream);}
+  .scr img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;}
+  /* placeholder until the real capture is dropped in */
+  .ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:60px;
+    background:repeating-linear-gradient(45deg,#FBF7EE,#FBF7EE 40px,#F1E9D9 40px,#F1E9D9 80px);}
+  .ph .t{font-family:var(--disp);font-weight:800;font-size:54px;color:var(--ink);}
+  .ph .c{font-family:var(--body);font-weight:600;font-size:34px;color:var(--ink2);}
+  .ph .pill{font-family:var(--body);font-weight:800;font-size:30px;color:#fff;background:var(--accent);border:4px solid var(--ink);border-radius:999px;padding:14px 30px;box-shadow:0 6px 0 var(--ink);}
 
   /* brand close */
-  .close{justify-content:center;gap:60px;}
-  .mark{font-family:var(--disp);font-weight:800;font-size:200px;letter-spacing:-8px;color:var(--ink);}
-  .row3{display:flex;gap:40px;}
-  .tagline{font-family:var(--body);font-weight:600;font-size:46px;color:var(--ink2);text-align:center;max-width:920px;}
+  .close .mark{position:absolute;left:0;right:0;top:1040px;text-align:center;font-family:var(--disp);font-weight:800;font-size:210px;letter-spacing:-9px;color:var(--ink);z-index:5;}
+  .close .tag{position:absolute;left:120px;right:120px;top:1320px;text-align:center;font-family:var(--body);font-weight:600;font-size:50px;color:var(--ink2);z-index:5;}
 </style>
 </head>
 <body>
 
-<!-- 1. KID HOME (full real screen) -->
+<!-- 1 -->
 <section class="panel" id="p1">
-  <div class="q"><h1>Chore done.<br>So… now what?</h1></div>
-  <div class="float stk give" style="top:560px;left:80px;transform:rotate(-7deg);">Real money 🪙</div>
-  <div class="float stk save rot" style="top:520px;right:70px;">+8 pts ✨</div>
-  <div class="phone">
-    <div class="notch"></div>
-    <div class="scr">
-      <div class="sb"><span>9:41</span><span>▮▮▮ 🔋</span></div>
-      <div class="app">
-        <div class="over">Monday</div>
-        <div class="greet">Hey, Mia.</div>
-        <div class="lvlrow"><span class="chip save">Level 3</span><span class="cap">120 / 200 to level 4</span></div>
-        <div class="bar"><i style="width:60%"></i></div>
-        <div class="tile hero">
-          <div class="over">Your money</div>
-          <div style="margin-top:6px;"><span class="money" style="font-size:108px;">$24</span><span class="money" style="font-size:52px;color:var(--ink3);">.50</span></div>
-          <div class="triple">
-            <div class="bk spend"><div class="bl">Spend</div><div class="bv">$9.80</div></div>
-            <div class="bk save"><div class="bl">🔒 Save</div><div class="bv">$9.80</div></div>
-            <div class="bk give"><div class="bl">Give</div><div class="bv">$4.90</div></div>
-          </div>
-        </div>
-        <div class="sec"><div class="over">Today</div><div class="h">2 chores <span class="mut">to go</span></div></div>
-        <div class="tile list">
-          <div class="crow"><div class="cb done">✓</div><div class="cgrow"><div class="ct done">Make your bed</div></div><div><div class="cmoney" style="color:var(--give6)">+$2.00</div><div class="cpts">+8 pts</div></div></div>
-          <div class="crow"><div class="cb wait">◷</div><div class="cgrow"><div class="ct">Walk the dog</div><div class="csub" style="color:var(--warn)">Waiting for a parent</div></div><div><div class="cmoney" style="color:var(--ink3)">$3.00</div><div class="cpts">+12 pts</div></div></div>
-          <div class="crow"><div class="cb todo"></div><div class="cgrow"><div class="ct">Tidy your room</div></div><div><div class="cmoney" style="color:var(--ink3)">$1.50</div><div class="cpts">+6 pts</div></div></div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="stage spend"></div>
+  <div class="dot" style="width:150px;height:150px;background:var(--give4);top:980px;left:90px;"></div>
+  <div class="sq" style="width:120px;height:120px;background:var(--save4);top:1080px;right:110px;transform:rotate(12deg);"></div>
+  <div class="bubble"><h1>Chore done.<br>So… now what?</h1><p>It turns into real money — split to spend, save &amp; give.</p></div>
+  <div class="stk give" style="top:900px;left:70px;transform:rotate(-8deg);">Real money 🪙</div>
+  <div class="stk save" style="top:860px;right:60px;transform:rotate(7deg);">+8 pts ✨</div>
+  <div class="phone"><div class="scr">
+    <div class="ph"><div class="t">Kid Home screen</div><div class="c">Drop the real screenshot here<br>(file: <b>raw/shot-1.png</b>)</div><div class="pill">balance · buckets · chores</div></div>
+    <!-- <img src="raw/shot-1.png" alt=""> -->
+  </div></div>
 </section>
 
-<!-- 2. THE SPLIT -->
+<!-- 2 -->
 <section class="panel" id="p2">
-  <div class="q"><h1>Where does<br>every dollar go?</h1></div>
-  <div class="float stk spend" style="top:600px;left:90px;transform:rotate(-6deg);">40% Spend</div>
-  <div class="float stk save" style="top:540px;left:50%;margin-left:-130px;transform:rotate(3deg);">40% Save</div>
-  <div class="float stk give rot" style="top:600px;right:90px;">20% Give</div>
-  <div class="phone">
-    <div class="notch"></div>
-    <div class="scr">
-      <div class="sb"><span>9:41</span><span>▮▮▮ 🔋</span></div>
-      <div class="app">
-        <div class="tile hero" style="margin-top:40px;">
-          <div class="over">You earned</div>
-          <div style="margin-top:6px;"><span class="money" style="font-size:120px;">$10</span><span class="money" style="font-size:56px;color:var(--ink3);">.00</span></div>
-          <div class="cap" style="margin-top:8px;">Split automatically — every time</div>
-          <div class="triple" style="margin-top:40px;">
-            <div class="bk spend"><div class="bl">Spend</div><div class="bv">$4.00</div></div>
-            <div class="bk save"><div class="bl">Save</div><div class="bv">$4.00</div></div>
-            <div class="bk give"><div class="bl">Give</div><div class="bv">$2.00</div></div>
-          </div>
-        </div>
-        <div class="note" style="margin-top:50px;"><span class="spark">✨</span><div><div class="nt">Every dollar splits three ways.</div><div class="nc">40% to spend, 40% saved up, 20% to a cause you pick.</div></div></div>
-        <div class="note" style="background:var(--give2);margin-top:34px;"><span class="spark">💚</span><div><div class="nt">Giving, built in.</div><div class="nc">Kids choose a cause and watch their giving add up.</div></div></div>
-      </div>
-    </div>
-  </div>
+  <div class="stage save"></div>
+  <div class="dot" style="width:140px;height:140px;background:var(--spend4);top:1000px;left:100px;"></div>
+  <div class="dot" style="width:100px;height:100px;background:var(--give4);top:940px;right:120px;"></div>
+  <div class="bubble"><h1>Where does<br>every dollar go?</h1><p>40% spend · 40% save · 20% give — automatically.</p></div>
+  <div class="stk spend" style="top:900px;left:60px;transform:rotate(-7deg);">40 / 40 / 20</div>
+  <div class="stk give" style="top:880px;right:60px;transform:rotate(8deg);">Giving built in 💚</div>
+  <div class="phone"><div class="scr">
+    <div class="ph"><div class="t">The split screen</div><div class="c">Drop the real screenshot here<br>(file: <b>raw/shot-2.png</b>)</div><div class="pill">$ → spend / save / give</div></div>
+    <!-- <img src="raw/shot-2.png" alt=""> -->
+  </div></div>
 </section>
 
-<!-- 3. PARENT APPROVE -->
+<!-- 3 -->
 <section class="panel" id="p3">
-  <div class="q"><h1>Stay in control —<br>without the nagging.</h1></div>
-  <div class="float stk" style="top:560px;right:80px;transform:rotate(6deg);background:var(--give2);color:var(--give8);">Tap to approve ✓</div>
-  <div class="phone">
-    <div class="notch"></div>
-    <div class="scr">
-      <div class="sb"><span>9:41</span><span>▮▮▮ 🔋</span></div>
-      <div class="app">
-        <div class="greet" style="margin-top:20px;">Chores</div>
-        <div class="lvlrow" style="margin-top:30px;"><span class="chip" style="background:var(--warn-t);color:var(--warn);">Needs your approval · 2</span></div>
-        <div class="tile" style="margin-top:30px;padding:34px 40px;">
-          <div style="display:flex;align-items:center;gap:26px;">
-            <div class="cb" style="width:76px;height:76px;border-radius:24px;background:var(--give2);color:var(--give8);font-family:var(--disp);font-weight:800;font-size:44px;">L</div>
-            <div class="cgrow"><div class="ct">Take out the trash</div><div class="csub" style="color:var(--ink3)">Leo · done 2h ago</div></div>
-            <div class="cmoney">$3.00</div>
-          </div>
-          <div style="display:flex;gap:24px;margin-top:30px;"><div class="btn approve">Approve</div><div class="btn back">Send back</div></div>
-        </div>
-        <div class="tile" style="margin-top:34px;padding:34px 40px;">
-          <div style="display:flex;align-items:center;gap:26px;">
-            <div class="cb" style="width:76px;height:76px;border-radius:24px;background:var(--save2);color:var(--save8);font-family:var(--disp);font-weight:800;font-size:44px;">M</div>
-            <div class="cgrow"><div class="ct">Practice piano</div><div class="csub" style="color:var(--ink3)">Mia · done 5h ago</div></div>
-            <div class="cmoney">$2.00</div>
-          </div>
-          <div style="display:flex;gap:24px;margin-top:30px;"><div class="btn approve">Approve</div><div class="btn back">Send back</div></div>
-        </div>
-        <div class="sec"><div class="over">Done this week</div><div class="h" style="font-size:44px;">7 approved <span class="mut">· $18.50</span></div></div>
-      </div>
-    </div>
-  </div>
+  <div class="stage give"></div>
+  <div class="sq" style="width:130px;height:130px;background:var(--save4);top:980px;left:90px;transform:rotate(-10deg);"></div>
+  <div class="dot" style="width:120px;height:120px;background:var(--spend4);top:1040px;right:100px;"></div>
+  <div class="bubble"><h1>Stay in control —<br>no nagging.</h1><p>Approve great work in a tap, or send it back.</p></div>
+  <div class="stk give" style="top:900px;left:70px;transform:rotate(-7deg);">Tap to approve ✓</div>
+  <div class="stk warm" style="top:880px;right:60px;transform:rotate(7deg);">2 to review</div>
+  <div class="phone"><div class="scr">
+    <div class="ph"><div class="t">Parent · approvals</div><div class="c">Drop the real screenshot here<br>(file: <b>raw/shot-3.png</b>)</div><div class="pill">Needs your approval</div></div>
+    <!-- <img src="raw/shot-3.png" alt=""> -->
+  </div></div>
 </section>
 
-<!-- 4. ENGAGEMENT / LEVELS -->
+<!-- 4 -->
 <section class="panel" id="p4">
-  <div class="q"><h1>Why do kids<br>keep coming back?</h1></div>
-  <div class="float stk save" style="top:560px;left:80px;transform:rotate(-7deg);">Level up! 🚀</div>
-  <div class="float stk give rot" style="top:600px;right:80px;">Streak: 6 🔥</div>
-  <div class="phone">
-    <div class="notch"></div>
-    <div class="scr">
-      <div class="sb"><span>9:41</span><span>▮▮▮ 🔋</span></div>
-      <div class="app">
-        <div class="over" style="margin-top:20px;">Your journey</div>
-        <div class="greet">Level 3</div>
-        <div class="cap" style="margin-top:8px;">120 / 200 points to level 4</div>
-        <div class="bar" style="height:34px;"><i style="width:60%"></i></div>
-        <div class="tile" style="margin-top:50px;padding:40px;background:var(--save2);">
-          <div class="nt" style="font-family:var(--disp);font-weight:800;font-size:44px;color:var(--save8);">Every chore earns points.</div>
-          <div class="nc" style="font-family:var(--body);font-weight:600;font-size:30px;color:var(--ink2);margin-top:10px;">Drive your car down the road and unlock new levels.</div>
-        </div>
-        <div style="display:flex;gap:24px;margin-top:40px;">
-          <div class="tile sm" style="flex:1;padding:34px;text-align:center;background:var(--spend2);"><div class="money" style="font-size:64px;color:var(--spend8);">$24</div><div class="bl" style="font-family:var(--body);font-weight:800;font-size:24px;color:var(--spend8);text-transform:uppercase;letter-spacing:1px;margin-top:6px;">Earned</div></div>
-          <div class="tile sm" style="flex:1;padding:34px;text-align:center;background:var(--give2);"><div class="money" style="font-size:64px;color:var(--give8);">320</div><div class="bl" style="font-family:var(--body);font-weight:800;font-size:24px;color:var(--give8);text-transform:uppercase;letter-spacing:1px;margin-top:6px;">Points</div></div>
-        </div>
-        <div class="note" style="margin-top:40px;"><span class="spark">🏆</span><div><div class="nt">Real rewards, real habits.</div><div class="nc">Saving and giving feel as good as spending.</div></div></div>
-      </div>
-    </div>
-  </div>
+  <div class="stage warm"></div>
+  <div class="dot" style="width:150px;height:150px;background:var(--save4);top:980px;left:90px;"></div>
+  <div class="sq" style="width:120px;height:120px;background:var(--give4);top:1050px;right:110px;transform:rotate(12deg);"></div>
+  <div class="bubble"><h1>Why do kids<br>keep coming back?</h1><p>Levels, points and streaks make habits stick.</p></div>
+  <div class="stk save" style="top:900px;left:70px;transform:rotate(-8deg);">Level up! 🚀</div>
+  <div class="stk give" style="top:880px;right:60px;transform:rotate(7deg);">Streak: 6 🔥</div>
+  <div class="phone"><div class="scr">
+    <div class="ph"><div class="t">Levels / journey</div><div class="c">Drop the real screenshot here<br>(file: <b>raw/shot-4.png</b>)</div><div class="pill">XP · levels · streaks</div></div>
+    <!-- <img src="raw/shot-4.png" alt=""> -->
+  </div></div>
 </section>
 
-<!-- 5. BRAND CLOSE -->
+<!-- 5 brand close -->
 <section class="panel close" id="p5">
-  <div class="float stk spend" style="top:520px;left:140px;transform:rotate(-10deg);font-size:44px;">🪙</div>
-  <div class="float stk give rot" style="top:560px;right:150px;font-size:44px;">💚</div>
+  <div class="dot" style="width:220px;height:220px;background:var(--spend4);top:300px;left:120px;"></div>
+  <div class="dot" style="width:160px;height:160px;background:var(--save4);top:560px;right:160px;"></div>
+  <div class="sq" style="width:180px;height:180px;background:var(--give4);bottom:520px;left:180px;transform:rotate(14deg);"></div>
+  <div class="dot" style="width:130px;height:130px;background:var(--accent);bottom:640px;right:200px;"></div>
   <div class="mark">chorey</div>
-  <div class="row3">
-    <span class="stk spend" style="font-size:54px;transform:rotate(-4deg);">Spend</span>
-    <span class="stk save" style="font-size:54px;transform:rotate(2deg);">Save</span>
-    <span class="stk give" style="font-size:54px;transform:rotate(-3deg);">Give</span>
-  </div>
-  <div class="tagline">Chores that teach kids to spend, save, and give — from day one.</div>
+  <div class="tag">Chores that teach kids to spend, save &amp; give — from day one.</div>
+  <div class="stk spend" style="top:1640px;left:230px;transform:rotate(-6deg);font-size:60px;">Spend</div>
+  <div class="stk save" style="top:1620px;left:50%;margin-left:-120px;transform:rotate(3deg);font-size:60px;">Save</div>
+  <div class="stk give" style="top:1640px;right:230px;transform:rotate(-4deg);font-size:60px;">Give</div>
 </section>
 
 </body>
