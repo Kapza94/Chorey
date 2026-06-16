@@ -17,3 +17,6 @@ skills-lock.json
 expo-env.d.ts
 # @end expo-cli
 .secrets/
+
+# Playwright MCP screenshot output
+.playwright-mcp/
