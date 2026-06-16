@@ -66,6 +66,34 @@ Last updated: 2026-06-15. Forward-looking checklist of remaining pre-launch work
 - [ ] Reflect both in the **App Store privacy "nutrition label"** (App Privacy in
       App Store Connect) and the **Play Data safety** form — required to match.
 
+## 🛡️ Security / DDoS & abuse hardening
+
+- [x] **Tightened RPC/trigger EXECUTE grants** (`security/harden-anon-rpc-grants`,
+      migration `20260616120000_harden_function_execute_grants.sql`):
+  - Trigger/internal functions (`block_*_when_household_paused`,
+    `create_ledger_event_when_payout_recorded`,
+    `create_trial_entitlement_for_household`) revoked from all API roles.
+  - Parent RPCs (`approve_*`, `choose_subscription_plan`, `ensure_*`,
+    `list_household_*`) → revoked from anon, granted to authenticated only.
+  - Child RPCs (`*_child_*`, access-code based) left anon-callable by design.
+  - Verified: anon loses parent/trigger execute, authenticated keeps it.
+- [ ] **Review `public.rls_auto_enable()`** — flagged by the advisor but not
+      defined in our migrations (platform/extension-created). Lock down manually
+      if appropriate.
+- [ ] **Auth rate limits** (dashboard → Authentication → Rate Limits): keep token
+      verification low (~30/5min, anti-brute-force), raise email/hour now that
+      Resend is wired.
+- [ ] **Cost / quota exhaustion** (dashboard/billing): enable Supabase usage
+      alerts; set a spend cap on Pro; add Resend usage alerts.
+- [ ] **Bot signup**: rely on rate limits for v1 (CAPTCHA is clunky in RN);
+      revisit Turnstile/hCaptcha via WebView only if abuse appears.
+- [ ] **Enable leaked-password protection** (Auth settings) — low impact
+      (passwordless), free one-click win.
+
+> Note: `npm run db:test` has **pre-existing failures on the local machine**
+> (identical with/without the migration above — not caused by it). Looks like a
+> pgTAP/CLI setup issue; worth a separate look but non-blocking.
+
 ## 🎨 App Store assets (to create)
 
 - [ ] **App Store / Play screenshots** — produce the marketing screenshots.
