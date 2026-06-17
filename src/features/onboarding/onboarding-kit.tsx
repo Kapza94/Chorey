@@ -8,6 +8,7 @@ import {
   View,
   type KeyboardTypeOptions,
   type ReturnKeyTypeOptions,
+  type TextInputProps,
 } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
 
@@ -202,6 +203,9 @@ export function OBField({
   maxLength,
   returnKeyType,
   onSubmitEditing,
+  autoCapitalize,
+  autoCorrect,
+  autoComplete,
 }: {
   label?: string;
   value: string;
@@ -213,6 +217,9 @@ export function OBField({
   maxLength?: number;
   returnKeyType?: ReturnKeyTypeOptions;
   onSubmitEditing?: () => void;
+  autoCapitalize?: TextInputProps["autoCapitalize"];
+  autoCorrect?: boolean;
+  autoComplete?: TextInputProps["autoComplete"];
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   return (
@@ -248,6 +255,9 @@ export function OBField({
           maxLength={maxLength}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          autoComplete={autoComplete}
           style={{
             backgroundColor: scheme.bgRaised,
             borderColor: palette.border.mid,

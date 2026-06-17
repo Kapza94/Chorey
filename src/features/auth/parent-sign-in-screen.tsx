@@ -309,9 +309,11 @@ export function ParentSignInScreen({
             <View style={{ gap: choreyTheme.spacing.md }}>
               <TextInput
                 accessibilityLabel="Magic link code"
-                keyboardType="number-pad"
-                onChangeText={setOtpCode}
-                placeholder="6-digit code"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="one-time-code"
+                onChangeText={(v) => setOtpCode(v.replace(/\s/g, ""))}
+                placeholder="Verification code"
                 placeholderTextColor={scheme.fgFaint}
                 style={{
                   borderRadius: choreyTheme.radii.md,

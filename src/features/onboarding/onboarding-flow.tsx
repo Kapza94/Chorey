@@ -1658,7 +1658,10 @@ function OBParentAccount({
   const [error, setError] = useState<string | null>(null);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const codeValid = codeValue.length === 6;
+  // The emailed code is alphanumeric (server-validated). Gate the button on a
+  // sane minimum length only — never assume an exact length/charset here, or a
+  // format change locks users out of finishing signup.
+  const codeValid = codeValue.length >= 6;
 
   const sendCode = async () => {
     if (!emailValid || busy) {
@@ -1723,7 +1726,7 @@ function OBParentAccount({
         subtitle={
           phase === "email"
             ? "Create your free parent account so everything you just set up is saved."
-            : `We sent a 6-digit code to ${email.trim()}. Enter it to finish.`
+            : `We sent a code to ${email.trim()}. Enter it to finish.`
         }
       />
       {phase === "email" ? (
@@ -1742,16 +1745,19 @@ function OBParentAccount({
         />
       ) : (
         <OBField
-          label="6-digit code"
+          label="Verification code"
           value={codeValue}
           onChange={(v) => {
-            setCodeValue(v.replace(/\D/g, "").slice(0, 6));
+            // Strip whitespace only — keep letters and digits, preserve case, so
+            // the code is passed to verification exactly as it appears in the email.
+            setCodeValue(v.replace(/\s/g, ""));
             setError(null);
           }}
-          placeholder="123456"
-          keyboardType="number-pad"
+          placeholder="Enter your code"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="one-time-code"
           autoFocus
-          maxLength={6}
           returnKeyType="go"
           onSubmitEditing={verifyAndSave}
         />

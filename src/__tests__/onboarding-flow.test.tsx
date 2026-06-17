@@ -73,12 +73,12 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Animals"));
     fireEvent.press(screen.getByText("Continue"));
 
-    // Create account — email, then the 6-digit code
+    // Create account — email, then the emailed verification code
     fireEvent.changeText(await screen.findByLabelText("Email"), "alex@example.com");
     fireEvent.press(screen.getByText("Email me a code"));
     expect(auth.sendEmailCode).toHaveBeenCalledWith("alex@example.com");
 
-    fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    fireEvent.changeText(await screen.findByLabelText("Verification code"), "ABCD1234");
     fireEvent.press(screen.getByText("Create account & finish"));
 
     // Plan choice before the trial — monthly or yearly, no prices invented.
@@ -96,7 +96,8 @@ describe("OnboardingFlow", () => {
 
     // Verified + persisted → the success screen appears
     expect(await screen.findByText("You're all set.")).toBeOnTheScreen();
-    expect(auth.verifyEmailCode).toHaveBeenCalledWith("alex@example.com", "123456");
+    // The alphanumeric code must reach verification intact — letters not stripped.
+    expect(auth.verifyEmailCode).toHaveBeenCalledWith("alex@example.com", "ABCD1234");
     expect(persist).toHaveBeenCalledTimes(1);
     expect(persist.mock.calls[0][0]).toMatchObject({
       role: "parent",
