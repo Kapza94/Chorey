@@ -7,7 +7,7 @@ import { LevelUpBurst } from "@/components/level-up-burst";
 import { KidJourneyScreen } from "@/features/kid-home/kid-journey-screen";
 import { levelForPoints } from "@/features/game/leveling";
 import { KidWishlistScreen, type KidWish } from "@/features/kid-home/kid-wishlist-screen";
-import { KidYouScreen, type KidSavingsGoal } from "@/features/kid-home/kid-you-screen";
+import { KidYouScreen } from "@/features/kid-home/kid-you-screen";
 import { KidTabBar, type KidTab } from "@/features/kid-home/kid-tab-bar";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import {
@@ -43,8 +43,6 @@ type Props = {
   savingsCents?: number;
   givingCents?: number;
   causeName?: string | null;
-  savingsGoal?: KidSavingsGoal | null;
-  onSetSavingsGoal?: (input: { name: string; targetCents: number }) => void;
   onSuggestCause?: (name: string) => void;
   onLogOut?: () => void;
   /** override the starting tab (tests) */
@@ -75,8 +73,6 @@ export function KidApp({
   savingsCents,
   givingCents,
   causeName,
-  savingsGoal,
-  onSetSavingsGoal,
   onSuggestCause,
   onLogOut,
   initialTab = "home",
@@ -120,8 +116,7 @@ export function KidApp({
           givingCents={givingCents}
           totalPoints={totalPoints}
           causeName={causeName}
-          savingsGoal={savingsGoal}
-          onSetSavingsGoal={onSetSavingsGoal}
+          wishes={wishes}
           onSuggestCause={onSuggestCause}
           onLogOut={onLogOut}
         />
