@@ -26,7 +26,7 @@ insert into public.child_access_codes (child_profile_id, household_id, access_co
 values (
   '00000000-0000-0000-0000-000000000b03',
   '00000000-0000-0000-0000-000000000b02',
-  '654321',
+  'CHOREY-SEND0001',
   '00000000-0000-0000-0000-000000000b01'
 );
 
@@ -73,13 +73,13 @@ select is(
 );
 
 select is(
-  (select sent_back_reason from public.list_child_chores('654321') where id = '00000000-0000-0000-0000-000000000b31'),
+  (select sent_back_reason from public.list_child_chores('CHOREY-SEND0001') where id = '00000000-0000-0000-0000-000000000b31'),
   'Please redo',
   'the child sees the send-back reason'
 );
 
 select is(
-  (select status::text from public.submit_child_chore('654321', '00000000-0000-0000-0000-000000000b31')),
+  (select status::text from public.submit_child_chore('CHOREY-SEND0001', '00000000-0000-0000-0000-000000000b31')),
   'submitted',
   'the child can resubmit a sent-back chore'
 );

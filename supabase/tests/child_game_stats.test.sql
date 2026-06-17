@@ -35,7 +35,7 @@ insert into public.child_access_codes (
 values (
   '00000000-0000-0000-0000-000000002203',
   '00000000-0000-0000-0000-000000002202',
-  '987654',
+  'CHOREY-GAME0001',
   '00000000-0000-0000-0000-000000002201'
 );
 
@@ -61,25 +61,25 @@ values
    '00000000-0000-0000-0000-000000002201');
 
 select is(
-  (select total_points from public.get_child_game_stats('987654')),
+  (select total_points from public.get_child_game_stats('CHOREY-GAME0001')),
   72,
   'points mirror pointsForChore: 12 + 10 + 50, submitted chores excluded'
 );
 
 select is(
-  (select approved_count from public.get_child_game_stats('987654')),
+  (select approved_count from public.get_child_game_stats('CHOREY-GAME0001')),
   3,
   'approved_count only counts approved chores'
 );
 
 select is(
-  (select total_points from public.get_child_game_stats('987 654')),
+  (select total_points from public.get_child_game_stats('CHOREY-GAME 0001')),
   72,
   'access code is normalised before lookup'
 );
 
 select is(
-  (select total_points from public.get_child_game_stats('000000')),
+  (select total_points from public.get_child_game_stats('CHOREY-00000000')),
   0,
   'unknown code reports zero points, not an error'
 );

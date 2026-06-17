@@ -35,7 +35,7 @@ insert into public.child_access_codes (
 values (
   '00000000-0000-0000-0000-000000001203',
   '00000000-0000-0000-0000-000000001202',
-  '777777',
+  'CHOREY-PAUS0001',
   '00000000-0000-0000-0000-000000001201'
 );
 
@@ -103,7 +103,7 @@ select throws_ok(
 
 select throws_ok(
   $$ select * from public.submit_child_chore(
-       '777777',
+       'CHOREY-PAUS0001',
        (select id from public.chore_instances
         where child_profile_id = '00000000-0000-0000-0000-000000001203'
         limit 1)
@@ -114,7 +114,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$ select * from public.create_child_wishlist_item('777777', 'Ball', 1000) $$,
+  $$ select * from public.create_child_wishlist_item('CHOREY-PAUS0001', 'Ball', 1000) $$,
   'P0001',
   'Chorey is paused.',
   'paused household blocks wishlist creation'
@@ -140,13 +140,13 @@ select is(
 
 -- History stays readable for the kid and the parent.
 select is(
-  (select count(*)::integer from public.list_child_chores('777777')),
+  (select count(*)::integer from public.list_child_chores('CHOREY-PAUS0001')),
   1,
   'paused household keeps child chores readable'
 );
 
 select is(
-  (select paused from public.resolve_child_access_code('777777')),
+  (select paused from public.resolve_child_access_code('CHOREY-PAUS0001')),
   true,
   'resolving an access code reports the pause to the kid app'
 );
