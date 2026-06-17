@@ -1,6 +1,6 @@
 import {
-  CURRENCIES,
   DEFAULT_CURRENCY,
+  isKnownCurrency,
   type CurrencyCode,
 } from "@/features/money/currency";
 
@@ -63,7 +63,7 @@ export function createChildSessionStore(storage: ChildSessionStorage) {
           childName: asString(record.childName),
           childProfileId: asString(record.childProfileId),
           householdId: asString(record.householdId),
-          currency: currency in CURRENCIES ? (currency as CurrencyCode) : DEFAULT_CURRENCY,
+          currency: isKnownCurrency(currency) ? currency : DEFAULT_CURRENCY,
         };
       } catch {
         return null;

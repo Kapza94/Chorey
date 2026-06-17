@@ -4,6 +4,7 @@ import { Plus } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
+import { fieldStyle } from "@/components/field-style";
 import {
   DEFAULT_CURRENCY,
   formatMoney,
@@ -330,18 +331,7 @@ function AddWishSheet({
           onChangeText={setName}
           placeholder="e.g. Skateboard"
           placeholderTextColor={scheme.fgFaint}
-          style={{
-            backgroundColor: scheme.bgPage,
-            borderColor: palette.border.mid,
-            borderWidth: 1,
-            borderRadius: radius.sm,
-            paddingHorizontal: 14,
-            paddingVertical: 11,
-            fontFamily: typography.family.body.regular,
-            fontSize: 15,
-            color: scheme.fg,
-            marginBottom: 14,
-          }}
+          style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
         />
 
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
@@ -354,18 +344,7 @@ function AddWishSheet({
           onChangeText={setTarget}
           placeholder="0.00"
           placeholderTextColor={scheme.fgFaint}
-          style={{
-            backgroundColor: scheme.bgPage,
-            borderColor: palette.border.mid,
-            borderWidth: 1,
-            borderRadius: radius.sm,
-            paddingHorizontal: 14,
-            paddingVertical: 11,
-            fontFamily: typography.family.body.regular,
-            fontSize: 15,
-            color: scheme.fg,
-            marginBottom: 20,
-          }}
+          style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 20 }]}
         />
 
         <Pressable

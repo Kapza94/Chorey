@@ -5,7 +5,7 @@ import { ChevronRight, CreditCard, KeyRound, LogOut } from "lucide-react-native"
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
-  CURRENCIES,
+  resolveCurrencyFormat,
   DEFAULT_CURRENCY,
   type CurrencyCode,
 } from "@/features/money/currency";
@@ -448,7 +448,7 @@ function BudgetCapField({
   onChange: (nextCents: number) => void;
 }) {
   const { scheme, typography } = useChoreyTheme();
-  const fmt = CURRENCIES[currency];
+  const fmt = resolveCurrencyFormat(currency);
   const major = Math.round(cents / 100);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(major));
@@ -462,10 +462,23 @@ function BudgetCapField({
 
   const symbolGap = fmt.spaceBetweenSymbol ? " " : "";
 
+  // Number row uses a tight, shared line-height on both the symbol and the input
+  // so they sit on a common centre line — without this the input inherits h1's
+  // ~50px lineHeight and the symbol floats above the digits.
+  const NUM_SIZE = 26;
+  const NUM_LH = 30;
+  const numStyle = {
+    color: scheme.fg,
+    fontFamily: typography.text.h1.fontFamily,
+    fontSize: NUM_SIZE,
+    lineHeight: NUM_LH,
+    includeFontPadding: false as const,
+  };
+
   return (
-    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4, marginTop: 2 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
       {fmt.symbolPosition === "before" ? (
-        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26 }]}>
+        <Text style={numStyle}>
           {fmt.symbol}
           {symbolGap}
         </Text>
@@ -484,19 +497,20 @@ function BudgetCapField({
         returnKeyType="done"
         selectTextOnFocus
         style={{
-          ...typography.text.h1,
-          color: scheme.fg,
-          fontSize: 26,
+          ...numStyle,
+          height: NUM_LH + 4,
+          textAlignVertical: "center",
           paddingVertical: 0,
           paddingHorizontal: 0,
-          minWidth: 28,
-          width: Math.max(28, text.length * 16),
+          // Room for every digit plus the caret — too tight and "90" clips to "9".
+          minWidth: 32,
+          width: Math.max(32, text.length * 18 + 10),
           borderBottomWidth: 2,
           borderBottomColor: accent,
         }}
       />
       {fmt.symbolPosition === "after" ? (
-        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 26 }]}>
+        <Text style={numStyle}>
           {symbolGap}
           {fmt.symbol}
         </Text>

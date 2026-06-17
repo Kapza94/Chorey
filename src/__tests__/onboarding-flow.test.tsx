@@ -51,6 +51,8 @@ describe("OnboardingFlow", () => {
     fireEvent.changeText(screen.getByLabelText("Your name"), "Alex");
     fireEvent.changeText(screen.getByLabelText("Family name"), "Rivera");
     fireEvent.press(screen.getByLabelText("Choose your country"));
+    // The picker spans every country, so filter down before tapping.
+    fireEvent.changeText(screen.getByLabelText("Search countries"), "Serbia");
     fireEvent.press(screen.getByLabelText("Serbia"));
     // caption reflects the chosen currency
     expect(screen.getByText(/RSD \(дин\)/)).toBeOnTheScreen();

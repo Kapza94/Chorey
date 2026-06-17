@@ -14,6 +14,7 @@ import type { Recurrence } from "@/features/chores/recurrence";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
 import { DEFAULT_SPLIT, splitCents, type Split } from "@/features/money/split";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
+import { fieldStyle } from "@/components/field-style";
 
 export type ChoreLibraryItem = {
   id: string;
@@ -436,17 +437,7 @@ function ChoreBoardRow({
             placeholder="What needs fixing?"
             placeholderTextColor={scheme.fgFaint}
             autoFocus
-            style={{
-              backgroundColor: scheme.bgPage,
-              borderColor: palette.border.mid,
-              borderWidth: 1,
-              borderRadius: radius.sm,
-              paddingHorizontal: 12,
-              paddingVertical: 9,
-              fontFamily: typography.family.body.regular,
-              fontSize: 14,
-              color: scheme.fg,
-            }}
+            style={fieldStyle(scheme, typography.family.body.regular)}
           />
           <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
             <Pressable
@@ -706,18 +697,7 @@ function AddChoreSheet({
           onChangeText={setName}
           placeholder="e.g. Make the bed"
           placeholderTextColor={scheme.fgFaint}
-          style={{
-            backgroundColor: scheme.bgPage,
-            borderColor: palette.border.mid,
-            borderWidth: 1,
-            borderRadius: radius.sm,
-            paddingHorizontal: 14,
-            paddingVertical: 11,
-            fontFamily: typography.family.body.regular,
-            fontSize: 15,
-            color: scheme.fg,
-            marginBottom: 14,
-          }}
+          style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
         />
 
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
@@ -730,18 +710,7 @@ function AddChoreSheet({
           onChangeText={setValue}
           placeholder="2.00"
           placeholderTextColor={scheme.fgFaint}
-          style={{
-            backgroundColor: scheme.bgPage,
-            borderColor: palette.border.mid,
-            borderWidth: 1,
-            borderRadius: radius.sm,
-            paddingHorizontal: 14,
-            paddingVertical: 11,
-            fontFamily: typography.family.body.regular,
-            fontSize: 15,
-            color: scheme.fg,
-            marginBottom: 14,
-          }}
+          style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
         />
 
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Image, Pressable, Text, TextInput, View } from "react-native";
 import {
   Apple,
   Check,
@@ -19,11 +19,13 @@ import {
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
-  CURRENCIES,
+  resolveCurrencyFormat,
   currencyForCountry,
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
+import { COUNTRIES } from "@/features/money/countries";
+import { CountryPicker } from "@/components/country-picker";
 import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 import {
   OBField,
@@ -37,19 +39,6 @@ import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo"
 import { ToySticker } from "@/components/toybox";
 
 /* ---------- reference data ---------- */
-
-type Country = { code: string; name: string; cur: string; symbol: string };
-
-export const COUNTRIES: Country[] = [
-  { code: "RS", name: "Serbia", cur: "RSD", symbol: "дин" },
-  { code: "US", name: "United States", cur: "USD", symbol: "$" },
-  { code: "GB", name: "United Kingdom", cur: "GBP", symbol: "£" },
-  { code: "DE", name: "Germany", cur: "EUR", symbol: "€" },
-  { code: "HR", name: "Croatia", cur: "EUR", symbol: "€" },
-  { code: "BA", name: "Bosnia & Herz.", cur: "BAM", symbol: "KM" },
-  { code: "AU", name: "Australia", cur: "AUD", symbol: "A$" },
-  { code: "CA", name: "Canada", cur: "CAD", symbol: "C$" },
-];
 
 export type KidTone = "allowance" | "savings" | "giving" | "sky";
 
@@ -661,7 +650,7 @@ function OBFamily({
               <>
                 Amounts will show in{" "}
                 <Text style={{ color: scheme.fgMuted, fontWeight: "700" }}>
-                  {country.cur} ({country.symbol})
+                  {country.cur} ({resolveCurrencyFormat(country.cur).symbol})
                 </Text>{" "}
                 — your local currency.
               </>
@@ -672,55 +661,12 @@ function OBFamily({
         </View>
       </View>
 
-      <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
-        <Pressable
-          accessibilityLabel="Dismiss"
-          onPress={() => setPickerOpen(false)}
-          style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
-        />
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: scheme.bgModal,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: 22,
-            paddingTop: 20,
-            paddingBottom: 30,
-            ...scheme.shadow.lg,
-          }}
-        >
-          <Text style={[typography.text.h2, { color: scheme.fg, marginBottom: 12 }]}>
-            Choose your country
-          </Text>
-          {COUNTRIES.map((c) => (
-            <Pressable
-              key={c.code}
-              accessibilityRole="button"
-              accessibilityLabel={c.name}
-              onPress={() => {
-                patch({ country: c.code });
-                setPickerOpen(false);
-              }}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                paddingVertical: 13,
-                borderBottomWidth: 1,
-                borderBottomColor: scheme.border,
-              }}
-            >
-              <Text style={[typography.text.body, { color: scheme.fg }]}>{c.name}</Text>
-              <Text style={[typography.text.body, { color: scheme.fgFaint }]}>
-                {c.cur} ({c.symbol})
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </Modal>
+      <CountryPicker
+        visible={pickerOpen}
+        selectedCode={data.country || null}
+        onSelect={(c) => patch({ country: c.code })}
+        onClose={() => setPickerOpen(false)}
+      />
     </OBShell>
   );
 }
@@ -1027,7 +973,7 @@ function OBBudgetSplit({
   const { scheme, typography } = useChoreyTheme();
   const country = COUNTRIES.find((c) => c.code === data.country);
   const symbol = country?.symbol ?? "$";
-  const groupSeparator = CURRENCIES[currencyForCountry(data.country)].groupSeparator;
+  const groupSeparator = resolveCurrencyFormat(currencyForCountry(data.country)).groupSeparator;
   // The 40 / 40 / 20 split is brand-fixed; this step explains it, never edits it.
   const spend = 40;
   const save = 40;
@@ -1178,7 +1124,7 @@ function OBChores({
 }) {
   const { scheme, typography } = useChoreyTheme();
   const currency = currencyForCountry(data.country);
-  const symbol = CURRENCIES[currency].symbol;
+  const symbol = resolveCurrencyFormat(currency).symbol;
   const allowance = bucketTokens.spend.ramp;
 
   const [customName, setCustomName] = useState("");
