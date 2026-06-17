@@ -34,13 +34,13 @@ values
   (
     '00000000-0000-0000-0000-000000000c03',
     '00000000-0000-0000-0000-000000000c02',
-    '111222',
+    'CHOREY-UNDO0001',
     '00000000-0000-0000-0000-000000000c01'
   ),
   (
     '00000000-0000-0000-0000-000000000c04',
     '00000000-0000-0000-0000-000000000c02',
-    '333444',
+    'CHOREY-UNDO0002',
     '00000000-0000-0000-0000-000000000c01'
   );
 
@@ -102,7 +102,7 @@ select is(
   (
     select status::text
     from public.undo_child_chore_submission(
-      '111-222',
+      'chorey-undo0001',
       '00000000-0000-0000-0000-000000000c11'
     )
   ),
@@ -132,7 +132,7 @@ select is(
 
 select is_empty(
   $$ select * from public.undo_child_chore_submission(
-    '000000',
+    'CHOREY-00000000',
     '00000000-0000-0000-0000-000000000c14'
   ) $$,
   'invalid access code cannot undo'
@@ -140,7 +140,7 @@ select is_empty(
 
 select is_empty(
   $$ select * from public.undo_child_chore_submission(
-    '111222',
+    'CHOREY-UNDO0001',
     '00000000-0000-0000-0000-000000000c14'
   ) $$,
   'one child cannot undo another child chore'
@@ -148,7 +148,7 @@ select is_empty(
 
 select is_empty(
   $$ select * from public.undo_child_chore_submission(
-    '111222',
+    'CHOREY-UNDO0001',
     '00000000-0000-0000-0000-000000000c12'
   ) $$,
   'assigned chore cannot be undone'
@@ -156,7 +156,7 @@ select is_empty(
 
 select is_empty(
   $$ select * from public.undo_child_chore_submission(
-    '111222',
+    'CHOREY-UNDO0001',
     '00000000-0000-0000-0000-000000000c13'
   ) $$,
   'approved chore cannot be undone'

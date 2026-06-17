@@ -13,7 +13,16 @@
  * This replaces the hard-coded `$` / `toFixed(2)` in the prototype.
  */
 
-export type CurrencyCode = "USD" | "EUR" | "GBP" | "RSD";
+import { COUNTRY_CURRENCY, COUNTRIES } from "@/features/money/countries";
+
+/**
+ * Any ISO 4217 code. The four locales in `CURRENCIES` are hand-tuned; every
+ * other currency is formatted from sensible defaults via `resolveCurrencyFormat`.
+ */
+export type CurrencyCode = string;
+
+/** The locales whose formatting we've hand-set in `CURRENCIES`. */
+export type TunedCurrencyCode = "USD" | "EUR" | "GBP" | "RSD";
 
 export type CurrencyFormat = {
   code: CurrencyCode;
@@ -28,7 +37,8 @@ export type CurrencyFormat = {
   groupSeparator: string;
 };
 
-export const CURRENCIES: Record<CurrencyCode, CurrencyFormat> = {
+/** Hand-tuned formats for the locales we've designed against. */
+export const CURRENCIES: Record<TunedCurrencyCode, CurrencyFormat> = {
   USD: {
     code: "USD",
     symbol: "$",
@@ -69,27 +79,53 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyFormat> = {
 
 export const DEFAULT_CURRENCY: CurrencyCode = "USD";
 
-/** ISO 3166-1 alpha-2 country code → currency. Eurozone members map to EUR. */
-const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
-  US: "USD",
-  RS: "RSD", // Serbia
-  GB: "GBP",
-  // Eurozone (the subset most relevant to onboarding; extend as needed)
-  AT: "EUR",
-  BE: "EUR",
-  DE: "EUR",
-  ES: "EUR",
-  FI: "EUR",
-  FR: "EUR",
-  GR: "EUR",
-  IE: "EUR",
-  IT: "EUR",
-  NL: "EUR",
-  PT: "EUR",
-  SI: "EUR",
-  SK: "EUR",
-  HR: "EUR", // Croatia (adopted EUR 2023)
-};
+/**
+ * ISO 4217 currencies with no minor unit — render whole numbers, no decimals.
+ * (RSD is officially 2-decimal but Chorey shows it whole, kept in CURRENCIES.)
+ */
+const ZERO_DECIMAL_CURRENCIES = new Set<string>([
+  "BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG",
+  "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF",
+]);
+
+/** ISO 4217 code → local glyph, taken from the bundled country dataset. */
+const CURRENCY_SYMBOLS: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const country of COUNTRIES) {
+    if (!(country.cur in map)) {
+      map[country.cur] = country.symbol;
+    }
+  }
+  return map;
+})();
+
+const isTuned = (code: string): code is TunedCurrencyCode => code in CURRENCIES;
+
+/**
+ * Resolve a display format for any ISO 4217 code. Hand-tuned locales use their
+ * exact format; everything else defaults to a leading symbol, 2 decimals, and
+ * "," / "." separators (or 0 decimals for known no-minor-unit currencies).
+ */
+export function resolveCurrencyFormat(code: CurrencyCode): CurrencyFormat {
+  if (isTuned(code)) {
+    return CURRENCIES[code];
+  }
+
+  return {
+    code,
+    symbol: CURRENCY_SYMBOLS[code] ?? code,
+    symbolPosition: "before",
+    spaceBetweenSymbol: false,
+    decimals: ZERO_DECIMAL_CURRENCIES.has(code) ? 0 : 2,
+    decimalSeparator: ".",
+    groupSeparator: ",",
+  };
+}
+
+/** True for any currency we can format — a tuned locale or a known ISO code. */
+export function isKnownCurrency(code: string): boolean {
+  return isTuned(code) || code in CURRENCY_SYMBOLS;
+}
 
 /** Resolve a currency from a country code, defaulting to USD for unknowns. */
 export function currencyForCountry(countryCode: string | null | undefined): CurrencyCode {
@@ -97,11 +133,11 @@ export function currencyForCountry(countryCode: string | null | undefined): Curr
     return DEFAULT_CURRENCY;
   }
 
-  return COUNTRY_TO_CURRENCY[countryCode.trim().toUpperCase()] ?? DEFAULT_CURRENCY;
+  return COUNTRY_CURRENCY[countryCode.trim().toUpperCase()] ?? DEFAULT_CURRENCY;
 }
 
 function resolveFormat(currency: CurrencyCode | CurrencyFormat): CurrencyFormat {
-  return typeof currency === "string" ? CURRENCIES[currency] : currency;
+  return typeof currency === "string" ? resolveCurrencyFormat(currency) : currency;
 }
 
 /** Group the integer part with the locale's thousands separator. */

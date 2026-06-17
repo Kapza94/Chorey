@@ -1,5 +1,10 @@
 import { currencyForCountry, type CurrencyCode } from "@/features/money/currency";
-import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
+import {
+  DEFAULT_SPLIT,
+  isValidSplit,
+  MIN_GIVE_PCT,
+  type Split,
+} from "@/features/money/split";
 
 export type SettlementFrequency = "weekly" | "monthly";
 
@@ -105,6 +110,33 @@ export function createHouseholdReadActions(client: HouseholdClient) {
       }
 
       return (result.data ?? []).map((row: { id: string }) => row.id);
+    },
+
+    /**
+     * Update a household's spend/save/give split. Parent admins only (RLS).
+     * Validates the shape and the Giving floor before writing, so the UI gets a
+     * clear error rather than a raw constraint violation.
+     */
+    async updateHouseholdSplit(householdId: string, split: Split): Promise<void> {
+      if (!isValidSplit(split)) {
+        throw new Error("Split percentages must be non-negative and sum to 100.");
+      }
+      if (split.give < MIN_GIVE_PCT) {
+        throw new Error(`Giving must stay at least ${MIN_GIVE_PCT}%.`);
+      }
+
+      const result = await client
+        .from("households")
+        .update({
+          split_spend: split.spend,
+          split_save: split.save,
+          split_give: split.give,
+        })
+        .eq("id", householdId);
+
+      if (result.error) {
+        throw result.error;
+      }
     },
 
     async getHouseholdSettings(householdId: string): Promise<HouseholdSettings> {

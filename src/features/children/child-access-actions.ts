@@ -1,6 +1,6 @@
 import {
-  CURRENCIES,
   DEFAULT_CURRENCY,
+  isKnownCurrency,
   type CurrencyCode,
 } from "@/features/money/currency";
 
@@ -131,9 +131,9 @@ export function createChildAccessActions(client: ChildAccessClient) {
         throw new Error("Access code was not found.");
       }
 
-      const currency =
-        typeof row.currency === "string" && row.currency in CURRENCIES
-          ? (row.currency as CurrencyCode)
+      const currency: CurrencyCode =
+        typeof row.currency === "string" && isKnownCurrency(row.currency)
+          ? row.currency
           : DEFAULT_CURRENCY;
 
       return {

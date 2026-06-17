@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Image, Pressable, Text, TextInput, View } from "react-native";
 import {
   Apple,
   Check,
@@ -19,12 +19,19 @@ import {
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
-  CURRENCIES,
+  resolveCurrencyFormat,
   currencyForCountry,
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
-import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
+import { COUNTRIES } from "@/features/money/countries";
+import { CountryPicker } from "@/components/country-picker";
+import {
+  balanceSplit,
+  MIN_GIVE_PCT,
+  SPLIT_STEP,
+  type Split,
+} from "@/features/money/split";
 import {
   OBField,
   OBPrimary,
@@ -37,19 +44,6 @@ import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo"
 import { ToySticker } from "@/components/toybox";
 
 /* ---------- reference data ---------- */
-
-type Country = { code: string; name: string; cur: string; symbol: string };
-
-export const COUNTRIES: Country[] = [
-  { code: "RS", name: "Serbia", cur: "RSD", symbol: "дин" },
-  { code: "US", name: "United States", cur: "USD", symbol: "$" },
-  { code: "GB", name: "United Kingdom", cur: "GBP", symbol: "£" },
-  { code: "DE", name: "Germany", cur: "EUR", symbol: "€" },
-  { code: "HR", name: "Croatia", cur: "EUR", symbol: "€" },
-  { code: "BA", name: "Bosnia & Herz.", cur: "BAM", symbol: "KM" },
-  { code: "AU", name: "Australia", cur: "AUD", symbol: "A$" },
-  { code: "CA", name: "Canada", cur: "CAD", symbol: "C$" },
-];
 
 export type KidTone = "allowance" | "savings" | "giving" | "sky";
 
@@ -227,8 +221,8 @@ export function OnboardingFlow({
     country: data.country,
     currency: currencyForCountry(data.country),
     kids: data.kids,
-    // The 40 / 40 / 20 split is brand-fixed and never user-configurable.
-    split: DEFAULT_SPLIT,
+    // 40 / 40 / 20 by default; the family may have nudged Spend/Giving.
+    split: balanceSplit(data.split.spend, data.split.give),
     cadence: data.cadence,
     budgetCents: data.budgetDollars * 100,
     chores: data.chores,
@@ -661,7 +655,7 @@ function OBFamily({
               <>
                 Amounts will show in{" "}
                 <Text style={{ color: scheme.fgMuted, fontWeight: "700" }}>
-                  {country.cur} ({country.symbol})
+                  {country.cur} ({resolveCurrencyFormat(country.cur).symbol})
                 </Text>{" "}
                 — your local currency.
               </>
@@ -672,55 +666,12 @@ function OBFamily({
         </View>
       </View>
 
-      <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
-        <Pressable
-          accessibilityLabel="Dismiss"
-          onPress={() => setPickerOpen(false)}
-          style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
-        />
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: scheme.bgModal,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: 22,
-            paddingTop: 20,
-            paddingBottom: 30,
-            ...scheme.shadow.lg,
-          }}
-        >
-          <Text style={[typography.text.h2, { color: scheme.fg, marginBottom: 12 }]}>
-            Choose your country
-          </Text>
-          {COUNTRIES.map((c) => (
-            <Pressable
-              key={c.code}
-              accessibilityRole="button"
-              accessibilityLabel={c.name}
-              onPress={() => {
-                patch({ country: c.code });
-                setPickerOpen(false);
-              }}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                paddingVertical: 13,
-                borderBottomWidth: 1,
-                borderBottomColor: scheme.border,
-              }}
-            >
-              <Text style={[typography.text.body, { color: scheme.fg }]}>{c.name}</Text>
-              <Text style={[typography.text.body, { color: scheme.fgFaint }]}>
-                {c.cur} ({c.symbol})
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </Modal>
+      <CountryPicker
+        visible={pickerOpen}
+        selectedCode={data.country || null}
+        onSelect={(c) => patch({ country: c.code })}
+        onClose={() => setPickerOpen(false)}
+      />
     </OBShell>
   );
 }
@@ -1027,11 +978,24 @@ function OBBudgetSplit({
   const { scheme, typography } = useChoreyTheme();
   const country = COUNTRIES.find((c) => c.code === data.country);
   const symbol = country?.symbol ?? "$";
-  const groupSeparator = CURRENCIES[currencyForCountry(data.country)].groupSeparator;
-  // The 40 / 40 / 20 split is brand-fixed; this step explains it, never edits it.
-  const spend = 40;
-  const save = 40;
-  const give = 20;
+  const groupSeparator = resolveCurrencyFormat(currencyForCountry(data.country)).groupSeparator;
+  // 40 / 40 / 20 is the recommended default; parents may nudge Spend and Giving.
+  // Savings is the remainder; Giving never drops below the floor.
+  const spend = data.split.spend;
+  const give = data.split.give;
+  const save = 100 - spend - give;
+
+  const stepSpend = (delta: number) =>
+    patch({
+      split: { spend: Math.max(0, Math.min(100 - give, spend + delta)), give },
+    });
+  const stepGive = (delta: number) =>
+    patch({
+      split: {
+        spend,
+        give: Math.max(MIN_GIVE_PCT, Math.min(100 - spend, give + delta)),
+      },
+    });
 
   return (
     <OBShell
@@ -1125,14 +1089,15 @@ function OBBudgetSplit({
       </View>
 
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
-        <SplitTile tone="spend" label="Spend" value={spend} />
-        <SplitTile tone="savings" label="Save" value={save} />
-        <SplitTile tone="giving" label="Give" value={give} />
+        <SplitTile tone="spend" label="Spend" value={spend} onStep={stepSpend} />
+        <SplitTile tone="savings" label="Save" value={save} hint="auto" />
+        <SplitTile tone="giving" label="Give" value={give} onStep={stepGive} />
       </View>
 
       <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
-        The split is the same for every Chorey family: spend a little, save a
-        little more, and always give some. It never changes — that&apos;s the habit.
+        We recommend 40 / 40 / 20 — spend a little, save a little more, and always
+        give some. Nudge Spend and Giving to fit your family; Giving stays at least
+        {" "}{MIN_GIVE_PCT}%.
       </Text>
     </OBShell>
   );
@@ -1142,10 +1107,14 @@ function SplitTile({
   tone,
   label,
   value,
+  hint,
+  onStep,
 }: {
   tone: "spend" | "savings" | "giving";
   label: string;
   value: number;
+  hint?: string;
+  onStep?: (delta: number) => void;
 }) {
   const { scheme, typography, bucketInk } = useChoreyTheme();
   const tintKey = tone === "spend" ? "allowance" : tone;
@@ -1159,6 +1128,16 @@ function SplitTile({
         {value}
         <Text style={{ fontSize: 14 }}>%</Text>
       </Text>
+      {onStep ? (
+        <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+          <OBStepButton symbol="−" label={`Decrease ${label}`} tone={tone} onPress={() => onStep(-SPLIT_STEP)} />
+          <OBStepButton symbol="+" label={`Increase ${label}`} tone={tone} onPress={() => onStep(SPLIT_STEP)} />
+        </View>
+      ) : hint ? (
+        <Text style={[typography.text.caption, { color: ink, opacity: 0.7, textAlign: "center", marginTop: 6 }]}>
+          {hint}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -1178,7 +1157,7 @@ function OBChores({
 }) {
   const { scheme, typography } = useChoreyTheme();
   const currency = currencyForCountry(data.country);
-  const symbol = CURRENCIES[currency].symbol;
+  const symbol = resolveCurrencyFormat(currency).symbol;
   const allowance = bucketTokens.spend.ramp;
 
   const [customName, setCustomName] = useState("");
@@ -1658,7 +1637,10 @@ function OBParentAccount({
   const [error, setError] = useState<string | null>(null);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const codeValid = codeValue.length === 6;
+  // The emailed code is alphanumeric (server-validated). Gate the button on a
+  // sane minimum length only — never assume an exact length/charset here, or a
+  // format change locks users out of finishing signup.
+  const codeValid = codeValue.length >= 6;
 
   const sendCode = async () => {
     if (!emailValid || busy) {
@@ -1723,7 +1705,7 @@ function OBParentAccount({
         subtitle={
           phase === "email"
             ? "Create your free parent account so everything you just set up is saved."
-            : `We sent a 6-digit code to ${email.trim()}. Enter it to finish.`
+            : `We sent a code to ${email.trim()}. Enter it to finish.`
         }
       />
       {phase === "email" ? (
@@ -1742,16 +1724,19 @@ function OBParentAccount({
         />
       ) : (
         <OBField
-          label="6-digit code"
+          label="Verification code"
           value={codeValue}
           onChange={(v) => {
-            setCodeValue(v.replace(/\D/g, "").slice(0, 6));
+            // Strip whitespace only — keep letters and digits, preserve case, so
+            // the code is passed to verification exactly as it appears in the email.
+            setCodeValue(v.replace(/\s/g, ""));
             setError(null);
           }}
-          placeholder="123456"
-          keyboardType="number-pad"
+          placeholder="Enter your code"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="one-time-code"
           autoFocus
-          maxLength={6}
           returnKeyType="go"
           onSubmitEditing={verifyAndSave}
         />

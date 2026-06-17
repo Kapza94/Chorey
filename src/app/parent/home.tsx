@@ -13,7 +13,10 @@ import type {
   PendingPurchase,
 } from "@/features/parent-app/parent-kids-screen";
 import { listHouseholdKids } from "@/features/parent-app/default-parent-kids-actions";
-import { getHouseholdSettings } from "@/features/household/default-household-actions";
+import {
+  getHouseholdSettings,
+  updateHouseholdSplit,
+} from "@/features/household/default-household-actions";
 import {
   formatPayoutDate,
   toPayoutHistoryRows,
@@ -239,6 +242,7 @@ export default function ParentHomeRoute() {
       rewardCents: chore.rewardCents,
       tone: kid?.tone ?? "allowance",
       status: chore.status,
+      recurrence: chore.recurrence,
       late: isRecurringChoreLate(chore),
       sentBackReason: chore.sentBackReason,
     };
@@ -406,6 +410,14 @@ export default function ParentHomeRoute() {
           cadence,
         });
         await reload();
+      }}
+      onChangeSplit={async (nextSplit) => {
+        if (!householdId) {
+          return;
+        }
+        // Optimistic: reflect the new split immediately, then persist.
+        setSplit(nextSplit);
+        await updateHouseholdSplit(householdId, nextSplit);
       }}
       onAddKid={() =>
         router.push({

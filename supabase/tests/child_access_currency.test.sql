@@ -36,18 +36,18 @@ insert into public.child_access_codes (
 values (
   '00000000-0000-0000-0000-000000001103',
   '00000000-0000-0000-0000-000000001102',
-  '654321',
+  'CHOREY-CUR00001',
   '00000000-0000-0000-0000-000000001101'
 );
 
 select is(
-  (select currency from public.resolve_child_access_code('654321')),
+  (select currency from public.resolve_child_access_code('CHOREY-CUR00001')),
   'RSD',
   'resolving an access code returns the household currency'
 );
 
 select is(
-  (select child_name from public.resolve_child_access_code('654 321')),
+  (select child_name from public.resolve_child_access_code('CHOREY-CUR0 0001')),
   'Dinar kid',
   'resolve still normalizes the code and returns the child'
 );

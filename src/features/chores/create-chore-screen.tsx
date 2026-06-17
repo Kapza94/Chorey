@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { SetupScreenLayout } from "@/components/setup-screen-layout";
+import { fieldStyle } from "@/components/field-style";
 import type { CreatedChore } from "@/features/chores/chore-actions";
 import {
   formatReward,
@@ -177,16 +178,7 @@ export function CreateChoreScreen({
           onChangeText={setTitle}
           placeholder="Load dishwasher"
           placeholderTextColor={scheme.fgFaint}
-          style={{
-            borderRadius: choreyTheme.radii.md,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            backgroundColor: scheme.bgModal,
-            color: scheme.fg,
-            fontSize: 16,
-            paddingHorizontal: choreyTheme.spacing.lg,
-            paddingVertical: 15,
-          }}
+          style={fieldStyle(scheme, choreyTheme.typography.family.body.regular)}
         />
       </View>
 
@@ -217,16 +209,7 @@ export function CreateChoreScreen({
           onChangeText={setRewardAmount}
           placeholder="2.50"
           placeholderTextColor={scheme.fgFaint}
-          style={{
-            borderRadius: choreyTheme.radii.md,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            backgroundColor: scheme.bgModal,
-            color: scheme.fg,
-            fontSize: 16,
-            paddingHorizontal: choreyTheme.spacing.lg,
-            paddingVertical: 15,
-          }}
+          style={fieldStyle(scheme, choreyTheme.typography.family.body.regular)}
         />
       </View>
 

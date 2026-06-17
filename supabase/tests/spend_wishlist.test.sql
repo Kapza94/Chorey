@@ -52,14 +52,14 @@ insert into public.child_access_codes (
 values (
   '00000000-0000-0000-0000-000000000703',
   '00000000-0000-0000-0000-000000000702',
-  '123456',
+  'CHOREY-WISH0001',
   '00000000-0000-0000-0000-000000000701'
 );
 
 select is(
   (
     select name
-    from public.create_child_wishlist_item('123456', ' Football ', 2500)
+    from public.create_child_wishlist_item('CHOREY-WISH0001', ' Football ', 2500)
   ),
   'Football',
   'child can create wishlist item'
@@ -68,7 +68,7 @@ select is(
 select is(
   (
     select count(*)::integer
-    from public.list_child_wishlist_items('123456')
+    from public.list_child_wishlist_items('CHOREY-WISH0001')
   ),
   1,
   'child can list own wishlist items'
@@ -76,7 +76,7 @@ select is(
 
 select throws_ok(
   $$ select * from public.request_wishlist_purchase(
-    '123456',
+    'CHOREY-WISH0001',
     (
       select id
       from public.wishlist_items
@@ -115,7 +115,7 @@ select is(
   (
     select status::text
     from public.request_wishlist_purchase(
-      '123456',
+      'CHOREY-WISH0001',
       (
         select id
         from public.wishlist_items

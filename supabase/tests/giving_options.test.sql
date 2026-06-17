@@ -46,21 +46,21 @@ insert into public.child_access_codes (
 values (
   '00000000-0000-0000-0000-000000000803',
   '00000000-0000-0000-0000-000000000802',
-  '123456',
+  'CHOREY-GIVE0001',
   '00000000-0000-0000-0000-000000000801'
 );
 
 select is(
   (
     select name
-    from public.suggest_giving_option('123456', ' Animal shelter ')
+    from public.suggest_giving_option('CHOREY-GIVE0001', ' Animal shelter ')
   ),
   'Animal shelter',
   'child can suggest giving option'
 );
 
 select is(
-  (select count(*)::integer from public.list_child_giving_options('123456')),
+  (select count(*)::integer from public.list_child_giving_options('CHOREY-GIVE0001')),
   0,
   'pending suggestion is not selectable'
 );
@@ -99,7 +99,7 @@ select is(
 );
 
 select is(
-  (select count(*)::integer from public.list_child_giving_options('123456')),
+  (select count(*)::integer from public.list_child_giving_options('CHOREY-GIVE0001')),
   1,
   'approved giving option is selectable'
 );

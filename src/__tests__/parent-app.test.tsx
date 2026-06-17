@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
+import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
 
 const mia: ParentKid = {
@@ -400,6 +401,31 @@ describe("ParentApp · Chores", () => {
     expect(screen.getByText("$3.00 left")).toBeOnTheScreen();
   });
 
+  it("filters the board by repeat-cadence tabs", () => {
+    const board: ChoreBoardItem[] = [
+      { id: "b1", title: "Make bed", childName: "Mia", rewardCents: 100, tone: "allowance", status: "assigned", recurrence: "daily" },
+      { id: "b2", title: "Mow lawn", childName: "Mia", rewardCents: 500, tone: "allowance", status: "assigned", recurrence: "weekly" },
+      { id: "b3", title: "Wash car", childName: "Mia", rewardCents: 300, tone: "allowance", status: "assigned", recurrence: null },
+    ];
+    render(<ParentApp initialTab="chores" kids={[mia]} choreBoard={board} />);
+
+    // All cadences visible by default
+    expect(screen.getByText("Make bed")).toBeOnTheScreen();
+    expect(screen.getByText("Mow lawn")).toBeOnTheScreen();
+    expect(screen.getByText("Wash car")).toBeOnTheScreen();
+
+    // Weekly tab shows only the weekly chore — a crossed-off weekly stays findable here
+    fireEvent.press(screen.getByLabelText("Show Weekly chores"));
+    expect(screen.getByText("Mow lawn")).toBeOnTheScreen();
+    expect(screen.queryByText("Make bed")).toBeNull();
+    expect(screen.queryByText("Wash car")).toBeNull();
+
+    // Once tab shows only the one-off chore
+    fireEvent.press(screen.getByLabelText("Show Once chores"));
+    expect(screen.getByText("Wash car")).toBeOnTheScreen();
+    expect(screen.queryByText("Mow lawn")).toBeNull();
+  });
+
   it("adds a chore with a live split preview", () => {
     const onAddChore = jest.fn();
     render(
@@ -549,6 +575,30 @@ describe("ParentApp · Settings", () => {
     // Mia starts at $25.00 (2500c) → increase to 3000
     fireEvent.press(screen.getByLabelText("Increase budget"));
     expect(onChangeBudget).toHaveBeenCalledWith("k1", 3000);
+  });
+
+  it("nudges the split and clamps Giving at the floor", () => {
+    const onChangeSplit = jest.fn();
+    const view = render(
+      <ParentApp initialTab="settings" kids={[mia]} onChangeSplit={onChangeSplit} />,
+    );
+
+    // Increase Spend 40 → 45; Savings absorbs the change (40 → 35), Give holds.
+    fireEvent.press(screen.getByLabelText("Increase Spend"));
+    expect(onChangeSplit).toHaveBeenCalledWith({ spend: 45, save: 35, give: 20 });
+
+    // With Giving already at the 10% floor, decreasing keeps it at 10.
+    view.rerender(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        split={{ spend: 40, save: 50, give: 10 }}
+        onChangeSplit={onChangeSplit}
+      />,
+    );
+    onChangeSplit.mockClear();
+    fireEvent.press(screen.getByLabelText("Decrease Give"));
+    expect(onChangeSplit).toHaveBeenCalledWith({ spend: 40, save: 50, give: 10 });
   });
 
   it("switches a kid's cadence", () => {

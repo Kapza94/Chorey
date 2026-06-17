@@ -51,6 +51,8 @@ describe("OnboardingFlow", () => {
     fireEvent.changeText(screen.getByLabelText("Your name"), "Alex");
     fireEvent.changeText(screen.getByLabelText("Family name"), "Rivera");
     fireEvent.press(screen.getByLabelText("Choose your country"));
+    // The picker spans every country, so filter down before tapping.
+    fireEvent.changeText(screen.getByLabelText("Search countries"), "Serbia");
     fireEvent.press(screen.getByLabelText("Serbia"));
     // caption reflects the chosen currency
     expect(screen.getByText(/RSD \(дин\)/)).toBeOnTheScreen();
@@ -73,12 +75,12 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Animals"));
     fireEvent.press(screen.getByText("Continue"));
 
-    // Create account — email, then the 6-digit code
+    // Create account — email, then the emailed verification code
     fireEvent.changeText(await screen.findByLabelText("Email"), "alex@example.com");
     fireEvent.press(screen.getByText("Email me a code"));
     expect(auth.sendEmailCode).toHaveBeenCalledWith("alex@example.com");
 
-    fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    fireEvent.changeText(await screen.findByLabelText("Verification code"), "ABCD1234");
     fireEvent.press(screen.getByText("Create account & finish"));
 
     // Plan choice before the trial — monthly or yearly, no prices invented.
@@ -96,7 +98,8 @@ describe("OnboardingFlow", () => {
 
     // Verified + persisted → the success screen appears
     expect(await screen.findByText("You're all set.")).toBeOnTheScreen();
-    expect(auth.verifyEmailCode).toHaveBeenCalledWith("alex@example.com", "123456");
+    // The alphanumeric code must reach verification intact — letters not stripped.
+    expect(auth.verifyEmailCode).toHaveBeenCalledWith("alex@example.com", "ABCD1234");
     expect(persist).toHaveBeenCalledTimes(1);
     expect(persist.mock.calls[0][0]).toMatchObject({
       role: "parent",
@@ -161,14 +164,24 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByText("Budget & split.")).toBeNull();
   });
 
-  it("shows the fixed 40/40/20 split with nothing to adjust", () => {
+  it("defaults to 40/40/20 but lets parents nudge it, with a Giving floor", () => {
     render(<OnboardingFlow initialStep="p_split" />);
 
-    // 40 / 40 / 20 is brand-fixed — the step explains it, no editor exists.
+    // 40 / 40 / 20 is the recommended default.
     expect(screen.getAllByText("40%")).toHaveLength(2);
     expect(screen.getByText("20%")).toBeOnTheScreen();
-    expect(screen.queryByLabelText("Increase Spend")).toBeNull();
-    expect(screen.queryByLabelText("Decrease Give")).toBeNull();
+
+    // Spend is adjustable; Savings absorbs the change.
+    fireEvent.press(screen.getByLabelText("Increase Spend"));
+    expect(screen.getByText("45%")).toBeOnTheScreen(); // spend 40 → 45
+
+    // Giving can be lowered to the 10% floor, then no further.
+    fireEvent.press(screen.getByLabelText("Decrease Give")); // 20 → 15
+    fireEvent.press(screen.getByLabelText("Decrease Give")); // 15 → 10
+    expect(screen.getByText("10%")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Decrease Give")); // floored at 10
+    expect(screen.getByText("10%")).toBeOnTheScreen();
+    expect(screen.queryByText("5%")).toBeNull();
   });
 
   it("gates the kid branch on a full 6-char code and reports it", () => {

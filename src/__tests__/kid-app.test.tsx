@@ -111,40 +111,23 @@ describe("KidApp shell", () => {
     expect(screen.queryByLabelText("Tell a parent something")).toBeNull();
   });
 
-  it("shows savings goal progress on You", () => {
-    render(
-      <KidApp
-        {...baseProps}
-        initialTab="you"
-        savingsGoal={{ name: "New bike", targetCents: 6000 }}
-      />,
-    );
+  it("surfaces the wishlist under Savings on You (no single goal)", () => {
+    render(<KidApp {...baseProps} initialTab="you" />);
 
-    // $12.80 saved toward the $60.00 bike.
-    expect(screen.getByText(/Saving for New bike/)).toBeOnTheScreen();
-    expect(screen.getByText(/\$12\.80 of \$60\.00/)).toBeOnTheScreen();
+    // Savings is "saving for many things" — the active wishes appear here.
+    expect(screen.getByText("Saving for")).toBeOnTheScreen();
+    expect(screen.getByText("Skateboard")).toBeOnTheScreen();
+    expect(screen.getByText("New book")).toBeOnTheScreen();
+    // The retired single-goal affordance is gone.
+    expect(screen.queryByLabelText("Set a savings goal")).toBeNull();
   });
 
-  it("sets a savings goal through the sheet", () => {
-    const onSetSavingsGoal = jest.fn();
-    render(
-      <KidApp
-        {...baseProps}
-        initialTab="you"
-        savingsGoal={null}
-        onSetSavingsGoal={onSetSavingsGoal}
-      />,
-    );
+  it("nudges toward the wishlist when there is nothing saved for yet", () => {
+    render(<KidApp {...baseProps} initialTab="you" wishes={[]} />);
 
-    fireEvent.press(screen.getByLabelText("Set a savings goal"));
-    fireEvent.changeText(screen.getByLabelText("Goal name"), "Telescope");
-    fireEvent.changeText(screen.getByLabelText("Goal cost"), "90.00");
-    fireEvent.press(screen.getByLabelText("Save goal"));
-
-    expect(onSetSavingsGoal).toHaveBeenCalledWith({
-      name: "Telescope",
-      targetCents: 9000,
-    });
+    expect(
+      screen.getByText(/your savings grow toward all of them/i),
+    ).toBeOnTheScreen();
   });
 
   it("suggests a giving cause through the sheet", () => {
