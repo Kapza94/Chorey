@@ -9,7 +9,12 @@ import {
   DEFAULT_CURRENCY,
   type CurrencyCode,
 } from "@/features/money/currency";
-import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
+import {
+  DEFAULT_SPLIT,
+  MIN_GIVE_PCT,
+  SPLIT_STEP,
+  type Split,
+} from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
 
@@ -29,6 +34,7 @@ type Props = {
   onManageSubscription?: () => void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
+  onChangeSplit?: (split: Split) => void;
   onLogOut?: () => void;
   headerRight?: ReactNode;
 };
@@ -42,6 +48,7 @@ export function ParentSettingsScreen({
   onManageSubscription,
   onChangeBudget,
   onChangeCadence,
+  onChangeSplit,
   onLogOut,
   headerRight,
 }: Props) {
@@ -92,51 +99,7 @@ export function ParentSettingsScreen({
           >
             The split
           </Text>
-          <View
-            style={{
-              backgroundColor: scheme.bgModal,
-              borderColor: scheme.toy.border,
-              borderWidth: toybox.borderWidth,
-              ...scheme.toy.shadowSm,
-              borderRadius: 18,
-              paddingHorizontal: 18,
-              paddingTop: 18,
-              paddingBottom: 16,
-              marginBottom: 16,
-            }}
-          >
-            <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
-              How earnings split
-            </Text>
-            <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, marginTop: 4 }]}>
-              {split.spend} / {split.save} / {split.give}
-            </Text>
-            <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: 4 }]}>
-              Every dollar your children earn splits into three buckets — the same for every
-              Chorey family, always. Spend a little, save a little more, always give some.
-            </Text>
-
-            <View
-              style={{
-                flexDirection: "row",
-                height: 14,
-                borderRadius: radius.pill,
-                overflow: "hidden",
-                gap: 2,
-                marginTop: 14,
-              }}
-            >
-              <View style={{ flex: split.spend, backgroundColor: bucketTokens.spend.ramp[400] }} />
-              <View style={{ flex: split.save, backgroundColor: bucketTokens.savings.ramp[400] }} />
-              <View style={{ flex: split.give, backgroundColor: bucketTokens.giving.ramp[400] }} />
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
-              <SplitPill tone="spend" label="Spend" value={split.spend} />
-              <SplitPill tone="savings" label="Save" value={split.save} />
-              <SplitPill tone="giving" label="Give" value={split.give} />
-            </View>
-          </View>
+          <SplitEditor split={split} onChange={onChangeSplit} />
 
           {/* Subscription — one household plan; parents manage it here. */}
           {subscriptionLabel ? (
@@ -542,14 +505,100 @@ function CapButton({
   );
 }
 
-function SplitPill({
+// Editable split: Spend and Giving step ±5; Savings is the auto-balanced
+// remainder; Giving can't drop below MIN_GIVE_PCT. Controlled by the `split`
+// prop — `onChange` updates it upstream (and persists). 40/40/20 is the default
+// every household starts on.
+function SplitEditor({
+  split,
+  onChange,
+}: {
+  split: Split;
+  onChange?: (next: Split) => void;
+}) {
+  const { scheme, typography, radius, toybox } = useChoreyTheme();
+  const editable = !!onChange;
+
+  const clampPct = (value: number, max: number) => Math.max(0, Math.min(max, value));
+
+  const stepSpend = (delta: number) => {
+    const spend = clampPct(split.spend + delta, 100 - split.give);
+    onChange?.({ spend, give: split.give, save: 100 - spend - split.give });
+  };
+  const stepGive = (delta: number) => {
+    const give = Math.max(MIN_GIVE_PCT, Math.min(100 - split.spend, split.give + delta));
+    onChange?.({ spend: split.spend, give, save: 100 - split.spend - give });
+  };
+
+  return (
+    <View
+      style={{
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        ...scheme.toy.shadowSm,
+        borderRadius: 18,
+        paddingHorizontal: 18,
+        paddingTop: 18,
+        paddingBottom: 16,
+        marginBottom: 16,
+      }}
+    >
+      <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>How earnings split</Text>
+      <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, marginTop: 4 }]}>
+        {split.spend} / {split.save} / {split.give}
+      </Text>
+      <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: 4 }]}>
+        We recommend 40 / 40 / 20. Nudge Spend and Giving — Savings balances the rest.
+        Giving always stays at least {MIN_GIVE_PCT}%.
+      </Text>
+
+      <View
+        style={{
+          flexDirection: "row",
+          height: 14,
+          borderRadius: radius.pill,
+          overflow: "hidden",
+          gap: 2,
+          marginTop: 14,
+        }}
+      >
+        <View style={{ flex: split.spend, backgroundColor: bucketTokens.spend.ramp[400] }} />
+        <View style={{ flex: split.save, backgroundColor: bucketTokens.savings.ramp[400] }} />
+        <View style={{ flex: split.give, backgroundColor: bucketTokens.giving.ramp[400] }} />
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
+        <SplitColumn
+          tone="spend"
+          label="Spend"
+          value={split.spend}
+          onStep={editable ? stepSpend : undefined}
+        />
+        <SplitColumn tone="savings" label="Save" value={split.save} hint="auto" />
+        <SplitColumn
+          tone="giving"
+          label="Give"
+          value={split.give}
+          onStep={editable ? stepGive : undefined}
+        />
+      </View>
+    </View>
+  );
+}
+
+function SplitColumn({
   tone,
   label,
   value,
+  hint,
+  onStep,
 }: {
   tone: "spend" | "savings" | "giving";
   label: string;
   value: number;
+  hint?: string;
+  onStep?: (delta: number) => void;
 }) {
   const { typography, scheme, bucketInk } = useChoreyTheme();
   const tintKey = tone === "spend" ? "allowance" : tone;
@@ -577,6 +626,45 @@ function SplitPill({
         {value}
         <Text style={{ fontSize: 12 }}>%</Text>
       </Text>
+      {onStep ? (
+        <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+          <SplitStep label={`Decrease ${label}`} symbol="−" ink={ink} onPress={() => onStep(-SPLIT_STEP)} />
+          <SplitStep label={`Increase ${label}`} symbol="+" ink={ink} onPress={() => onStep(SPLIT_STEP)} />
+        </View>
+      ) : hint ? (
+        <Text style={[typography.text.caption, { color: ink, opacity: 0.7, marginTop: 8 }]}>{hint}</Text>
+      ) : null}
     </View>
+  );
+}
+
+function SplitStep({
+  label,
+  symbol,
+  ink,
+  onPress,
+}: {
+  label: string;
+  symbol: string;
+  ink: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={{
+        flex: 1,
+        height: 28,
+        borderRadius: 8,
+        borderWidth: 1.5,
+        borderColor: ink,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ fontSize: 16, fontWeight: "800", color: ink, lineHeight: 18 }}>{symbol}</Text>
+    </Pressable>
   );
 }

@@ -86,6 +86,7 @@ type Props = {
   onManageSubscription?: () => void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
+  onChangeSplit?: (split: Split) => void;
   onLogOut?: () => void;
   // Account
   account?: ParentAccount;
@@ -134,6 +135,7 @@ export function ParentApp({
   onManageSubscription,
   onChangeBudget,
   onChangeCadence,
+  onChangeSplit,
   onLogOut,
   account,
   onEditName,
@@ -215,6 +217,7 @@ export function ParentApp({
           onManageSubscription={onManageSubscription}
           onChangeBudget={onChangeBudget}
           onChangeCadence={onChangeCadence}
+          onChangeSplit={onChangeSplit}
           onLogOut={onLogOut}
           headerRight={headerRight}
         />
