@@ -37,19 +37,19 @@ insert into public.child_access_codes (
 values (
   '00000000-0000-0000-0000-000000001303',
   '00000000-0000-0000-0000-000000001302',
-  '888888',
+  'CHOREY-SAVE0001',
   '00000000-0000-0000-0000-000000001301'
 );
 
 select is(
-  (select name from public.set_child_savings_goal('888888', ' New bike ', 6000)),
+  (select name from public.set_child_savings_goal('CHOREY-SAVE0001', ' New bike ', 6000)),
   'New bike',
   'child can set a savings goal by access code'
 );
 
 -- Setting again replaces the goal (one per kid, the point is focus).
 select is(
-  (select target_cents from public.set_child_savings_goal('888888', 'Telescope', 9000)),
+  (select target_cents from public.set_child_savings_goal('CHOREY-SAVE0001', 'Telescope', 9000)),
   9000,
   'setting again replaces the single goal'
 );
@@ -62,7 +62,7 @@ select is(
 );
 
 select is(
-  (select name from public.get_child_savings_goal('888888')),
+  (select name from public.get_child_savings_goal('CHOREY-SAVE0001')),
   'Telescope',
   'child can read their goal back'
 );
@@ -73,7 +73,7 @@ set status = 'lapsed'
 where household_id = '00000000-0000-0000-0000-000000001302';
 
 select throws_ok(
-  $$ select * from public.set_child_savings_goal('888888', 'Drums', 12000) $$,
+  $$ select * from public.set_child_savings_goal('CHOREY-SAVE0001', 'Drums', 12000) $$,
   'P0001',
   'Chorey is paused.',
   'paused household blocks savings goal changes'
