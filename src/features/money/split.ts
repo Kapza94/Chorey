@@ -21,6 +21,12 @@ export const DEFAULT_SPLIT: Split = { spend: 40, save: 40, give: 20 };
 /** Step size for the Spend/Give steppers in the split editor. */
 export const SPLIT_STEP = 5;
 
+/**
+ * Giving floor — "always give some" is brand DNA, so Giving can be lowered but
+ * never below this. Mirrored by the `households_split_give_floor` DB constraint.
+ */
+export const MIN_GIVE_PCT = 10;
+
 /** Clamp to [0, 100]. */
 function clamp(value: number): number {
   return Math.max(0, Math.min(100, value));

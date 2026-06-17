@@ -577,6 +577,30 @@ describe("ParentApp · Settings", () => {
     expect(onChangeBudget).toHaveBeenCalledWith("k1", 3000);
   });
 
+  it("nudges the split and clamps Giving at the floor", () => {
+    const onChangeSplit = jest.fn();
+    const view = render(
+      <ParentApp initialTab="settings" kids={[mia]} onChangeSplit={onChangeSplit} />,
+    );
+
+    // Increase Spend 40 → 45; Savings absorbs the change (40 → 35), Give holds.
+    fireEvent.press(screen.getByLabelText("Increase Spend"));
+    expect(onChangeSplit).toHaveBeenCalledWith({ spend: 45, save: 35, give: 20 });
+
+    // With Giving already at the 10% floor, decreasing keeps it at 10.
+    view.rerender(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        split={{ spend: 40, save: 50, give: 10 }}
+        onChangeSplit={onChangeSplit}
+      />,
+    );
+    onChangeSplit.mockClear();
+    fireEvent.press(screen.getByLabelText("Decrease Give"));
+    expect(onChangeSplit).toHaveBeenCalledWith({ spend: 40, save: 50, give: 10 });
+  });
+
   it("switches a kid's cadence", () => {
     const onChangeCadence = jest.fn();
     render(

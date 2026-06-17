@@ -26,7 +26,12 @@ import {
 } from "@/features/money/currency";
 import { COUNTRIES } from "@/features/money/countries";
 import { CountryPicker } from "@/components/country-picker";
-import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
+import {
+  balanceSplit,
+  MIN_GIVE_PCT,
+  SPLIT_STEP,
+  type Split,
+} from "@/features/money/split";
 import {
   OBField,
   OBPrimary,
@@ -216,8 +221,8 @@ export function OnboardingFlow({
     country: data.country,
     currency: currencyForCountry(data.country),
     kids: data.kids,
-    // The 40 / 40 / 20 split is brand-fixed and never user-configurable.
-    split: DEFAULT_SPLIT,
+    // 40 / 40 / 20 by default; the family may have nudged Spend/Giving.
+    split: balanceSplit(data.split.spend, data.split.give),
     cadence: data.cadence,
     budgetCents: data.budgetDollars * 100,
     chores: data.chores,
@@ -974,10 +979,23 @@ function OBBudgetSplit({
   const country = COUNTRIES.find((c) => c.code === data.country);
   const symbol = country?.symbol ?? "$";
   const groupSeparator = resolveCurrencyFormat(currencyForCountry(data.country)).groupSeparator;
-  // The 40 / 40 / 20 split is brand-fixed; this step explains it, never edits it.
-  const spend = 40;
-  const save = 40;
-  const give = 20;
+  // 40 / 40 / 20 is the recommended default; parents may nudge Spend and Giving.
+  // Savings is the remainder; Giving never drops below the floor.
+  const spend = data.split.spend;
+  const give = data.split.give;
+  const save = 100 - spend - give;
+
+  const stepSpend = (delta: number) =>
+    patch({
+      split: { spend: Math.max(0, Math.min(100 - give, spend + delta)), give },
+    });
+  const stepGive = (delta: number) =>
+    patch({
+      split: {
+        spend,
+        give: Math.max(MIN_GIVE_PCT, Math.min(100 - spend, give + delta)),
+      },
+    });
 
   return (
     <OBShell
@@ -1071,14 +1089,15 @@ function OBBudgetSplit({
       </View>
 
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
-        <SplitTile tone="spend" label="Spend" value={spend} />
-        <SplitTile tone="savings" label="Save" value={save} />
-        <SplitTile tone="giving" label="Give" value={give} />
+        <SplitTile tone="spend" label="Spend" value={spend} onStep={stepSpend} />
+        <SplitTile tone="savings" label="Save" value={save} hint="auto" />
+        <SplitTile tone="giving" label="Give" value={give} onStep={stepGive} />
       </View>
 
       <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
-        The split is the same for every Chorey family: spend a little, save a
-        little more, and always give some. It never changes — that&apos;s the habit.
+        We recommend 40 / 40 / 20 — spend a little, save a little more, and always
+        give some. Nudge Spend and Giving to fit your family; Giving stays at least
+        {" "}{MIN_GIVE_PCT}%.
       </Text>
     </OBShell>
   );
@@ -1088,10 +1107,14 @@ function SplitTile({
   tone,
   label,
   value,
+  hint,
+  onStep,
 }: {
   tone: "spend" | "savings" | "giving";
   label: string;
   value: number;
+  hint?: string;
+  onStep?: (delta: number) => void;
 }) {
   const { scheme, typography, bucketInk } = useChoreyTheme();
   const tintKey = tone === "spend" ? "allowance" : tone;
@@ -1105,6 +1128,16 @@ function SplitTile({
         {value}
         <Text style={{ fontSize: 14 }}>%</Text>
       </Text>
+      {onStep ? (
+        <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+          <OBStepButton symbol="−" label={`Decrease ${label}`} tone={tone} onPress={() => onStep(-SPLIT_STEP)} />
+          <OBStepButton symbol="+" label={`Increase ${label}`} tone={tone} onPress={() => onStep(SPLIT_STEP)} />
+        </View>
+      ) : hint ? (
+        <Text style={[typography.text.caption, { color: ink, opacity: 0.7, textAlign: "center", marginTop: 6 }]}>
+          {hint}
+        </Text>
+      ) : null}
     </View>
   );
 }

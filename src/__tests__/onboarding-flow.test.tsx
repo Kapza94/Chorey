@@ -164,14 +164,24 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByText("Budget & split.")).toBeNull();
   });
 
-  it("shows the fixed 40/40/20 split with nothing to adjust", () => {
+  it("defaults to 40/40/20 but lets parents nudge it, with a Giving floor", () => {
     render(<OnboardingFlow initialStep="p_split" />);
 
-    // 40 / 40 / 20 is brand-fixed — the step explains it, no editor exists.
+    // 40 / 40 / 20 is the recommended default.
     expect(screen.getAllByText("40%")).toHaveLength(2);
     expect(screen.getByText("20%")).toBeOnTheScreen();
-    expect(screen.queryByLabelText("Increase Spend")).toBeNull();
-    expect(screen.queryByLabelText("Decrease Give")).toBeNull();
+
+    // Spend is adjustable; Savings absorbs the change.
+    fireEvent.press(screen.getByLabelText("Increase Spend"));
+    expect(screen.getByText("45%")).toBeOnTheScreen(); // spend 40 → 45
+
+    // Giving can be lowered to the 10% floor, then no further.
+    fireEvent.press(screen.getByLabelText("Decrease Give")); // 20 → 15
+    fireEvent.press(screen.getByLabelText("Decrease Give")); // 15 → 10
+    expect(screen.getByText("10%")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Decrease Give")); // floored at 10
+    expect(screen.getByText("10%")).toBeOnTheScreen();
+    expect(screen.queryByText("5%")).toBeNull();
   });
 
   it("gates the kid branch on a full 6-char code and reports it", () => {
