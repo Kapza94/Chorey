@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
+import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
 
 const mia: ParentKid = {
@@ -398,6 +399,31 @@ describe("ParentApp · Chores", () => {
     expect(screen.getByText("Daily · Mia")).toBeOnTheScreen();
     // Mia: assigned 22.00 of 25.00 budget → $3.00 left
     expect(screen.getByText("$3.00 left")).toBeOnTheScreen();
+  });
+
+  it("filters the board by repeat-cadence tabs", () => {
+    const board: ChoreBoardItem[] = [
+      { id: "b1", title: "Make bed", childName: "Mia", rewardCents: 100, tone: "allowance", status: "assigned", recurrence: "daily" },
+      { id: "b2", title: "Mow lawn", childName: "Mia", rewardCents: 500, tone: "allowance", status: "assigned", recurrence: "weekly" },
+      { id: "b3", title: "Wash car", childName: "Mia", rewardCents: 300, tone: "allowance", status: "assigned", recurrence: null },
+    ];
+    render(<ParentApp initialTab="chores" kids={[mia]} choreBoard={board} />);
+
+    // All cadences visible by default
+    expect(screen.getByText("Make bed")).toBeOnTheScreen();
+    expect(screen.getByText("Mow lawn")).toBeOnTheScreen();
+    expect(screen.getByText("Wash car")).toBeOnTheScreen();
+
+    // Weekly tab shows only the weekly chore — a crossed-off weekly stays findable here
+    fireEvent.press(screen.getByLabelText("Show Weekly chores"));
+    expect(screen.getByText("Mow lawn")).toBeOnTheScreen();
+    expect(screen.queryByText("Make bed")).toBeNull();
+    expect(screen.queryByText("Wash car")).toBeNull();
+
+    // Once tab shows only the one-off chore
+    fireEvent.press(screen.getByLabelText("Show Once chores"));
+    expect(screen.getByText("Wash car")).toBeOnTheScreen();
+    expect(screen.queryByText("Mow lawn")).toBeNull();
   });
 
   it("adds a chore with a live split preview", () => {

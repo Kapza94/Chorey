@@ -31,12 +31,25 @@ export type ChoreBoardItem = {
   rewardCents: number;
   tone: ParentKid["tone"];
   status: ChoreStatus;
+  /** how often this chore repeats; null/undefined for a one-off. */
+  recurrence?: Recurrence | null;
   /** an overdue recurring chore the child still hasn't done. */
   late?: boolean;
   sentBackReason?: string | null;
 };
 
 export type ChoreAssignee = { id: string; name: string };
+
+/** Which repeat cadence the Chores board is filtered to. */
+type RecurFilter = "all" | Recurrence | "one-off";
+
+const RECUR_TABS: { id: RecurFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "daily", label: "Daily" },
+  { id: "weekly", label: "Weekly" },
+  { id: "monthly", label: "Monthly" },
+  { id: "one-off", label: "Once" },
+];
 
 type Props = {
   currency?: CurrencyCode;
@@ -74,13 +87,26 @@ export function ParentChoresScreen({
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const [showAdd, setShowAdd] = useState(false);
+  // Which repeat-cadence the parent is viewing. "all" shows everything; a
+  // crossed-off weekly chore stays visible under its own tab so the next
+  // period's copy isn't a surprise.
+  const [recurFilter, setRecurFilter] = useState<RecurFilter>("all");
+
+  const matchesRecur = (item: ChoreBoardItem) =>
+    recurFilter === "all"
+      ? true
+      : recurFilter === "one-off"
+        ? !item.recurrence
+        : item.recurrence === recurFilter;
+
+  const visible = board.filter(matchesRecur);
 
   // The board: what's waiting on the parent, what kids still owe, what's done.
-  const needsApproval = board.filter((item) => item.status === "submitted");
-  const todo = board.filter(
+  const needsApproval = visible.filter((item) => item.status === "submitted");
+  const todo = visible.filter(
     (item) => item.status === "assigned" || item.status === "sent_back",
   );
-  const done = board.filter((item) => item.status === "approved");
+  const done = visible.filter((item) => item.status === "approved");
   const lateCount = todo.filter((item) => item.late).length;
 
   return (
@@ -115,6 +141,11 @@ export function ParentChoresScreen({
           }
         />
 
+        {/* Repeat-cadence tabs — big, clear, tappable. */}
+        {board.length > 0 ? (
+          <RecurrenceTabs board={board} value={recurFilter} onChange={setRecurFilter} />
+        ) : null}
+
         {/* Assigned-vs-cap per kid */}
         {kids.length > 0 ? (
           <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: 18, paddingBottom: 14 }}>
@@ -125,7 +156,7 @@ export function ParentChoresScreen({
         ) : null}
 
         {/* Board: Needs you → To do → Done */}
-        {board.length > 0 ? (
+        {visible.length > 0 ? (
           <View style={{ paddingHorizontal: 18, gap: 10, marginBottom: 18 }}>
             {needsApproval.length > 0 ? (
               <BoardSection title="Needs your approval" count={needsApproval.length}>
@@ -160,6 +191,15 @@ export function ParentChoresScreen({
                 ))}
               </BoardSection>
             ) : null}
+          </View>
+        ) : null}
+
+        {/* Filter matched nothing, but other chores exist — explain the empty tab. */}
+        {board.length > 0 && visible.length === 0 ? (
+          <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: 16 }}>
+            <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
+              No {recurFilter === "one-off" ? "one-off" : recurFilter} chores right now.
+            </Text>
           </View>
         ) : null}
 
@@ -250,6 +290,93 @@ export function ParentChoresScreen({
         }}
       />
     </View>
+  );
+}
+
+function RecurrenceTabs({
+  board,
+  value,
+  onChange,
+}: {
+  board: ChoreBoardItem[];
+  value: RecurFilter;
+  onChange: (next: RecurFilter) => void;
+}) {
+  const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
+
+  const countFor = (id: RecurFilter) =>
+    id === "all"
+      ? board.length
+      : id === "one-off"
+        ? board.filter((item) => !item.recurrence).length
+        : board.filter((item) => item.recurrence === id).length;
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: 8, paddingHorizontal: 18, paddingBottom: 14 }}
+    >
+      {RECUR_TABS.map((tab) => {
+        const selected = tab.id === value;
+        const count = countFor(tab.id);
+        return (
+          <Pressable
+            key={tab.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Show ${tab.label} chores`}
+            accessibilityState={{ selected }}
+            onPress={() => onChange(tab.id)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              borderRadius: radius.pill,
+              backgroundColor: selected ? palette.accent[600] : scheme.bgModal,
+              borderWidth: toybox.borderWidth,
+              borderColor: selected ? palette.accent[800] : scheme.toy.border,
+              ...(selected ? null : scheme.toy.shadowSm),
+            }}
+          >
+            <Text
+              style={[
+                typography.text.label,
+                { fontSize: 13, color: selected ? palette.cream[4] : scheme.fg },
+              ]}
+            >
+              {tab.label}
+            </Text>
+            {count > 0 ? (
+              <View
+                style={{
+                  minWidth: 18,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
+                  borderRadius: radius.pill,
+                  alignItems: "center",
+                  backgroundColor: selected ? "rgba(255, 252, 245, 0.28)" : scheme.bgSunken,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.text.caption,
+                    {
+                      fontSize: 11,
+                      fontWeight: "700",
+                      color: selected ? palette.cream[4] : scheme.fgMuted,
+                    },
+                  ]}
+                >
+                  {count}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </ScrollView>
   );
 }
 
