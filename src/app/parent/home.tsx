@@ -239,6 +239,7 @@ export default function ParentHomeRoute() {
       rewardCents: chore.rewardCents,
       tone: kid?.tone ?? "allowance",
       status: chore.status,
+      recurrence: chore.recurrence,
       late: isRecurringChoreLate(chore),
       sentBackReason: chore.sentBackReason,
     };
