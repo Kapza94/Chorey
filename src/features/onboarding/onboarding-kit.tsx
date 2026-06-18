@@ -221,7 +221,7 @@ export function OBField({
   autoCorrect?: boolean;
   autoComplete?: TextInputProps["autoComplete"];
 }) {
-  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const { scheme, typography, radius } = useChoreyTheme();
   return (
     <View>
       {label ? (
@@ -259,8 +259,12 @@ export function OBField({
           autoCorrect={autoCorrect}
           autoComplete={autoComplete}
           style={{
-            backgroundColor: scheme.bgRaised,
-            borderColor: palette.border.mid,
+            // A shade lighter than the cards/sheets it sits on (bgRaised) so the
+            // field reads as a distinct, tappable control instead of blending
+            // into the surrounding card. Border uses the bold toybox ink outline
+            // to match the rest of the form fields (see field-style.ts).
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
             borderWidth: 1.5,
             borderRadius: radius.sm,
             // Fixed single-line height (not vertical padding) so the caret and

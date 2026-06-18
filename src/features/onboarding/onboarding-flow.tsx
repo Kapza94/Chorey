@@ -42,6 +42,7 @@ import {
 } from "@/features/onboarding/onboarding-kit";
 import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo";
 import { ToySticker } from "@/components/toybox";
+import { SocialAuthButtons } from "@/components/social-auth-buttons";
 
 /* ---------- reference data ---------- */
 
@@ -176,6 +177,13 @@ function joinCodeFor(familyName: string) {
 export type OnboardingAuth = {
   sendEmailCode: (email: string) => Promise<void>;
   verifyEmailCode: (email: string, code: string) => Promise<void>;
+  /**
+   * One-tap OAuth sign-up. Each resolves truthy only when a session was
+   * actually established (false/void = cancelled), mirroring the sign-in
+   * screen. Optional so the flow still works when only email is wired.
+   */
+  signInWithApple?: () => boolean | void | Promise<boolean | void>;
+  signInWithGoogle?: () => boolean | void | Promise<boolean | void>;
 };
 
 /** What persisting the parent setup hands back — the real generated codes. */
@@ -1629,12 +1637,37 @@ function OBParentAccount({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { typography, palette } = useChoreyTheme();
+  const { scheme, typography, palette } = useChoreyTheme();
   const [phase, setPhase] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [codeValue, setCodeValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const hasSocial = !!(auth?.signInWithApple || auth?.signInWithGoogle);
+
+  // One-tap Apple/Google sign-up: only persist + advance when a session was
+  // actually established (cancelling the provider browser returns false/void),
+  // matching the email path and the sign-in screen.
+  const signUpWith = async (provider: "apple" | "google") => {
+    const run = provider === "apple" ? auth?.signInWithApple : auth?.signInWithGoogle;
+    if (!run || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const signedIn = await run();
+      if (signedIn) {
+        await onPersist();
+        onNext();
+      }
+    } catch (e) {
+      setError(errorMessage(e) ?? "Couldn't sign in. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   // The emailed code is alphanumeric (server-validated). Gate the button on a
@@ -1709,19 +1742,36 @@ function OBParentAccount({
         }
       />
       {phase === "email" ? (
-        <OBField
-          label="Email"
-          value={email}
-          onChange={(v) => {
-            setEmail(v);
-            setError(null);
-          }}
-          placeholder="you@example.com"
-          keyboardType="email-address"
-          autoFocus
-          returnKeyType="go"
-          onSubmitEditing={sendCode}
-        />
+        <>
+          {hasSocial ? (
+            <View style={{ gap: 10, marginBottom: 18 }}>
+              <SocialAuthButtons
+                onApple={() => signUpWith("apple")}
+                onGoogle={() => signUpWith("google")}
+                disabled={busy}
+              />
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: scheme.border }} />
+                <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+                  or use email
+                </Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: scheme.border }} />
+              </View>
+            </View>
+          ) : null}
+          <OBField
+            label="Email"
+            value={email}
+            onChange={(v) => {
+              setEmail(v);
+              setError(null);
+            }}
+            placeholder="you@example.com"
+            keyboardType="email-address"
+            returnKeyType="go"
+            onSubmitEditing={sendCode}
+          />
+        </>
       ) : (
         <OBField
           label="Verification code"
