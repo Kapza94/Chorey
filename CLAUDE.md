@@ -27,23 +27,20 @@ npm run db:test      # Run SQL tests in supabase/tests/
 ## Git workflow
 
 Branch roles:
-- **`main` = the release branch.** TestFlight / App Store builds are ALWAYS built from `main`, never from `dev`, `integration/preview`, or a feature branch.
-- **`dev` = the working/integration branch** where feature work lands.
+- **`dev` = the working / integration branch.** All feature work is integrated here.
+- **`main` = the release branch.** App Store / TestFlight builds are ALWAYS built from `main` — never from `dev`, a feature branch, or any other branch.
 
 Day-to-day:
-- Base all feature work on `dev`.
-- Create a new feature branch from `dev` for every feature or fix before making changes.
-- Never commit directly to `dev`.
-- Never push directly to `dev`.
-- Before committing, confirm the current branch is a feature branch off `dev`.
-- Before pushing, confirm the target remote branch is the same feature branch.
+- Base every feature/fix on a new feature branch created off `dev`.
+- Do work and commit on that feature branch — never commit or push *directly* to `dev`.
+- When the feature is ready, **merge the feature branch into `dev`** and push `dev`. Keep `dev` up to date as each feature lands.
 
-Releasing to TestFlight (do this every release):
-1. Push everything that should ship into `main`.
-2. Confirm there are no merge conflicts.
-3. Squash/resolve any merge conflicts.
+Releasing to the App Store / TestFlight:
+1. Make sure `dev` is up to date — every feature branch for this release is merged into `dev`.
+2. Merge `dev` → `main` and push `main`.
+3. Confirm there are no merge conflicts; resolve/squash any that exist.
 4. Verify `main` is green (`npm run typecheck` + `npm test`).
-5. Build and submit **from `main`** (`eas build --platform ios --profile production --auto-submit`).
+5. Build + submit from `main` (`eas build --platform ios --profile production --auto-submit`).
 
 ## Environment
 
