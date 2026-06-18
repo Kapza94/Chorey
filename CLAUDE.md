@@ -26,12 +26,24 @@ npm run db:test      # Run SQL tests in supabase/tests/
 
 ## Git workflow
 
+Branch roles:
+- **`main` = the release branch.** TestFlight / App Store builds are ALWAYS built from `main`, never from `dev`, `integration/preview`, or a feature branch.
+- **`dev` = the working/integration branch** where feature work lands.
+
+Day-to-day:
 - Base all feature work on `dev`.
 - Create a new feature branch from `dev` for every feature or fix before making changes.
 - Never commit directly to `dev`.
 - Never push directly to `dev`.
 - Before committing, confirm the current branch is a feature branch off `dev`.
 - Before pushing, confirm the target remote branch is the same feature branch.
+
+Releasing to TestFlight (do this every release):
+1. Push everything that should ship into `main`.
+2. Confirm there are no merge conflicts.
+3. Squash/resolve any merge conflicts.
+4. Verify `main` is green (`npm run typecheck` + `npm test`).
+5. Build and submit **from `main`** (`eas build --platform ios --profile production --auto-submit`).
 
 ## Environment
 
