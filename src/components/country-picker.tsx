@@ -1,5 +1,14 @@
-import { useMemo, useState } from "react";
-import { FlatList, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  FlatList,
+  Keyboard,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Check, Search } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -25,6 +34,7 @@ type Props = {
 export function CountryPicker({ visible, selectedCode, onSelect, onClose }: Props) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const [query, setQuery] = useState("");
+  const keyboardHeight = useKeyboardHeight();
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -56,7 +66,10 @@ export function CountryPicker({ visible, selectedCode, onSelect, onClose }: Prop
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: 0,
+          // Lift the sheet to sit on top of the keyboard so the search field and
+          // results stay visible while typing-to-filter (otherwise the keyboard
+          // covers the bottom-anchored sheet entirely).
+          bottom: keyboardHeight,
           maxHeight: "85%",
           backgroundColor: scheme.bgModal,
           borderTopLeftRadius: 24,
@@ -163,4 +176,28 @@ export function CountryPicker({ visible, selectedCode, onSelect, onClose }: Prop
       </View>
     </Modal>
   );
+}
+
+/**
+ * Tracks the on-screen keyboard height so a bottom-anchored sheet can lift above
+ * it. iOS fires `keyboardWillShow/Hide` (smoother, ahead of the animation);
+ * Android only reliably fires the `Did` events.
+ */
+function useKeyboardHeight(): number {
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => setHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  return height;
 }

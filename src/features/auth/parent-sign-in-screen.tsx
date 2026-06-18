@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
-import { AppleIcon, GoogleIcon } from "@/components/brand-icons";
+import { SocialAuthButtons } from "@/components/social-auth-buttons";
 import { choreyTheme } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { LegalConsent } from "@/features/legal/legal-consent";
@@ -20,57 +20,6 @@ const noopActions: ParentSignInActions = {
   sendMagicLink() {},
   verifyEmailOtp() {},
 };
-
-function AuthButton({
-  label,
-  variant,
-  onPress,
-}: {
-  label: string;
-  variant: "apple" | "google";
-  onPress: () => void;
-}) {
-  const { scheme, palette } = useChoreyTheme();
-  const isApple = variant === "apple";
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: "center",
-        borderRadius: choreyTheme.radii.pill,
-        backgroundColor: isApple
-          ? "#11100F"
-          : pressed
-            ? scheme.tint.allowance
-            : scheme.bgModal,
-        borderColor: isApple ? "#11100F" : scheme.border,
-        borderWidth: 1,
-        flexDirection: "row",
-        minHeight: 48,
-        paddingHorizontal: 18,
-        paddingVertical: 13,
-      })}
-    >
-      <View style={{ width: 24, alignItems: "center" }}>
-        {isApple ? <AppleIcon /> : <GoogleIcon />}
-      </View>
-      <View style={{ flex: 1, alignItems: "center", paddingRight: 24 }}>
-        <Text
-          style={{
-            color: isApple ? palette.cream[4] : "#3C4043",
-            fontSize: 16,
-            fontWeight: "700",
-          }}
-        >
-          {label}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
 
 export function ParentSignInScreen({
   actions = noopActions,
@@ -210,15 +159,9 @@ export function ParentSignInScreen({
             ...choreyTheme.shadows.card,
           }}
         >
-          <AuthButton
-            label="Continue with Apple"
-            variant="apple"
-            onPress={() => handleOAuth("apple")}
-          />
-          <AuthButton
-            label="Continue with Google"
-            variant="google"
-            onPress={() => handleOAuth("google")}
+          <SocialAuthButtons
+            onApple={() => handleOAuth("apple")}
+            onGoogle={() => handleOAuth("google")}
           />
         </View>
 
