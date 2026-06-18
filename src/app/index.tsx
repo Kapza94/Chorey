@@ -141,9 +141,12 @@ export default function IndexRoute() {
   }
 
   // Email 6-digit OTP: sendMagicLink emails the code; verifyEmailOtp checks it.
+  // Apple/Google are the one-tap primary options on the account step.
   const auth: OnboardingAuth = {
     sendEmailCode: (email) => parentAuth.sendMagicLink(email),
     verifyEmailCode: (email, code) => parentAuth.verifyEmailOtp(email, code),
+    signInWithApple: () => parentAuth.signInWithApple(),
+    signInWithGoogle: () => parentAuth.signInWithGoogle(),
   };
 
   return (
