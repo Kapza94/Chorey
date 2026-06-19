@@ -2101,50 +2101,41 @@ function OBKidCode({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography, palette } = useChoreyTheme();
-  const cells = 6;
-  const chars = code.padEnd(cells, " ").slice(0, cells).split("");
-  const onType = (v: string) => setCode(v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, cells));
+  const { scheme, typography } = useChoreyTheme();
+  // Access codes are CHOREY-XXXXXXXX (8 alphanumerics after the prefix). Keep
+  // letters, digits and the dash; uppercase; drop everything else. The server
+  // normalizes + validates on join, so gate on a sane minimum length rather
+  // than an exact format (a format change must never lock kids out of joining).
+  const onType = (v: string) => setCode(v.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+  const ready = code.replace(/[^A-Z0-9]/gi, "").length >= 8;
 
   return (
     <OBShell
       onBack={onBack}
       footer={
-        <OBPrimary onPress={onNext} disabled={code.length < cells}>
-          {code.length < cells ? "Enter your code" : "Join family"}
+        <OBPrimary onPress={onNext} disabled={!ready}>
+          {ready ? "Join family" : "Enter your code"}
         </OBPrimary>
       }
     >
-      <OBTitle title="Enter your code." subtitle="Ask a parent for the 6-character join code." />
-      <View>
-        <View style={{ flexDirection: "row", gap: 8, justifyContent: "space-between" }}>
-          {chars.map((ch, i) => (
-            <View
-              key={i}
-              style={{
-                flex: 1,
-                height: 58,
-                borderRadius: 12,
-                backgroundColor: scheme.bgRaised,
-                borderWidth: 1.5,
-                borderColor: i === code.length ? palette.accent[600] : palette.border.mid,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ fontFamily: typography.family.display.bold, fontSize: 26, color: scheme.fg }}>
-                {ch.trim()}
-              </Text>
-            </View>
-          ))}
-        </View>
-        {/* hidden input overlay */}
-        <OBField label={undefined} value={code} onChange={onType} />
-      </View>
+      <OBTitle
+        title="Enter your code."
+        subtitle="Ask a parent for your join code — it looks like CHOREY-XXXXXXXX."
+      />
+      <OBField
+        label="Join code"
+        value={code}
+        onChange={onType}
+        placeholder="CHOREY-XXXXXXXX"
+        autoCapitalize="characters"
+        autoCorrect={false}
+        autoComplete="off"
+        autoFocus
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Use a sample code"
-        onPress={() => setCode("CHRVR1")}
+        onPress={() => setCode("CHOREY-DEMO0001")}
         style={{ marginTop: 16 }}
       >
         <Text

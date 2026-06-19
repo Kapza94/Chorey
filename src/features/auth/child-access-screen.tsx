@@ -64,6 +64,7 @@ export function ChildAccessScreen({
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
+      automaticallyAdjustKeyboardInsets
       style={{ flex: 1, backgroundColor: scheme.bgPage }}
       contentContainerStyle={{
         padding: choreyTheme.spacing.xl,
@@ -71,6 +72,7 @@ export function ChildAccessScreen({
         gap: choreyTheme.spacing.xl,
       }}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
     >
       <Pressable
         accessibilityLabel="Go back"

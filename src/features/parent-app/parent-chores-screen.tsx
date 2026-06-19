@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import { Check, ChevronRight, Clock, Lock, Plus, Undo2 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -112,7 +114,14 @@ export function ParentChoresScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentContainerStyle={{ paddingBottom: 120 }}
+        style={{ flex: 1 }}
+      >
         <ParentHeader
           subtitle="This week"
           title="Chores."
@@ -705,6 +714,7 @@ function AddChoreSheet({
   }) => void;
 }) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
+  const keyboardHeight = useKeyboardHeight();
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [showAllAssignees, setShowAllAssignees] = useState(false);
@@ -791,7 +801,7 @@ function AddChoreSheet({
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: keyboardHeight,
           backgroundColor: scheme.bgModal,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,

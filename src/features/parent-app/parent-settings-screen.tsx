@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, CreditCard, KeyRound, LogOut } from "lucide-react-native";
+import { Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import { ChevronRight, CreditCard, KeyRound, LogOut, Share2 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -56,7 +56,14 @@ export function ParentSettingsScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentContainerStyle={{ paddingBottom: 120 }}
+        style={{ flex: 1 }}
+      >
         <ParentHeader subtitle="Account" title="Settings." action={headerRight} />
 
         <View style={{ paddingHorizontal: 18 }}>
@@ -202,6 +209,26 @@ export function ParentSettingsScreen({
                     >
                       {entry.accessCode}
                     </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Share ${kid?.name ?? "child"}'s code`}
+                      hitSlop={8}
+                      onPress={() =>
+                        Share.share({
+                          message: `${kid?.name ?? "Your child"}'s Chorey join code: ${entry.accessCode}\n\nOpen Chorey, tap "Join as a child", and enter this code.`,
+                        })
+                      }
+                      style={({ pressed }) => ({
+                        width: 34,
+                        height: 34,
+                        borderRadius: 999,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: pressed ? scheme.bgSunken : "transparent",
+                      })}
+                    >
+                      <Share2 size={16} color={scheme.fgMuted} strokeWidth={2} />
+                    </Pressable>
                   </View>
                 );
               })

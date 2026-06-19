@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
+
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import {
   ChevronRight,
   CreditCard,
@@ -83,6 +85,7 @@ export function ParentAccountSheet({
   onClose: () => void;
 }) {
   const { scheme, typography, palette, toybox, isDark } = useChoreyTheme();
+  const keyboardHeight = useKeyboardHeight();
   const peach = palette.allowance;
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(account.name);
@@ -123,6 +126,8 @@ export function ParentAccountSheet({
           paddingHorizontal: 18,
           paddingTop: 14,
           paddingBottom: 34,
+          // Lift the sheet (and the feedback form it hosts) above the keyboard.
+          marginBottom: keyboardHeight,
         }}
       >
         <View
