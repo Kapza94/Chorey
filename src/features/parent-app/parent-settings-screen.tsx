@@ -1,8 +1,20 @@
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChevronRight, CreditCard, KeyRound, LogOut } from "lucide-react-native";
+import {
+  ChevronRight,
+  CreditCard,
+  KeyRound,
+  LogOut,
+  Monitor,
+  Moon,
+  Sun,
+} from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
+import {
+  useThemePreference,
+  type ThemePreference,
+} from "@/theme/theme-preference";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
   resolveCurrencyFormat,
@@ -100,6 +112,17 @@ export function ParentSettingsScreen({
             The split
           </Text>
           <SplitEditor split={split} onChange={onChangeSplit} />
+
+          {/* Appearance — light / dark / follow the phone. */}
+          <Text
+            style={[
+              typography.text.overline,
+              { color: scheme.fgFaint, paddingHorizontal: 4, paddingTop: 20, paddingBottom: 8 },
+            ]}
+          >
+            Appearance
+          </Text>
+          <AppearancePicker />
 
           {/* Subscription — one household plan; parents manage it here. */}
           {subscriptionLabel ? (
@@ -516,6 +539,71 @@ function CapButton({
         {symbol}
       </Text>
     </Pressable>
+  );
+}
+
+// Light / Dark / System segmented control. Writes straight to the persisted
+// theme preference, so the whole app re-themes immediately and the choice
+// survives restarts.
+const APPEARANCE_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Sun }[] = [
+  { value: "system", label: "System", Icon: Monitor },
+  { value: "light", label: "Light", Icon: Sun },
+  { value: "dark", label: "Dark", Icon: Moon },
+];
+
+function AppearancePicker() {
+  const { scheme, typography, palette, toybox } = useChoreyTheme();
+  const { preference, setPreference } = useThemePreference();
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        gap: 8,
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        ...scheme.toy.shadowSm,
+        borderRadius: 16,
+        padding: 8,
+        marginBottom: 20,
+      }}
+    >
+      {APPEARANCE_OPTIONS.map(({ value, label, Icon }) => {
+        const selected = preference === value;
+        return (
+          <Pressable
+            key={value}
+            accessibilityRole="button"
+            accessibilityLabel={`${label} appearance`}
+            accessibilityState={{ selected }}
+            onPress={() => setPreference(value)}
+            style={{
+              flex: 1,
+              alignItems: "center",
+              gap: 6,
+              paddingVertical: 12,
+              borderRadius: 12,
+              backgroundColor: selected ? palette.accent[600] : scheme.bgSunken,
+            }}
+          >
+            <Icon
+              size={18}
+              color={selected ? palette.cream[4] : scheme.fgMuted}
+              strokeWidth={2.2}
+            />
+            <Text
+              style={[
+                typography.text.label,
+                { fontSize: 13, color: selected ? palette.cream[4] : scheme.fgMuted },
+              ]}
+            >
+              {label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 

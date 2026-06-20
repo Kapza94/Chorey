@@ -9,6 +9,8 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { ConfigErrorScreen } from "@/features/system/config-error-screen";
 import { AnalyticsProvider } from "@/features/analytics/analytics-provider";
 import { useChoreyFonts } from "@/theme/use-chorey-fonts";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
+import { ThemePreferenceProvider } from "@/theme/theme-preference";
 import { DevRoleSwitcher } from "@/features/dev/dev-role-switcher";
 
 // Error reporting stays disabled until a DSN is configured (no-op like billing
@@ -31,6 +33,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 function RootLayout() {
   const fontsReady = useChoreyFonts();
+  const { isDark } = useChoreyTheme();
+  // Status-bar glyphs flip with the resolved theme so they stay legible whether
+  // the user picked light, dark, or "follow system".
+  const statusBarStyle = isDark ? "light" : "dark";
 
   useEffect(() => {
     // Hide the splash once fonts are ready — or immediately if the build is
@@ -45,7 +51,7 @@ function RootLayout() {
   if (!isSupabaseConfigured) {
     return (
       <>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle} />
         <ConfigErrorScreen />
       </>
     );
@@ -57,11 +63,21 @@ function RootLayout() {
 
   return (
     <AnalyticsProvider>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle} />
       <Stack screenOptions={{ headerShown: false }} />
       {__DEV__ ? <DevRoleSwitcher /> : null}
     </AnalyticsProvider>
   );
 }
 
-export default Sentry.wrap(RootLayout);
+// The theme preference must wrap the whole tree so every `useChoreyTheme()` call
+// (including RootLayout's own) resolves against the user's saved appearance.
+function RootLayoutWithProviders() {
+  return (
+    <ThemePreferenceProvider>
+      <RootLayout />
+    </ThemePreferenceProvider>
+  );
+}
+
+export default Sentry.wrap(RootLayoutWithProviders);
