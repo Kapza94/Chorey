@@ -43,7 +43,6 @@ import {
   loadChildSession,
   saveChildSession,
 } from "@/features/children/default-child-session";
-import { DEFAULT_CURRENCY } from "@/features/money/currency";
 
 const emptyBalances: BucketBalances = {
   givingCents: 0,
@@ -72,6 +71,7 @@ export default function ChildHomeRoute() {
   const { scheme, typography, radius } = useChoreyTheme();
   const [session, setSession] = useState<ChildSession | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [badCode, setBadCode] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -107,15 +107,17 @@ export default function ChildHomeRoute() {
           setSession(next);
         } catch {
           if (!active) return;
-          // Couldn't resolve right now (offline?) — keep the kid in with what
-          // the params carry rather than bouncing them out.
-          setSession({
-            accessCode: paramAccessCode,
-            childName: paramChildName ?? "",
-            childProfileId: "",
-            householdId: "",
-            currency: DEFAULT_CURRENCY,
-          });
+          // A returning kid with a stored session is just offline — keep them in
+          // on what we already know. But a first-time join (no stored session)
+          // that won't resolve is almost always a wrong code: send them back to
+          // re-enter it instead of into a dead-end "couldn't load" screen that
+          // blames the internet.
+          const stored = loadChildSession();
+          if (stored && stored.accessCode === paramAccessCode) {
+            setSession(stored);
+          } else {
+            setBadCode(true);
+          }
         }
       } else {
         setSession(loadChildSession());
@@ -230,6 +232,54 @@ export default function ChildHomeRoute() {
     [wishlistItems],
   );
 
+  // Drop any half-formed session and send the kid back to the start, where the
+  // onboarding kid path lets them type a fresh code.
+  const reenterCode = () => {
+    clearChildSession();
+    router.replace("/");
+  };
+
+  if (badCode) {
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: scheme.bgPage,
+          flex: 1,
+          gap: 8,
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, textAlign: "center" }]}>
+          That code didn&apos;t work.
+        </Text>
+        <Text style={[typography.text.bodySm, { color: scheme.fgMuted, textAlign: "center" }]}>
+          Double-check the code with a parent — it looks like CHOREY-XXXXXXXX.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Enter a different code"
+          onPress={reenterCode}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
+            borderColor: scheme.border,
+            borderRadius: radius.pill,
+            borderWidth: 1,
+            marginTop: 8,
+            paddingHorizontal: 28,
+            paddingVertical: 13,
+          })}
+        >
+          <Text style={[typography.text.label, { color: scheme.fg, fontSize: 15 }]}>
+            Enter a different code
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   if (sessionChecked && !session) {
     return <Redirect href="/" />;
   }
@@ -307,6 +357,16 @@ export default function ChildHomeRoute() {
         >
           <Text style={[typography.text.label, { color: scheme.fg, fontSize: 15 }]}>
             Try again
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Enter a different code"
+          onPress={reenterCode}
+          style={{ marginTop: 4, paddingHorizontal: 28, paddingVertical: 10 }}
+        >
+          <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 14 }]}>
+            Enter a different code
           </Text>
         </Pressable>
       </View>

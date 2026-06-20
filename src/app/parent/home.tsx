@@ -61,6 +61,7 @@ import {
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
+  deleteChoreForHousehold,
   listChoresForHousehold,
   sendBackChoreForHousehold,
 } from "@/features/chores/default-chore-actions";
@@ -365,6 +366,14 @@ export default function ParentHomeRoute() {
         await sendBackChoreForHousehold({ householdId, choreId, reason });
         await reload();
       }}
+      onDeleteChore={async (choreId) => {
+        if (!householdId) {
+          return;
+        }
+
+        await deleteChoreForHousehold({ householdId, choreId });
+        await reload();
+      }}
       onApprovePurchase={async (requestId) => {
         if (!householdId) {
           return;
@@ -488,7 +497,10 @@ export default function ParentHomeRoute() {
           method,
           note: detail,
         });
-        setPayouts(await listPayoutsForHousehold(householdId));
+        // Reload everything, not just payouts: the payout deducts the kid's
+        // Spend balance in the ledger, so "Ready to pay out" must refetch kids
+        // or it keeps showing money that's already been handed over.
+        await reload();
       }}
       // The board (To do / Needs you / Done) is the live chores view; the flat
       // library would just duplicate the same instances, so it's left empty.

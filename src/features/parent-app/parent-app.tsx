@@ -53,6 +53,7 @@ type Props = {
   onReviewApprovals?: () => void;
   onApproveChore?: (choreId: string) => void;
   onSendBackChore?: (choreId: string, reason: string) => void;
+  onDeleteChore?: (choreId: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
   /** when set, the Kids tab offers a shareable weekly stats card */
@@ -116,6 +117,7 @@ export function ParentApp({
   onReviewApprovals,
   onApproveChore,
   onSendBackChore,
+  onDeleteChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
   shareStats,
@@ -194,6 +196,7 @@ export function ParentApp({
           onAddChore={onAddChore}
           onApproveChore={onApproveChore}
           onSendBackChore={onSendBackChore}
+          onDeleteChore={onDeleteChore}
           headerRight={headerRight}
         />
       ) : tab === "pay" ? (

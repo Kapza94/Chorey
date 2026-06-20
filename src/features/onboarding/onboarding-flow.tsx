@@ -201,6 +201,7 @@ export function OnboardingFlow({
   persist,
   choosePlan,
   onSignIn,
+  validateKidCode,
 }: {
   onComplete?: (
     result: OnboardingResult,
@@ -215,6 +216,12 @@ export function OnboardingFlow({
   choosePlan?: (householdId: string, plan: "monthly" | "yearly") => Promise<void>;
   /** Returning parents: send them to sign-in instead of the setup wizard. */
   onSignIn?: () => void;
+  /**
+   * Check a kid's join code before the avatar step so a typo is caught up front
+   * instead of after they've picked a colour and a name. "unknown" (e.g. the
+   * device is offline) lets them through — the home screen resolves it later.
+   */
+  validateKidCode?: (code: string) => Promise<"ok" | "bad" | "unknown">;
 }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
@@ -348,6 +355,7 @@ export function OnboardingFlow({
         <OBKidCode
           code={code}
           setCode={setCode}
+          validate={validateKidCode}
           onNext={() => setStep("k_avatar")}
           onBack={() => setStep("role")}
         />
@@ -2093,28 +2101,53 @@ function OBParentDone({
 function OBKidCode({
   code,
   setCode,
+  validate,
   onNext,
   onBack,
 }: {
   code: string;
   setCode: (c: string) => void;
+  validate?: (code: string) => Promise<"ok" | "bad" | "unknown">;
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, palette } = useChoreyTheme();
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Access codes are CHOREY-XXXXXXXX (8 alphanumerics after the prefix). Keep
   // letters, digits and the dash; uppercase; drop everything else. The server
   // normalizes + validates on join, so gate on a sane minimum length rather
   // than an exact format (a format change must never lock kids out of joining).
-  const onType = (v: string) => setCode(v.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+  const onType = (v: string) => {
+    setCode(v.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+    if (error) setError(null);
+  };
   const ready = code.replace(/[^A-Z0-9]/gi, "").length >= 8;
+
+  // Check the code before the avatar step. A wrong code stops here with a clear
+  // message instead of letting the kid set up a profile against a dead code; an
+  // "unknown" result (offline) still lets them through.
+  const submit = async () => {
+    if (!validate) {
+      onNext();
+      return;
+    }
+    setChecking(true);
+    const result = await validate(code);
+    setChecking(false);
+    if (result === "bad") {
+      setError("That code didn't work. Double-check it with a parent.");
+      return;
+    }
+    onNext();
+  };
 
   return (
     <OBShell
       onBack={onBack}
       footer={
-        <OBPrimary onPress={onNext} disabled={!ready}>
-          {ready ? "Join family" : "Enter your code"}
+        <OBPrimary onPress={submit} disabled={!ready || checking}>
+          {checking ? "Checking…" : ready ? "Join family" : "Enter your code"}
         </OBPrimary>
       }
     >
@@ -2132,6 +2165,16 @@ function OBKidCode({
         autoComplete="off"
         autoFocus
       />
+      {error ? (
+        <Text
+          style={[
+            typography.text.bodySm,
+            { color: palette.semantic.danger[600], marginTop: 10 },
+          ]}
+        >
+          {error}
+        </Text>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Use a sample code"
