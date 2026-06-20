@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChevronRight, Heart, Lock, LogOut } from "lucide-react-native";
 
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
+
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import { ToyAvatar, ToySticker } from "@/components/toybox";
@@ -334,6 +336,7 @@ function SuggestCauseSheet({
   onConfirm: (name: string) => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
+  const keyboardHeight = useKeyboardHeight();
   const giving = bucketTokens.giving.ramp;
   const [name, setName] = useState("");
   const canSave = name.trim().length > 0;
@@ -353,7 +356,7 @@ function SuggestCauseSheet({
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: keyboardHeight,
           backgroundColor: scheme.bgModal,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,

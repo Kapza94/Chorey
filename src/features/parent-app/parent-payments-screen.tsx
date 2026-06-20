@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-nativ
 import { Check, Sparkles, Wallet } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
   DEFAULT_CURRENCY,
@@ -96,10 +97,20 @@ export function ParentPaymentsScreen({
   // Only kids who are still owed money show in "due"; the rest are paid up.
   const owing = due.filter((kid) => owedCents(kid) > 0);
   const dueTotal = owing.reduce((sum, kid) => sum + owedCents(kid), 0);
+  // Nothing to settle until at least one child has actually earned something —
+  // a zero-earnings period has no money to hand over, so settling is disabled.
+  const hasEarnings = due.some((kid) => kid.earnedCents > 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentContainerStyle={{ paddingBottom: 120 }}
+        style={{ flex: 1 }}
+      >
         <ParentHeader subtitle="Off-app payouts" title="Payments." action={headerRight} />
 
         {/* Explainer */}
@@ -126,6 +137,7 @@ export function ParentPaymentsScreen({
         {settlementPeriod ? (
           <SettlementCard
             period={settlementPeriod}
+            hasEarnings={hasEarnings}
             onMarkAllSettled={onMarkAllSettled}
           />
         ) : null}
@@ -313,9 +325,11 @@ function periodDay(iso: string): string {
 
 function SettlementCard({
   period,
+  hasEarnings,
   onMarkAllSettled,
 }: {
   period: SettlementPeriod;
+  hasEarnings: boolean;
   onMarkAllSettled?: () => void;
 }) {
   const { scheme, typography, palette, radius, bucketInk, toybox } = useChoreyTheme();
@@ -383,7 +397,11 @@ function SettlementCard({
         })}
       </View>
 
-      {allSettled ? (
+      {!hasEarnings ? (
+        <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 12 }]}>
+          Nothing to settle yet — no earnings this period.
+        </Text>
+      ) : allSettled ? (
         <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 12 }]}>
           Period settled
         </Text>
@@ -536,6 +554,7 @@ function MarkPaidSheet({
   onConfirm: (amountCents: number, method: PayoutMethod, detail?: string) => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
+  const keyboardHeight = useKeyboardHeight();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PayoutMethod>("cash");
   const [otherChoice, setOtherChoice] = useState<string>(OTHER_PRESETS[0]);
@@ -588,7 +607,7 @@ function MarkPaidSheet({
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: keyboardHeight,
           backgroundColor: scheme.bgModal,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,

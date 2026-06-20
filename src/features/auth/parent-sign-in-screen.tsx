@@ -94,6 +94,9 @@ export function ParentSignInScreen({
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
+      automaticallyAdjustKeyboardInsets
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
       style={{ flex: 1, backgroundColor: scheme.bgPage }}
       contentContainerStyle={{
         flexGrow: 1,

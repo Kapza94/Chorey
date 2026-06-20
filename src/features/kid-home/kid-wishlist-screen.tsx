@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Plus } from "lucide-react-native";
 
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
+
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import { fieldStyle } from "@/components/field-style";
@@ -267,6 +269,7 @@ function AddWishSheet({
   onConfirm: (input: { name: string; targetCents: number }) => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
+  const keyboardHeight = useKeyboardHeight();
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
 
@@ -298,7 +301,7 @@ function AddWishSheet({
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: keyboardHeight,
           backgroundColor: scheme.bgModal,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,

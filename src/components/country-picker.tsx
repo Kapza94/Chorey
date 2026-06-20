@@ -1,17 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  FlatList,
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { useMemo, useState } from "react";
+import { FlatList, Modal, Pressable, Text, TextInput, View } from "react-native";
 import { Check, Search } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import { fieldStyle } from "@/components/field-style";
 import { COUNTRIES, type CountryInfo } from "@/features/money/countries";
 import { resolveCurrencyFormat } from "@/features/money/currency";
@@ -176,28 +168,4 @@ export function CountryPicker({ visible, selectedCode, onSelect, onClose }: Prop
       </View>
     </Modal>
   );
-}
-
-/**
- * Tracks the on-screen keyboard height so a bottom-anchored sheet can lift above
- * it. iOS fires `keyboardWillShow/Hide` (smoother, ahead of the animation);
- * Android only reliably fires the `Did` events.
- */
-function useKeyboardHeight(): number {
-  const [height, setHeight] = useState(0);
-
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const showSub = Keyboard.addListener(showEvent, (e) => {
-      setHeight(e.endCoordinates.height);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => setHeight(0));
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  return height;
 }

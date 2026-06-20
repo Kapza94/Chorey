@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
 import { choreyTheme } from "@/theme/chorey-theme";
 
@@ -21,7 +28,12 @@ export function SetupScreenLayout({
   onBack,
 }: Props) {
   return (
-    <View style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}>
+    // Lift the pinned footer (and scrollable fields) above the keyboard so the
+    // submit button and lower inputs never end up hidden underneath it.
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
@@ -30,6 +42,7 @@ export function SetupScreenLayout({
           gap: choreyTheme.spacing.xxl,
         }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
         style={{ flex: 1 }}
       >
         {onBack ? (
@@ -123,6 +136,6 @@ export function SetupScreenLayout({
       >
         {footer}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

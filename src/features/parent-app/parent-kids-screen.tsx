@@ -135,7 +135,14 @@ export function ParentKidsScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 120 }} style={{ flex: 1 }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentContainerStyle={{ paddingBottom: 120 }}
+        style={{ flex: 1 }}
+      >
         <ParentHeader
           subtitle={subtitle}
           title="Children."

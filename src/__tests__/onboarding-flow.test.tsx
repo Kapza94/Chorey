@@ -184,7 +184,7 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByText("5%")).toBeNull();
   });
 
-  it("gates the kid branch on a full 6-char code and reports it", () => {
+  it("gates the kid branch on the join code and reports it", () => {
     const onComplete = jest.fn();
     render(<OnboardingFlow initialStep="k_code" onComplete={onComplete} />);
 
@@ -200,7 +200,7 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByText("Start earning"));
 
     expect(onComplete).toHaveBeenCalledWith(
-      expect.objectContaining({ role: "kid", code: "CHRVR1", kidName: "Mia" }),
+      expect.objectContaining({ role: "kid", code: "CHOREY-DEMO0001", kidName: "Mia" }),
     );
   });
 
