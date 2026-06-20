@@ -8,6 +8,7 @@ import {
   type ChoreyScheme,
   type ColorScheme,
 } from "@/theme/chorey-theme";
+import { useThemePreference } from "@/theme/theme-preference";
 
 export type ChoreyThemeContext = typeof choreyTheme & {
   /** active color mode */
@@ -32,11 +33,17 @@ export type ChoreyThemeContext = typeof choreyTheme & {
  * Pull surfaces/text/borders from `scheme` (they flip with dark mode); pull the
  * brand trio and type presets from the static tokens (they don't).
  *
- * @param override force a specific mode (e.g. a user setting that beats the OS).
+ * Mode resolution order: an explicit `override` wins; otherwise the user's saved
+ * appearance preference ("light"/"dark"); otherwise the OS setting ("system").
+ *
+ * @param override force a specific mode (rarely needed — beats the user setting).
  */
 export function useChoreyTheme(override?: ColorScheme): ChoreyThemeContext {
   const system = useColorScheme();
-  const mode: ColorScheme = override ?? (system === "dark" ? "dark" : "light");
+  const { preference } = useThemePreference();
+  const systemMode: ColorScheme = system === "dark" ? "dark" : "light";
+  const mode: ColorScheme =
+    override ?? (preference === "system" ? systemMode : preference);
 
   const isDark = mode === "dark";
 
