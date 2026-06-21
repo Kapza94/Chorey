@@ -258,7 +258,9 @@ export function ParentSignInScreen({
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="one-time-code"
+                returnKeyType="go"
                 onChangeText={(v) => setOtpCode(v.replace(/\s/g, ""))}
+                onSubmitEditing={handleVerifyOtp}
                 placeholder="Verification code"
                 placeholderTextColor={scheme.fgFaint}
                 style={{

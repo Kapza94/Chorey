@@ -147,5 +147,20 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
 
       return mapChore(result.data);
     },
+
+    // Remove a chore that hasn't been approved yet. Approved chores own ledger
+    // events (the 40/40/20 split already paid out), so the status guard keeps a
+    // delete from ever silently clawing money back out of a kid's buckets.
+    async deleteChore(choreId: string): Promise<void> {
+      const result = await client
+        .from("chore_instances")
+        .delete()
+        .eq("id", choreId)
+        .neq("status", "approved");
+
+      if (result.error) {
+        throw result.error;
+      }
+    },
   };
 }

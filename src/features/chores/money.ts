@@ -23,6 +23,26 @@ export function parseRewardCents(value: string) {
   return pounds * 100 + cents;
 }
 
+/**
+ * Keep a money text field to a valid shape as the user types: digits, a single
+ * decimal point, at most two decimals. Mirrors what parseRewardCents accepts, so
+ * the field can never hold a value the parser then silently rejects (e.g. a
+ * third decimal that leaves the Add button mysteriously disabled).
+ */
+export function clampRewardInput(raw: string): string {
+  const cleaned = raw.replace(/[^0-9.]/g, "");
+  const dot = cleaned.indexOf(".");
+
+  if (dot === -1) {
+    return cleaned;
+  }
+
+  const whole = cleaned.slice(0, dot);
+  const fraction = cleaned.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+
+  return `${whole}.${fraction}`;
+}
+
 export function formatReward(cents: number) {
   return (cents / 100).toFixed(2);
 }

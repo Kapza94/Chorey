@@ -10,7 +10,7 @@ import {
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
-import { formatReward, parseRewardCents } from "@/features/chores/money";
+import { clampRewardInput, formatReward, parseRewardCents } from "@/features/chores/money";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import { ParentHeader } from "@/features/parent-app/parent-primitives";
@@ -617,7 +617,16 @@ function MarkPaidSheet({
           ...scheme.shadow.lg,
         }}
       >
-        <View
+        {/* Tapping the grabber dismisses — with the number pad up the backdrop
+            scrolls off-screen, so this is the reliable way out. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={() => {
+            resetForm();
+            onClose();
+          }}
+          hitSlop={12}
           style={{
             width: 38,
             height: 4,
@@ -643,7 +652,7 @@ function MarkPaidSheet({
             accessibilityLabel="Payout amount"
             keyboardType="decimal-pad"
             value={amountValue}
-            onChangeText={setAmount}
+            onChangeText={(raw) => setAmount(clampRewardInput(raw))}
             style={{
               backgroundColor: scheme.bgPage,
               borderColor: palette.border.mid,

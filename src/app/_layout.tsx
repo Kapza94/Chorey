@@ -3,6 +3,7 @@ import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Sentry from "@sentry/react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { getSentryDsn } from "@/lib/env";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -33,7 +34,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 function RootLayout() {
   const fontsReady = useChoreyFonts();
-  const { isDark } = useChoreyTheme();
+  const { isDark, scheme } = useChoreyTheme();
   // Status-bar glyphs flip with the resolved theme so they stay legible whether
   // the user picked light, dark, or "follow system".
   const statusBarStyle = isDark ? "light" : "dark";
@@ -64,7 +65,16 @@ function RootLayout() {
   return (
     <AnalyticsProvider>
       <StatusBar style={statusBarStyle} />
-      <Stack screenOptions={{ headerShown: false }} />
+      {/* One top inset for the whole app — every screen leaned on the iOS-only
+          ScrollView `contentInsetAdjustmentBehavior` before, which left content
+          tucked under the status bar / Dynamic Island whenever it didn't kick
+          in. The page-coloured band keeps the notch area on-theme. */}
+      <SafeAreaView
+        edges={["top"]}
+        style={{ flex: 1, backgroundColor: scheme.bgPage }}
+      >
+        <Stack screenOptions={{ headerShown: false }} />
+      </SafeAreaView>
       {__DEV__ ? <DevRoleSwitcher /> : null}
     </AnalyticsProvider>
   );
@@ -74,9 +84,11 @@ function RootLayout() {
 // (including RootLayout's own) resolves against the user's saved appearance.
 function RootLayoutWithProviders() {
   return (
-    <ThemePreferenceProvider>
-      <RootLayout />
-    </ThemePreferenceProvider>
+    <SafeAreaProvider>
+      <ThemePreferenceProvider>
+        <RootLayout />
+      </ThemePreferenceProvider>
+    </SafeAreaProvider>
   );
 }
 

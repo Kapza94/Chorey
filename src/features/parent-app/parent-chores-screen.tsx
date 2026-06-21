@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { useKeyboardHeight } from "@/components/use-keyboard-height";
-import { Check, ChevronRight, Clock, Lock, Plus, Undo2 } from "lucide-react-native";
+import { Check, ChevronRight, Clock, Lock, Plus, Trash2, Undo2 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -11,7 +11,7 @@ import {
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
-import { parseRewardCents } from "@/features/chores/money";
+import { clampRewardInput, parseRewardCents } from "@/features/chores/money";
 import type { Recurrence } from "@/features/chores/recurrence";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
 import { DEFAULT_SPLIT, splitCents, type Split } from "@/features/money/split";
@@ -72,6 +72,7 @@ type Props = {
   }) => void;
   onApproveChore?: (choreId: string) => void;
   onSendBackChore?: (choreId: string, reason: string) => void;
+  onDeleteChore?: (choreId: string) => void;
   headerRight?: ReactNode;
 };
 
@@ -86,6 +87,7 @@ export function ParentChoresScreen({
   onAddChore,
   onApproveChore,
   onSendBackChore,
+  onDeleteChore,
   headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
@@ -189,7 +191,12 @@ export function ParentChoresScreen({
                 badge={lateCount > 0 ? `${lateCount} late` : undefined}
               >
                 {todo.map((item) => (
-                  <ChoreBoardRow key={item.id} item={item} currency={currency} />
+                  <ChoreBoardRow
+                    key={item.id}
+                    item={item}
+                    currency={currency}
+                    onDelete={onDeleteChore ? () => onDeleteChore(item.id) : undefined}
+                  />
                 ))}
               </BoardSection>
             ) : null}
@@ -449,11 +456,13 @@ function ChoreBoardRow({
   currency,
   onApprove,
   onSendBack,
+  onDelete,
 }: {
   item: ChoreBoardItem;
   currency: CurrencyCode;
   onApprove?: () => void;
   onSendBack?: (reason: string) => void;
+  onDelete?: () => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const ramp = bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp;
@@ -561,6 +570,31 @@ function ChoreBoardRow({
           </View>
         ) : approved ? (
           <Check size={18} color={ramp[600]} strokeWidth={3} />
+        ) : onDelete && !back ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${item.title}`}
+            onPress={() =>
+              Alert.alert(
+                "Delete chore?",
+                `"${item.title}" will be removed for ${item.childName}.`,
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Delete", style: "destructive", onPress: onDelete },
+                ],
+              )
+            }
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: radius.pill,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: scheme.bgSunken,
+            }}
+          >
+            <Trash2 size={15} color={scheme.fgMuted} strokeWidth={2.2} />
+          </Pressable>
         ) : null}
       </View>
 
@@ -811,7 +845,16 @@ function AddChoreSheet({
           ...scheme.shadow.lg,
         }}
       >
-        <View
+        {/* Tapping the grabber dismisses — with the number pad up the backdrop
+            scrolls off-screen, so this is the reliable way out. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={() => {
+            reset();
+            onClose();
+          }}
+          hitSlop={12}
           style={{
             width: 38,
             height: 4,
@@ -821,9 +864,31 @@ function AddChoreSheet({
             marginBottom: 14,
           }}
         />
-        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24, marginBottom: 16 }]}>
-          New chore.
-        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
+          <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24 }]}>
+            New chore.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+            onPress={() => {
+              reset();
+              onClose();
+            }}
+            hitSlop={8}
+          >
+            <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 15 }]}>
+              Cancel
+            </Text>
+          </Pressable>
+        </View>
 
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
           Name
@@ -844,7 +909,7 @@ function AddChoreSheet({
           accessibilityLabel="Chore reward"
           keyboardType="decimal-pad"
           value={value}
-          onChangeText={setValue}
+          onChangeText={(raw) => setValue(clampRewardInput(raw))}
           placeholder="2.00"
           placeholderTextColor={scheme.fgFaint}
           style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}

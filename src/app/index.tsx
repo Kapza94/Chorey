@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import { loadChildSession } from "@/features/children/default-child-session";
+import { resolveChildAccessCode } from "@/features/children/default-child-access-actions";
 import { chooseSubscriptionPlan } from "@/features/entitlements/default-subscription-actions";
 import { getPrimaryHouseholdId } from "@/features/household/default-household-actions";
 import { OnboardingFlow, type OnboardingAuth } from "@/features/onboarding/onboarding-flow";
@@ -154,6 +155,17 @@ export default function IndexRoute() {
       auth={auth}
       persist={persistOnboardingForSignedInParent}
       choosePlan={chooseSubscriptionPlan}
+      validateKidCode={async (code) => {
+        try {
+          await resolveChildAccessCode(code);
+          return "ok";
+        } catch (e) {
+          // "not found" is a wrong code; anything else (offline, RPC down) is
+          // unknown, so we let the kid through and resolve it on the home screen.
+          const message = e instanceof Error ? e.message : "";
+          return /not found/i.test(message) ? "bad" : "unknown";
+        }
+      }}
       onSignIn={() => router.push("/parent/sign-in")}
       onComplete={(result, persisted) => {
         if (result.role === "parent") {

@@ -41,6 +41,7 @@ import {
   OBTitle,
 } from "@/features/onboarding/onboarding-kit";
 import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo";
+import { SignaturePad } from "@/features/onboarding/signature-pad";
 import { ToySticker } from "@/components/toybox";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
 
@@ -148,6 +149,7 @@ type Step =
   | "p_causes"
   | "p_account"
   | "p_plan"
+  | "p_pledge"
   | "p_done"
   | "k_code"
   | "k_avatar"
@@ -201,6 +203,7 @@ export function OnboardingFlow({
   persist,
   choosePlan,
   onSignIn,
+  validateKidCode,
 }: {
   onComplete?: (
     result: OnboardingResult,
@@ -215,6 +218,12 @@ export function OnboardingFlow({
   choosePlan?: (householdId: string, plan: "monthly" | "yearly") => Promise<void>;
   /** Returning parents: send them to sign-in instead of the setup wizard. */
   onSignIn?: () => void;
+  /**
+   * Check a kid's join code before the avatar step so a typo is caught up front
+   * instead of after they've picked a colour and a name. "unknown" (e.g. the
+   * device is offline) lets them through — the home screen resolves it later.
+   */
+  validateKidCode?: (code: string) => Promise<"ok" | "bad" | "unknown">;
 }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
@@ -338,7 +347,15 @@ export function OnboardingFlow({
               await choosePlan?.(persisted.householdId, plan);
             }
           }}
-          onContinue={() => setStep("p_done")}
+          onContinue={() => setStep("p_pledge")}
+        />
+      );
+    case "p_pledge":
+      return (
+        <OBPledge
+          data={data}
+          onNext={() => setStep("p_done")}
+          onBack={() => setStep("p_plan")}
         />
       );
     case "p_done":
@@ -348,6 +365,7 @@ export function OnboardingFlow({
         <OBKidCode
           code={code}
           setCode={setCode}
+          validate={validateKidCode}
           onNext={() => setStep("k_avatar")}
           onBack={() => setStep("role")}
         />
@@ -2009,6 +2027,100 @@ function OBPlanChoice({
   );
 }
 
+/* ---------- Parent: the family promise (sign it, show the kid) ---------- */
+
+function OBPledge({
+  data,
+  onNext,
+  onBack,
+}: {
+  data: OnboardingData;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const [signed, setSigned] = useState(false);
+
+  const names = data.kids.map((kid) => kid.name.trim()).filter(Boolean);
+  const kidLabel =
+    names.length === 0 ? "your kid" : names.length === 1 ? names[0] : "your kids";
+  const them = names.length > 1 ? "them" : kidLabel;
+
+  return (
+    <OBShell
+      onBack={onBack}
+      footer={
+        <OBPrimary onPress={onNext} disabled={!signed}>
+          {signed ? "We pinky promise" : "Sign to promise"}
+        </OBPrimary>
+      }
+    >
+      <View
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 999,
+          backgroundColor: bucketTokens.giving.ramp[200],
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 6,
+        }}
+      >
+        <HandHeart size={28} color={bucketTokens.giving.ramp[800]} strokeWidth={2.2} />
+      </View>
+
+      <OBTitle
+        title="Pinky promise."
+        subtitle={`A real deal between you and ${kidLabel}. Sign it below, then show ${them} — that's what makes it count.`}
+      />
+
+      {/* The promise — first person, kid-friendly, framed as the parent's word. */}
+      <View
+        style={{
+          padding: 18,
+          borderRadius: 18,
+          backgroundColor: scheme.bgRaised,
+          borderColor: scheme.border,
+          borderWidth: 1,
+          marginBottom: 22,
+        }}
+      >
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>
+          The deal
+        </Text>
+        <Text style={[typography.text.body, { color: scheme.fg, lineHeight: 24 }]}>
+          I promise to pay you fairly for every chore you finish, and to always
+          keep my word. You promise to do your best. We&apos;re a team now.
+        </Text>
+      </View>
+
+      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+        Your signature
+      </Text>
+      <SignaturePad onChange={setSigned} />
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 18,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          borderRadius: radius.sm,
+          backgroundColor: scheme.tint.info,
+        }}
+      >
+        <Sparkles size={16} color={palette.semantic.info[600]} strokeWidth={2.2} />
+        <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}>
+          Now show {them} the screen so they know it&apos;s a real promise — you
+          just shook on it.
+        </Text>
+      </View>
+    </OBShell>
+  );
+}
+
 function OBParentDone({
   data,
   persisted,
@@ -2093,28 +2205,53 @@ function OBParentDone({
 function OBKidCode({
   code,
   setCode,
+  validate,
   onNext,
   onBack,
 }: {
   code: string;
   setCode: (c: string) => void;
+  validate?: (code: string) => Promise<"ok" | "bad" | "unknown">;
   onNext: () => void;
   onBack: () => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, palette } = useChoreyTheme();
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Access codes are CHOREY-XXXXXXXX (8 alphanumerics after the prefix). Keep
   // letters, digits and the dash; uppercase; drop everything else. The server
   // normalizes + validates on join, so gate on a sane minimum length rather
   // than an exact format (a format change must never lock kids out of joining).
-  const onType = (v: string) => setCode(v.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+  const onType = (v: string) => {
+    setCode(v.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+    if (error) setError(null);
+  };
   const ready = code.replace(/[^A-Z0-9]/gi, "").length >= 8;
+
+  // Check the code before the avatar step. A wrong code stops here with a clear
+  // message instead of letting the kid set up a profile against a dead code; an
+  // "unknown" result (offline) still lets them through.
+  const submit = async () => {
+    if (!validate) {
+      onNext();
+      return;
+    }
+    setChecking(true);
+    const result = await validate(code);
+    setChecking(false);
+    if (result === "bad") {
+      setError("That code didn't work. Double-check it with a parent.");
+      return;
+    }
+    onNext();
+  };
 
   return (
     <OBShell
       onBack={onBack}
       footer={
-        <OBPrimary onPress={onNext} disabled={!ready}>
-          {ready ? "Join family" : "Enter your code"}
+        <OBPrimary onPress={submit} disabled={!ready || checking}>
+          {checking ? "Checking…" : ready ? "Join family" : "Enter your code"}
         </OBPrimary>
       }
     >
@@ -2132,6 +2269,16 @@ function OBKidCode({
         autoComplete="off"
         autoFocus
       />
+      {error ? (
+        <Text
+          style={[
+            typography.text.bodySm,
+            { color: palette.semantic.danger[600], marginTop: 10 },
+          ]}
+        >
+          {error}
+        </Text>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Use a sample code"

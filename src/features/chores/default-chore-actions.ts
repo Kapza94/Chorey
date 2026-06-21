@@ -39,3 +39,12 @@ export async function sendBackChoreForHousehold(input: {
     reason: input.reason,
   });
 }
+
+export async function deleteChoreForHousehold(input: {
+  householdId: string;
+  choreId: string;
+}): Promise<void> {
+  return createChoreActions(supabase, input.householdId).deleteChore(
+    input.choreId,
+  );
+}
