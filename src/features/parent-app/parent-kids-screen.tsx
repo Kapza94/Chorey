@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Image } from "expo-image";
 import { Check, ChevronRight, Plus, Share2, Sparkles, Undo2, Wallet } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -64,6 +65,8 @@ export type PendingApproval = {
   title: string;
   rewardCents: number;
   tone: ParentKid["tone"];
+  /** signed URL of the kid's completion photo, when they attached one */
+  photoUrl?: string;
 };
 
 /** A kid's request to spend their Spend balance on a wishlist item. */
@@ -627,6 +630,29 @@ function ChoreReviewRow({
           </View>
         ) : null}
       </View>
+
+      {item.photoUrl ? (
+        <Pressable
+          accessibilityRole="imagebutton"
+          accessibilityLabel={`Open ${item.childName}'s photo to save it`}
+          onPress={() => void Linking.openURL(item.photoUrl as string)}
+          style={{ marginTop: 10 }}
+        >
+          <Image
+            source={{ uri: item.photoUrl }}
+            style={{ width: "100%", height: 180, borderRadius: radius.sm }}
+            contentFit="cover"
+          />
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, marginTop: 5, textAlign: "center" },
+            ]}
+          >
+            Tap photo to view or save · available for 30 days
+          </Text>
+        </Pressable>
+      ) : null}
 
       {back ? (
         <View style={{ marginTop: 10 }}>

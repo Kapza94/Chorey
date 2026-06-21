@@ -46,6 +46,13 @@
       ],
       "expo-sharing",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Chorey needs access to your photos so you can attach a picture of a finished chore.",
+          "cameraPermission": "Chorey needs camera access so you can take a picture of a finished chore."
+        }
+      ],
+      [
         "@sentry/react-native",
         {
           "disableAutoUpload": true

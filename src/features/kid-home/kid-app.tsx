@@ -23,8 +23,10 @@ type Props = {
   split?: Split;
   currency?: CurrencyCode;
   chores?: KidChore[];
-  onSubmitChore?: (id: string) => Promise<void>;
+  onSubmitChore?: (id: string, photoBase64?: string | null) => Promise<void>;
   onUndoChore?: (id: string) => Promise<void>;
+  /** when set, the kid can attach a photo of a finished chore */
+  pickPhoto?: () => Promise<{ uri: string; base64: string } | null>;
   // Wishlist
   spendableCents?: number;
   wishes?: KidWish[];
@@ -61,6 +63,7 @@ export function KidApp({
   chores,
   onSubmitChore,
   onUndoChore,
+  pickPhoto,
   spendableCents,
   wishes,
   onRequestPurchase,
@@ -137,11 +140,12 @@ export function KidApp({
         chore={selectedChore}
         currency={currency ?? DEFAULT_CURRENCY}
         onClose={() => setSelectedChoreId(null)}
-        onSubmit={async (choreId) => {
+        pickPhoto={pickPhoto}
+        onSubmit={async (choreId, photoBase64) => {
           if (!onSubmitChore) {
             throw new Error("This chore cannot be updated right now.");
           }
-          await onSubmitChore(choreId);
+          await onSubmitChore(choreId, photoBase64);
         }}
         onUndo={async (choreId) => {
           if (!onUndoChore) {

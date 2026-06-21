@@ -64,6 +64,7 @@ import {
   deleteChoreForHousehold,
   listChoresForHousehold,
   sendBackChoreForHousehold,
+  signChorePhotoUrls,
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
 import { isRecurringChoreLate } from "@/features/chores/recurrence";
@@ -101,6 +102,7 @@ export default function ParentHomeRoute() {
   const [split, setSplit] = useState<Split>(DEFAULT_SPLIT);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [chores, setChores] = useState<CreatedChore[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [purchases, setPurchases] = useState<HouseholdPurchaseRequest[]>([]);
   const [suggestions, setSuggestions] = useState<GivingSuggestion[]>([]);
   const [settlementPeriod, setSettlementPeriod] = useState<SettlementPeriod | null>(null);
@@ -183,6 +185,14 @@ export default function ParentHomeRoute() {
     setHouseholdName(settings.name);
     setPayouts(nextPayouts);
     setChores(nextChores);
+
+    // Sign URLs only for submitted chores that carry a photo — that's all the
+    // approval cards render.
+    const photoPaths = nextChores
+      .filter((chore) => chore.status === "submitted" && chore.photoPath)
+      .map((chore) => chore.photoPath as string);
+    setPhotoUrls(await signChorePhotoUrls(photoPaths));
+
     setPurchases(nextPurchases);
     setSuggestions(nextSuggestions);
     setSettlementPeriod(nextPeriod);
@@ -229,6 +239,7 @@ export default function ParentHomeRoute() {
         title: chore.title,
         rewardCents: chore.rewardCents,
         tone: kid?.tone ?? "allowance",
+        photoUrl: chore.photoPath ? photoUrls[chore.photoPath] : undefined,
       };
     });
 

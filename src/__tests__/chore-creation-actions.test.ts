@@ -43,6 +43,7 @@ describe("chore creation actions", () => {
       sentBackReason: null,
       recurrence: null,
       periodKey: null,
+      photoPath: null,
     });
     expect(client.from).toHaveBeenCalledWith("chore_instances");
     expect(client.from.mock.results[0]?.value.insert).toHaveBeenCalledWith({

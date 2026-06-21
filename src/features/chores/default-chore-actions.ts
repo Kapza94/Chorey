@@ -48,3 +48,32 @@ export async function deleteChoreForHousehold(input: {
     input.choreId,
   );
 }
+
+/**
+ * Short-lived signed URLs for chore-completion photos, keyed by storage path.
+ * The bucket is private; the household read policy lets a signed-in parent mint
+ * these for their own household's photos. Paths that fail to sign are omitted.
+ */
+export async function signChorePhotoUrls(
+  paths: string[],
+): Promise<Record<string, string>> {
+  if (paths.length === 0) {
+    return {};
+  }
+
+  const { data, error } = await supabase.storage
+    .from("chore-photos")
+    .createSignedUrls(paths, 60 * 60);
+
+  if (error || !data) {
+    return {};
+  }
+
+  const urls: Record<string, string> = {};
+  for (const item of data) {
+    if (item.signedUrl && item.path) {
+      urls[item.path] = item.signedUrl;
+    }
+  }
+  return urls;
+}
