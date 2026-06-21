@@ -8,11 +8,11 @@
 //             the bucket has no anon write policy.
 //
 //   purge   — deletes photos older than 30 days and clears their photo_path.
-//             Called on a cron, authorized with the service-role key (see README).
+//             Called on a cron, authorized with a Vault token (see README).
 //
 // Deploy with verify_jwt off: the upload path authenticates with the child's
-// access code (kids aren't Supabase users) and the purge path with the
-// service-role key, so neither relies on a platform JWT.
+// access code (kids aren't Supabase users) and the purge path with a token kept
+// in Supabase Vault, so neither relies on a platform JWT.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
