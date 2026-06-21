@@ -42,3 +42,23 @@ using (
       and m.household_id::text = (storage.foldername(name))[1]
   )
 );
+
+-- The purge cron and the chore-photos edge function share a token kept in
+-- Supabase Vault (created out-of-band on the live project). Only the service
+-- role can read it, so the edge function authenticates the cron without a
+-- hand-provisioned secret. Returns null when the secret isn't set (purge then
+-- 401s harmlessly until it is).
+create or replace function public.chore_photos_purge_token()
+returns text
+language sql
+security definer
+set search_path = ''
+as $$
+  select decrypted_secret
+  from vault.decrypted_secrets
+  where name = 'chore_photos_purge'
+  limit 1
+$$;
+
+revoke all on function public.chore_photos_purge_token() from public, anon, authenticated;
+grant execute on function public.chore_photos_purge_token() to service_role;

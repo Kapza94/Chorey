@@ -413,10 +413,15 @@ export default function ChildHomeRoute() {
         );
 
         // Upload after the chore is submitted so the row exists for the edge
-        // function to stamp. A failed upload doesn't undo the submission — the
-        // chore is finished either way; the photo is a bonus.
+        // function to stamp. Best-effort: the chore is finished either way, so a
+        // failed photo upload must not surface as a failed submit.
         if (photoBase64) {
-          await uploadChorePhotoForChild({ accessCode, choreId, imageBase64: photoBase64 });
+          try {
+            await uploadChorePhotoForChild({ accessCode, choreId, imageBase64: photoBase64 });
+          } catch {
+            // ponytail: photo is a bonus; swallow so the kid isn't told the
+            // (successful) submit failed. Add a "photo didn't send" toast if it matters.
+          }
         }
       }}
       onUndoChore={async (choreId) => {

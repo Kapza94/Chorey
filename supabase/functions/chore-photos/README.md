@@ -22,10 +22,11 @@ read their own household's photos directly via a Storage RLS policy (see
 
 ```bash
 supabase functions deploy chore-photos --no-verify-jwt
-supabase secrets set CHORE_PHOTOS_PURGE_AUTH=<random-string>
 ```
 
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically. The
+purge action authorizes against `SUPABASE_SERVICE_ROLE_KEY`, so there is no
+separate secret to set.
 
 ## Schedule the purge (pg_cron + pg_net, daily)
 
@@ -38,7 +39,7 @@ select cron.schedule(
     url := 'https://<PROJECT_REF>.functions.supabase.co/chore-photos',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', '<the CHORE_PHOTOS_PURGE_AUTH value>'
+      'Authorization', 'Bearer <SUPABASE_SERVICE_ROLE_KEY>'
     ),
     body := jsonb_build_object('action', 'purge')
   );
