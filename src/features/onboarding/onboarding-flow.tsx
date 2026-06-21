@@ -41,6 +41,7 @@ import {
   OBTitle,
 } from "@/features/onboarding/onboarding-kit";
 import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo";
+import { SignaturePad } from "@/features/onboarding/signature-pad";
 import { ToySticker } from "@/components/toybox";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
 
@@ -148,6 +149,7 @@ type Step =
   | "p_causes"
   | "p_account"
   | "p_plan"
+  | "p_pledge"
   | "p_done"
   | "k_code"
   | "k_avatar"
@@ -345,7 +347,15 @@ export function OnboardingFlow({
               await choosePlan?.(persisted.householdId, plan);
             }
           }}
-          onContinue={() => setStep("p_done")}
+          onContinue={() => setStep("p_pledge")}
+        />
+      );
+    case "p_pledge":
+      return (
+        <OBPledge
+          data={data}
+          onNext={() => setStep("p_done")}
+          onBack={() => setStep("p_plan")}
         />
       );
     case "p_done":
@@ -2013,6 +2023,100 @@ function OBPlanChoice({
           {errorMessage}
         </Text>
       ) : null}
+    </OBShell>
+  );
+}
+
+/* ---------- Parent: the family promise (sign it, show the kid) ---------- */
+
+function OBPledge({
+  data,
+  onNext,
+  onBack,
+}: {
+  data: OnboardingData;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const [signed, setSigned] = useState(false);
+
+  const names = data.kids.map((kid) => kid.name.trim()).filter(Boolean);
+  const kidLabel =
+    names.length === 0 ? "your kid" : names.length === 1 ? names[0] : "your kids";
+  const them = names.length > 1 ? "them" : kidLabel;
+
+  return (
+    <OBShell
+      onBack={onBack}
+      footer={
+        <OBPrimary onPress={onNext} disabled={!signed}>
+          {signed ? "We pinky promise" : "Sign to promise"}
+        </OBPrimary>
+      }
+    >
+      <View
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 999,
+          backgroundColor: bucketTokens.giving.ramp[200],
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 6,
+        }}
+      >
+        <HandHeart size={28} color={bucketTokens.giving.ramp[800]} strokeWidth={2.2} />
+      </View>
+
+      <OBTitle
+        title="Pinky promise."
+        subtitle={`A real deal between you and ${kidLabel}. Sign it below, then show ${them} — that's what makes it count.`}
+      />
+
+      {/* The promise — first person, kid-friendly, framed as the parent's word. */}
+      <View
+        style={{
+          padding: 18,
+          borderRadius: 18,
+          backgroundColor: scheme.bgRaised,
+          borderColor: scheme.border,
+          borderWidth: 1,
+          marginBottom: 22,
+        }}
+      >
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>
+          The deal
+        </Text>
+        <Text style={[typography.text.body, { color: scheme.fg, lineHeight: 24 }]}>
+          I promise to pay you fairly for every chore you finish, and to always
+          keep my word. You promise to do your best. We&apos;re a team now.
+        </Text>
+      </View>
+
+      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+        Your signature
+      </Text>
+      <SignaturePad onChange={setSigned} />
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 18,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          borderRadius: radius.sm,
+          backgroundColor: scheme.tint.info,
+        }}
+      >
+        <Sparkles size={16} color={palette.semantic.info[600]} strokeWidth={2.2} />
+        <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}>
+          Now show {them} the screen so they know it&apos;s a real promise — you
+          just shook on it.
+        </Text>
+      </View>
     </OBShell>
   );
 }

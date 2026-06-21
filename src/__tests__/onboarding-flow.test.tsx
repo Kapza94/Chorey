@@ -2,6 +2,20 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 
 import { OnboardingFlow } from "@/features/onboarding/onboarding-flow";
 
+// The signature pad draws via PanResponder, which isn't worth simulating here —
+// stub it with a button that reports "signed" so the pledge step can advance.
+jest.mock("@/features/onboarding/signature-pad", () => ({
+  SignaturePad: ({ onChange }: { onChange?: (hasInk: boolean) => void }) => {
+    const React = require("react");
+    const { Pressable, Text } = require("react-native");
+    return React.createElement(
+      Pressable,
+      { accessibilityLabel: "Sign", onPress: () => onChange?.(true) },
+      React.createElement(Text, null, "Sign"),
+    );
+  },
+}));
+
 describe("OnboardingFlow", () => {
   it("walks welcome → big idea → role", () => {
     render(<OnboardingFlow />);
@@ -95,6 +109,11 @@ describe("OnboardingFlow", () => {
     await waitFor(() => {
       expect(choosePlan).toHaveBeenCalledWith("h1", "monthly");
     });
+
+    // The family-promise screen: sign it, then seal the deal.
+    expect(await screen.findByText("Pinky promise.")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Sign"));
+    fireEvent.press(screen.getByText("We pinky promise"));
 
     // Verified + persisted → the success screen appears
     expect(await screen.findByText("You're all set.")).toBeOnTheScreen();
