@@ -25,10 +25,12 @@ export type CreatedChore = {
   recurrence?: Recurrence | null;
   /** the period this recurring instance belongs to (YYYY-MM-DD), if any. */
   periodKey?: string | null;
+  /** storage path of the kid's completion photo, if they attached one. */
+  photoPath?: string | null;
 };
 
 const CHORE_COLUMNS =
-  "id, household_id, child_profile_id, title, reward_cents, status, sent_back_reason, period_key, chore_templates(recurrence)";
+  "id, household_id, child_profile_id, title, reward_cents, status, sent_back_reason, period_key, photo_path, chore_templates(recurrence)";
 
 function mapChore(row: any): CreatedChore {
   // The joined template (if any) carries the recurrence; one-off chores have none.
@@ -46,6 +48,7 @@ function mapChore(row: any): CreatedChore {
     sentBackReason: row.sent_back_reason ?? null,
     recurrence: template?.recurrence ?? null,
     periodKey: row.period_key ?? null,
+    photoPath: row.photo_path ?? null,
   };
 }
 

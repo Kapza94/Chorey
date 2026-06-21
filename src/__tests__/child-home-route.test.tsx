@@ -85,6 +85,11 @@ jest.mock("@/features/chores/default-child-chore-actions", () => ({
     mockUndoChoreSubmissionForChild(...args),
 }));
 
+jest.mock("@/features/chores/default-child-photo-actions", () => ({
+  pickChorePhoto: jest.fn(async () => null),
+  uploadChorePhotoForChild: jest.fn(async () => undefined),
+}));
+
 jest.mock("@/features/ledger/default-ledger-actions", () => ({
   getBucketBalancesForChild: (...args: unknown[]) =>
     mockGetBucketBalancesForChild(...args),

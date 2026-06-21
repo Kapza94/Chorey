@@ -14,6 +14,10 @@ import {
   submitChoreForChild,
   undoChoreSubmissionForChild,
 } from "@/features/chores/default-child-chore-actions";
+import {
+  pickChorePhoto,
+  uploadChorePhotoForChild,
+} from "@/features/chores/default-child-photo-actions";
 import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
 import {
   createWishlistItemForChild,
@@ -397,7 +401,8 @@ export default function ChildHomeRoute() {
         );
         setCelebrationLevel(null);
       }}
-      onSubmitChore={async (choreId) => {
+      pickPhoto={pickChorePhoto}
+      onSubmitChore={async (choreId, photoBase64) => {
         if (!accessCode) {
           throw new Error("Child access code is missing.");
         }
@@ -406,6 +411,13 @@ export default function ChildHomeRoute() {
         setChores((current) =>
           current.map((chore) => (chore.id === choreId ? submitted : chore)),
         );
+
+        // Upload after the chore is submitted so the row exists for the edge
+        // function to stamp. A failed upload doesn't undo the submission — the
+        // chore is finished either way; the photo is a bonus.
+        if (photoBase64) {
+          await uploadChorePhotoForChild({ accessCode, choreId, imageBase64: photoBase64 });
+        }
       }}
       onUndoChore={async (choreId) => {
         if (!accessCode) {

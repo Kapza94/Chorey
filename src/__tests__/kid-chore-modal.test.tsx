@@ -28,7 +28,7 @@ it("submits a to-do chore from the modal", async () => {
 
   fireEvent.press(screen.getByLabelText("Mark as finished"));
 
-  await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("c1"));
+  await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("c1", null));
 });
 
 it("confirms before undoing a waiting chore", async () => {

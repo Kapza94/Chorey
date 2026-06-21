@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
-import { Check, Clock, RotateCcw, X } from "lucide-react-native";
+import { Image } from "expo-image";
+import { Camera, Check, Clock, RotateCcw, X } from "lucide-react-native";
 
 import type { KidChore } from "@/features/kid-home/kid-home-screen";
 import { formatMoney, type CurrencyCode } from "@/features/money/currency";
@@ -11,8 +12,10 @@ type Props = {
   chore: KidChore | null;
   currency: CurrencyCode;
   onClose: () => void;
-  onSubmit: (choreId: string) => Promise<void>;
+  onSubmit: (choreId: string, photoBase64?: string | null) => Promise<void>;
   onUndo: (choreId: string) => Promise<void>;
+  /** when set, the kid can attach a photo of the finished chore before submitting */
+  pickPhoto?: () => Promise<{ uri: string; base64: string } | null>;
 };
 
 export function KidChoreModal({
@@ -21,12 +24,33 @@ export function KidChoreModal({
   onClose,
   onSubmit,
   onUndo,
+  pickPhoto,
 }: Props) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
   const [confirmingUndo, setConfirmingUndo] = useState(false);
   const [pendingAction, setPendingAction] = useState<"submit" | "undo" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{ uri: string; base64: string } | null>(null);
+  const [picking, setPicking] = useState(false);
+
+  async function addPhoto() {
+    if (!pickPhoto || picking || pendingAction) {
+      return;
+    }
+    setPicking(true);
+    setErrorMessage(null);
+    try {
+      const picked = await pickPhoto();
+      if (picked) {
+        setPhoto(picked);
+      }
+    } catch {
+      setErrorMessage("Couldn't open the camera. Try again.");
+    } finally {
+      setPicking(false);
+    }
+  }
 
   async function runAction(
     action: "submit" | "undo",
@@ -58,6 +82,7 @@ export function KidChoreModal({
 
     setConfirmingUndo(false);
     setErrorMessage(null);
+    setPhoto(null);
     onClose();
   }
 
@@ -174,11 +199,26 @@ export function KidChoreModal({
 
           <View style={{ marginTop: 22 }}>
             {chore.state === "todo" ? (
-              <PrimaryButton
-                label="Mark as finished"
-                disabled={pendingAction != null}
-                onPress={() => void runAction("submit", onSubmit)}
-              />
+              <View>
+                {pickPhoto ? (
+                  <PhotoPicker
+                    photo={photo}
+                    picking={picking}
+                    disabled={pendingAction != null}
+                    onAdd={() => void addPhoto()}
+                    onRemove={() => setPhoto(null)}
+                  />
+                ) : null}
+                <PrimaryButton
+                  label="Mark as finished"
+                  disabled={pendingAction != null || picking}
+                  onPress={() =>
+                    void runAction("submit", (id) =>
+                      onSubmit(id, photo?.base64 ?? null),
+                    )
+                  }
+                />
+              </View>
             ) : chore.state === "waiting" ? (
               confirmingUndo ? (
                 <View>
@@ -300,6 +340,85 @@ export function KidChoreModal({
         </View>
       ) : null}
     </Modal>
+  );
+}
+
+function PhotoPicker({
+  photo,
+  picking,
+  disabled,
+  onAdd,
+  onRemove,
+}: {
+  photo: { uri: string; base64: string } | null;
+  picking: boolean;
+  disabled: boolean;
+  onAdd: () => void;
+  onRemove: () => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+
+  if (photo) {
+    return (
+      <View style={{ marginBottom: 12, alignItems: "center" }}>
+        <View>
+          <Image
+            source={{ uri: photo.uri }}
+            style={{ width: 120, height: 120, borderRadius: radius.sm }}
+            contentFit="cover"
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Remove photo"
+            disabled={disabled}
+            onPress={onRemove}
+            hitSlop={8}
+            style={{
+              position: "absolute",
+              top: -8,
+              right: -8,
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: scheme.fg,
+            }}
+          >
+            <X size={15} color={scheme.bgPage} strokeWidth={2.6} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Add a photo"
+      accessibilityState={{ disabled }}
+      disabled={disabled || picking}
+      onPress={onAdd}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minHeight: 48,
+        marginBottom: 12,
+        paddingVertical: 13,
+        borderRadius: radius.pill,
+        borderWidth: 1,
+        borderColor: palette.border.mid,
+        backgroundColor: pressed ? scheme.bgSunken : scheme.bgPage,
+        opacity: disabled ? 0.55 : 1,
+      })}
+    >
+      <Camera size={17} color={scheme.fgMuted} strokeWidth={2.3} />
+      <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 15 }]}>
+        {picking ? "Opening…" : "Add a photo"}
+      </Text>
+    </Pressable>
   );
 }
 

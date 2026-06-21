@@ -46,7 +46,7 @@ describe("KidApp shell", () => {
     expect(screen.getByLabelText("Close chore")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("Mark as finished"));
-    await waitFor(() => expect(onSubmitChore).toHaveBeenCalledWith("c1"));
+    await waitFor(() => expect(onSubmitChore).toHaveBeenCalledWith("c1", null));
   });
 
   it("opens a waiting chore and forwards confirmed undo", async () => {
