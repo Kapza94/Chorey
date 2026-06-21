@@ -2043,7 +2043,7 @@ function OBPledge({
 
   const names = data.kids.map((kid) => kid.name.trim()).filter(Boolean);
   const kidLabel =
-    names.length === 0 ? "your kid" : names.length === 1 ? names[0] : "your kids";
+    names.length === 0 ? "your child" : names.length === 1 ? names[0] : "your children";
   const them = names.length > 1 ? "them" : kidLabel;
 
   return (
