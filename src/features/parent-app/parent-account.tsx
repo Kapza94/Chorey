@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Modal, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from "react-native";
 
 import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import {
+  Camera,
   ChevronRight,
   CreditCard,
   LifeBuoy,
@@ -60,6 +61,7 @@ export function ParentAccountSheet({
   account,
   subscriptionLabel,
   onEditName,
+  onChangePhoto,
   onManageSubscription,
   onManageStoreSubscription,
   onSubmitContact,
@@ -72,6 +74,8 @@ export function ParentAccountSheet({
   account: ParentAccount;
   subscriptionLabel?: string;
   onEditName?: (name: string) => void;
+  /** Pick + upload a new profile photo. Resolves when done (or cancelled). */
+  onChangePhoto?: () => Promise<void> | void;
   onManageSubscription?: () => void;
   /** Opens the App Store / Play Store page to cancel or change billing. */
   onManageStoreSubscription?: () => void;
@@ -89,8 +93,21 @@ export function ParentAccountSheet({
   const peach = palette.allowance;
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(account.name);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   // 'menu' is the account list; the others swap in a focused sub-view.
   const [view, setView] = useState<"menu" | "contact" | "feedback" | "delete">("menu");
+
+  const changePhoto = async () => {
+    if (!onChangePhoto || uploadingPhoto) {
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      await onChangePhoto();
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const providerLabel = PROVIDER_LABEL[account.provider] ?? "Account";
 
@@ -156,7 +173,39 @@ export function ParentAccountSheet({
           <>
         {/* Identity */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 13 }}>
-          <ToyAvatar name={account.name} tone="savings" size={58} imageUrl={account.avatarUrl} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
+            disabled={!onChangePhoto || uploadingPhoto}
+            onPress={changePhoto}
+            style={{ width: 58, height: 58 }}
+          >
+            <ToyAvatar name={account.name} tone="savings" size={58} imageUrl={account.avatarUrl} />
+            {/* Camera badge — signals the avatar is tappable to change. */}
+            {onChangePhoto ? (
+              <View
+                style={{
+                  position: "absolute",
+                  right: -2,
+                  bottom: -2,
+                  width: 24,
+                  height: 24,
+                  borderRadius: 999,
+                  backgroundColor: palette.accent[600],
+                  borderColor: scheme.bgModal,
+                  borderWidth: 2,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {uploadingPhoto ? (
+                  <ActivityIndicator size="small" color={palette.cream[4]} />
+                ) : (
+                  <Camera size={12} color={palette.cream[4]} strokeWidth={2.4} />
+                )}
+              </View>
+            ) : null}
+          </Pressable>
           <View style={{ flex: 1 }}>
             {editing ? (
               <TextInput

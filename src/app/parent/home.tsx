@@ -58,6 +58,7 @@ import {
   updateParentDisplayName,
   type ParentIdentity,
 } from "@/features/auth/parent-identity-actions";
+import { pickAndUploadParentAvatar } from "@/features/account/default-avatar-actions";
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
@@ -477,6 +478,12 @@ export default function ParentHomeRoute() {
       onEditName={async (name) => {
         setIdentity((prev) => (prev ? { ...prev, name } : prev));
         await updateParentDisplayName(name);
+      }}
+      onChangePhoto={async () => {
+        const url = await pickAndUploadParentAvatar();
+        if (url) {
+          setIdentity((prev) => (prev ? { ...prev, avatarUrl: url } : prev));
+        }
       }}
       onManageStoreSubscription={async () => {
         const url = await getStoreManagementUrl();

@@ -94,6 +94,7 @@ type Props = {
   // Account
   account?: ParentAccount;
   onEditName?: (name: string) => void;
+  onChangePhoto?: () => Promise<void> | void;
   onManageStoreSubscription?: () => void;
   onSubmitContact?: (message: string) => Promise<void>;
   onSubmitFeedback?: (message: string) => Promise<void>;
@@ -137,6 +138,7 @@ export function ParentApp({
   accessCodes,
   subscriptionLabel,
   onManageSubscription,
+  onChangePhoto,
   onChangeBudget,
   onChangeCadence,
   onChangeSplit,
@@ -236,6 +238,7 @@ export function ParentApp({
           account={account}
           subscriptionLabel={subscriptionLabel}
           onEditName={onEditName}
+          onChangePhoto={onChangePhoto}
           onManageSubscription={() => {
             setAccountOpen(false);
             onManageSubscription?.();
