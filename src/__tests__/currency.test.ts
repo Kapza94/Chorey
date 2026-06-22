@@ -18,12 +18,12 @@ describe("currency formatting", () => {
 
   it("formats RSD with 0 decimals and the symbol after", () => {
     // 1500 dinars stored as 150000 cents
-    expect(formatMoney(150000, "RSD")).toBe("1.500 дин");
-    expect(formatMoney(2500, "RSD")).toBe("25 дин");
+    expect(formatMoney(150000, "RSD")).toBe("1.500 din");
+    expect(formatMoney(2500, "RSD")).toBe("25 din");
   });
 
   it("rounds sub-major remainders for 0-decimal currencies", () => {
-    expect(formatMoney(150050, "RSD")).toBe("1.501 дин"); // 1500.50 → 1501
+    expect(formatMoney(150050, "RSD")).toBe("1.501 din"); // 1500.50 → 1501
   });
 
   it("renders negatives with a leading minus", () => {

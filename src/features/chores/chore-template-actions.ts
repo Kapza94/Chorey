@@ -3,6 +3,7 @@ import {
   resolveHouseholdEntitlement,
 } from "@/features/entitlements/entitlements";
 import type { Recurrence } from "@/features/chores/recurrence";
+import type { DueTime } from "@/features/chores/due-time";
 
 type TemplateClient = {
   from(table: string): any;
@@ -17,6 +18,8 @@ export type CreateChoreTemplateInput = {
   title: string;
   rewardCents: number;
   recurrence: Recurrence;
+  /** Wall-clock "due by" time ("HH:MM"), or null/undefined for anytime. */
+  dueTime?: DueTime;
 };
 
 export type CreatedChoreTemplate = {
@@ -26,6 +29,7 @@ export type CreatedChoreTemplate = {
   title: string;
   rewardCents: number;
   recurrence: Recurrence;
+  dueTime: DueTime;
   active: boolean;
 };
 
@@ -37,12 +41,13 @@ function mapTemplate(row: any): CreatedChoreTemplate {
     title: row.title,
     rewardCents: row.reward_cents,
     recurrence: row.recurrence,
+    dueTime: row.due_time ?? null,
     active: row.active,
   };
 }
 
 const TEMPLATE_COLUMNS =
-  "id, household_id, child_profile_id, title, reward_cents, recurrence, active";
+  "id, household_id, child_profile_id, title, reward_cents, recurrence, due_time, active";
 
 export function createChoreTemplateActions(
   client: TemplateClient,
@@ -87,6 +92,7 @@ export function createChoreTemplateActions(
           title,
           reward_cents: input.rewardCents,
           recurrence: input.recurrence,
+          due_time: input.dueTime ?? null,
         })
         .select(TEMPLATE_COLUMNS)
         .single();

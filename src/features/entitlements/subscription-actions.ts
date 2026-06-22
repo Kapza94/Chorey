@@ -3,7 +3,7 @@ import {
   type SubscriptionStatus,
 } from "@/features/entitlements/entitlements";
 
-export type SubscriptionPlan = "weekly" | "monthly" | "yearly";
+export type SubscriptionPlan = "monthly" | "annual";
 
 /**
  * The household's Chorey Family subscription as the parent app sees it.
@@ -27,16 +27,28 @@ function formatDay(iso: string): string {
   return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
 }
 
-/** One-line summary for settings rows — always shows the real renewal date. */
+/** Whole days left until `iso`, rounded up and floored at 0 ("1 day left"
+ *  while there are still hours to go, never a misleading "0"). */
+export function trialDaysRemaining(iso: string): number {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+}
+
+/** One-line summary for settings rows and the profile sticker. */
 export function describeSubscription(subscription: HouseholdSubscription): string {
   if (subscription.status === "trialing") {
-    return subscription.trialEndsAt
-      ? `Free trial · ends ${formatDay(subscription.trialEndsAt)}`
-      : "Free trial";
+    if (!subscription.trialEndsAt) {
+      return "Free trial";
+    }
+    const days = trialDaysRemaining(subscription.trialEndsAt);
+    if (days === 0) {
+      return "Free trial · last day";
+    }
+    return `Free trial · ${days} ${days === 1 ? "day" : "days"} left`;
   }
 
   if (subscription.status === "active") {
-    return subscription.plan ? `Active · billed ${subscription.plan}` : "Active";
+    const planLabel = subscription.plan === "annual" ? "annually" : subscription.plan;
+    return planLabel ? `Active · billed ${planLabel}` : "Active";
   }
 
   return "Paused";

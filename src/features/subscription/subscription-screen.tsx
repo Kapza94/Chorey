@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import {
   BellOff,
@@ -58,6 +59,14 @@ export function SubscriptionScreen({
   const lapsed = subscription.status === "lapsed";
   const offerFor = (plan: SubscriptionPlan) =>
     offers?.find((offer) => offer.plan === plan);
+
+  // Tapping a card only *selects* it; the Subscribe button below commits the
+  // purchase. Default to the annual ("Best deal") plan, or whatever the
+  // household already has.
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(
+    subscription.plan ?? "annual",
+  );
+
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -168,8 +177,8 @@ export function SubscriptionScreen({
               >
                 {subscription.status === "trialing" && subscription.trialEndsAt
                   ? subscription.plan
-                    ? `Your trial ends ${formatDay(subscription.trialEndsAt)}. Billed ${subscription.plan} after the trial — cancel anytime before then.`
-                    : `Your trial ends ${formatDay(subscription.trialEndsAt)}. Pick how you'd like to be billed after it.`
+                    ? `Free until ${formatDay(subscription.trialEndsAt)}, then billed ${subscription.plan === "annual" ? "annually" : subscription.plan} — cancel anytime before then.`
+                    : `Free until ${formatDay(subscription.trialEndsAt)}. Pick how you'd like to be billed after it.`
                   : "One plan runs the whole household — every child, every parent, every chore."}
               </Text>
 
@@ -203,16 +212,10 @@ export function SubscriptionScreen({
           accessibilityRole="button"
           accessibilityLabel="Close subscription"
           onPress={onClose}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            marginTop: 8,
-            paddingVertical: 14,
-            borderRadius: radius.pill,
-            backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
-          })}
+          style={{ alignItems: "center", marginTop: 4, paddingVertical: 12 }}
         >
-          <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 15 }]}>
-            Back
+          <Text style={[typography.text.label, { color: scheme.fgFaint, fontSize: 15 }]}>
+            Maybe later
           </Text>
         </Pressable>
       </ScrollView>
@@ -220,9 +223,21 @@ export function SubscriptionScreen({
   );
 
   function renderPlans(fineprint: string) {
-    const weekly = offerFor("weekly");
     const monthly = offerFor("monthly");
-    const yearly = offerFor("yearly");
+    const yearly = offerFor("annual");
+
+    const monthlyNum = monthly?.priceString
+      ? parseFloat(monthly.priceString.replace(/[^0-9.]/g, ""))
+      : null;
+    const annualNum = yearly?.priceString
+      ? parseFloat(yearly.priceString.replace(/[^0-9.]/g, ""))
+      : null;
+    // ponytail: $95.99 is a fixed marketing claim (12 × $7.99 = $95.88, rounded up for display)
+    const annualCompare = yearly?.priceString ? "$95.99" : undefined;
+    const annualSavings =
+      monthlyNum != null && annualNum != null
+        ? Math.round(monthlyNum * 12 - annualNum)
+        : null;
 
     return (
       <>
@@ -230,32 +245,42 @@ export function SubscriptionScreen({
           Billing
         </Text>
 
-        {weekly ? (
-          <PlanCard
-            plan="weekly"
-            label="Weekly"
-            caption="Try it week to week"
-            priceString={weekly.priceString}
-            selected={subscription.plan === "weekly"}
-            onPress={() => onChoosePlan?.("weekly")}
-          />
-        ) : null}
         <PlanCard
           plan="monthly"
           label="Monthly"
           caption="Simple, month to month"
           priceString={monthly?.priceString}
-          selected={subscription.plan === "monthly"}
-          onPress={() => onChoosePlan?.("monthly")}
+          selected={selectedPlan === "monthly"}
+          onPress={() => setSelectedPlan("monthly")}
         />
         <PlanCard
-          plan="yearly"
-          label="Yearly"
-          caption="2 months free"
+          plan="annual"
+          label="Annual"
+          caption="5 months free"
           priceString={yearly?.priceString}
-          selected={subscription.plan === "yearly"}
-          onPress={() => onChoosePlan?.("yearly")}
+          comparePrice={annualCompare}
+          savingsLabel={annualSavings != null ? `You save $${annualSavings}` : undefined}
+          selected={selectedPlan === "annual"}
+          onPress={() => setSelectedPlan("annual")}
         />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Subscribe — ${selectedPlan} billing`}
+          onPress={() => onChoosePlan?.(selectedPlan)}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            marginTop: 6,
+            paddingVertical: 16,
+            borderRadius: radius.pill,
+            backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+            ...scheme.toy.shadow,
+          })}
+        >
+          <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 16 }]}>
+            {subscription.status === "trialing" ? "Start free trial" : "Subscribe"}
+          </Text>
+        </Pressable>
 
         {onRestore ? (
           <Pressable
@@ -308,6 +333,8 @@ export function SubscriptionScreen({
     label,
     caption,
     priceString,
+    comparePrice,
+    savingsLabel,
     selected,
     onPress,
   }: {
@@ -315,86 +342,114 @@ export function SubscriptionScreen({
     label: string;
     caption: string;
     priceString?: string;
+    comparePrice?: string;
+    savingsLabel?: string;
     selected: boolean;
     onPress: () => void;
   }) {
     const spend = bucketTokens.spend.ramp;
 
+    // Wrap in a View so the corner savings badge can float above the card edge
     return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Choose ${plan} billing`}
-        accessibilityState={{ selected }}
-        onPress={onPress}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          backgroundColor: selected ? scheme.tint.allowance : scheme.bgModal,
-          borderColor: scheme.toy.border,
-          borderWidth: toybox.borderWidth,
-          borderRadius: 16,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          ...(selected ? scheme.toy.shadow : scheme.toy.shadowSm),
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <View>
-            <Text
-              style={[
-                typography.text.h3,
-                { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
-              ]}
-            >
-              {label}
-            </Text>
-            {priceString ? (
-              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4, marginTop: 2 }}>
-                <Text
-                  style={[
-                    typography.text.h3,
-                    { color: selected ? spend[800] : scheme.fg, fontSize: 17 },
-                  ]}
-                >
-                  {priceString}
-                </Text>
-                <Text
-                  style={[
-                    typography.text.caption,
-                    { color: selected ? spend[600] : scheme.fgFaint },
-                  ]}
-                >
-                  {plan === "yearly" ? "/ year" : plan === "weekly" ? "/ week" : "/ month"}
-                </Text>
-              </View>
-            ) : null}
-            <Text
-              style={[
-                typography.text.caption,
-                { color: selected ? spend[600] : scheme.fgFaint, marginTop: 2 },
-              ]}
-            >
+      <View style={{ marginTop: plan === "annual" ? 16 : 0 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Choose ${plan} billing`}
+          accessibilityState={{ selected }}
+          onPress={onPress}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: selected ? scheme.tint.allowance : scheme.bgModal,
+            borderColor: selected ? spend[400] : scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            borderRadius: 16,
+            paddingHorizontal: 18,
+            paddingVertical: 18,
+            gap: 12,
+            ...(selected ? scheme.toy.shadow : scheme.toy.shadowSm),
+          }}
+        >
+          {/* Radio */}
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: radius.pill,
+              borderWidth: selected ? 0 : 1.5,
+              borderColor: scheme.border,
+              backgroundColor: selected ? spend[600] : "transparent",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {selected ? <Check size={13} color={palette.cream[4]} strokeWidth={3} /> : null}
+          </View>
+
+          {/* Label + caption */}
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={[typography.text.h3, { color: selected ? spend[800] : scheme.fg, fontSize: 16 }]}>
+                {label}
+              </Text>
+              {plan === "annual" ? <ToySticker label="Best deal" tone="spend" /> : null}
+            </View>
+            <Text style={[typography.text.caption, { color: selected ? spend[600] : scheme.fgFaint, marginTop: 3 }]}>
               {caption}
             </Text>
           </View>
-          {plan === "yearly" ? <ToySticker label="Best deal" tone="spend" /> : null}
-        </View>
-        <View
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: radius.pill,
-            borderWidth: selected ? 0 : 1.5,
-            borderColor: scheme.border,
-            backgroundColor: selected ? spend[600] : "transparent",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {selected ? <Check size={13} color={palette.cream[4]} strokeWidth={3} /> : null}
-        </View>
-      </Pressable>
+
+          {/* Price stack — right-aligned */}
+          <View style={{ alignItems: "flex-end" }}>
+            {priceString ? (
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 3 }}>
+                <Text style={[typography.text.h3, { color: selected ? spend[800] : scheme.fg, fontSize: 18 }]}>
+                  {priceString}
+                </Text>
+                <Text style={[typography.text.caption, { fontSize: 13, color: selected ? spend[600] : scheme.fgFaint }]}>
+                  {plan === "annual" ? "/ yr" : "/ mo"}
+                </Text>
+              </View>
+            ) : null}
+            {comparePrice ? (
+              <Text
+                style={{
+                  fontFamily: typography.family.display.extra,
+                  fontSize: 18,
+                  color: selected ? spend[200] : scheme.fgFaint,
+                  textDecorationLine: "line-through",
+                  textDecorationColor: selected ? spend[400] : scheme.fgFaint,
+                  marginTop: 3,
+                }}
+              >
+                {comparePrice} / yr
+              </Text>
+            ) : null}
+          </View>
+        </Pressable>
+
+        {/* Savings badge — straddles the top border */}
+        {plan === "annual" && savingsLabel ? (
+          <View
+            style={{
+              position: "absolute",
+              top: -14,
+              right: 14,
+              backgroundColor: giving[400],
+              borderColor: giving[600],
+              borderWidth: toybox.borderWidth,
+              borderRadius: toybox.radius,
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              ...scheme.toy.shadow,
+            }}
+          >
+            <Text style={{ fontFamily: typography.family.display.extra, fontSize: 13, color: giving[800] }}>
+              {savingsLabel}
+            </Text>
+          </View>
+        ) : null}
+      </View>
     );
   }
 }

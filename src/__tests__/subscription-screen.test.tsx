@@ -17,12 +17,12 @@ describe("SubscriptionScreen", () => {
 
     expect(screen.getByText("Chorey Family")).toBeOnTheScreen();
     expect(screen.getByText("Free trial")).toBeOnTheScreen();
-    expect(screen.getByText(/ends Jun 25, 2026/)).toBeOnTheScreen();
+    expect(screen.getByText(/Free until Jun 25, 2026/)).toBeOnTheScreen();
     expect(screen.getByLabelText("Choose monthly billing")).toBeOnTheScreen();
-    expect(screen.getByLabelText("Choose yearly billing")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Choose annual billing")).toBeOnTheScreen();
   });
 
-  it("reports the chosen plan", () => {
+  it("reports the selected plan only after Subscribe is pressed", () => {
     const onChoosePlan = jest.fn();
     render(
       <SubscriptionScreen
@@ -36,8 +36,35 @@ describe("SubscriptionScreen", () => {
       />,
     );
 
-    fireEvent.press(screen.getByLabelText("Choose yearly billing"));
-    expect(onChoosePlan).toHaveBeenCalledWith("yearly");
+    // Tapping a card only selects it — no purchase yet.
+    fireEvent.press(screen.getByLabelText("Choose monthly billing"));
+    expect(onChoosePlan).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByLabelText("Subscribe — monthly billing"));
+    expect(onChoosePlan).toHaveBeenCalledWith("monthly");
+  });
+
+  it("defaults the selection to the annual plan", () => {
+    const onChoosePlan = jest.fn();
+    render(
+      <SubscriptionScreen
+        subscription={{
+          status: "trialing",
+          plan: null,
+          trialEndsAt: "2026-06-25T00:00:00Z",
+          currentPeriodEndsAt: null,
+        }}
+        onChoosePlan={onChoosePlan}
+      />,
+    );
+
+    expect(
+      screen.getByLabelText("Choose annual billing").props.accessibilityState,
+    ).toMatchObject({ selected: true });
+
+    // Subscribe without touching a card commits the default (annual).
+    fireEvent.press(screen.getByLabelText("Subscribe — annual billing"));
+    expect(onChoosePlan).toHaveBeenCalledWith("annual");
   });
 
   it("shows the already-chosen plan as selected", () => {
@@ -45,7 +72,7 @@ describe("SubscriptionScreen", () => {
       <SubscriptionScreen
         subscription={{
           status: "trialing",
-          plan: "yearly",
+          plan: "annual",
           trialEndsAt: "2026-06-25T00:00:00Z",
           currentPeriodEndsAt: null,
         }}
@@ -53,9 +80,9 @@ describe("SubscriptionScreen", () => {
     );
 
     expect(
-      screen.getByLabelText("Choose yearly billing").props.accessibilityState,
+      screen.getByLabelText("Choose annual billing").props.accessibilityState,
     ).toMatchObject({ selected: true });
-    expect(screen.getByText(/Billed yearly after the trial/)).toBeOnTheScreen();
+    expect(screen.getByText(/billed annually/)).toBeOnTheScreen();
   });
 
   it("shows the paused state with data reassurance when lapsed", () => {
@@ -102,13 +129,13 @@ describe("SubscriptionScreen", () => {
         }}
         offers={[
           { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
-          { plan: "yearly", priceString: "$39.99", packageIdentifier: "y" },
+          { plan: "annual", priceString: "$59.99", packageIdentifier: "y" },
         ]}
       />,
     );
 
     expect(screen.getByText("$4.99")).toBeOnTheScreen();
-    expect(screen.getByText("$39.99")).toBeOnTheScreen();
+    expect(screen.getByText("$59.99")).toBeOnTheScreen();
   });
 
   it("purchases the tapped plan and can restore prior purchases", () => {
@@ -124,7 +151,7 @@ describe("SubscriptionScreen", () => {
         }}
         offers={[
           { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
-          { plan: "yearly", priceString: "$39.99", packageIdentifier: "y" },
+          { plan: "annual", priceString: "$59.99", packageIdentifier: "y" },
         ]}
         onChoosePlan={onChoosePlan}
         onRestore={onRestore}
@@ -132,6 +159,7 @@ describe("SubscriptionScreen", () => {
     );
 
     fireEvent.press(screen.getByLabelText("Choose monthly billing"));
+    fireEvent.press(screen.getByLabelText("Subscribe — monthly billing"));
     expect(onChoosePlan).toHaveBeenCalledWith("monthly");
 
     fireEvent.press(screen.getByLabelText("Restore purchases"));
@@ -150,14 +178,15 @@ describe("SubscriptionScreen", () => {
         }}
         offers={[
           { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
-          { plan: "yearly", priceString: "$39.99", packageIdentifier: "y" },
+          { plan: "annual", priceString: "$59.99", packageIdentifier: "y" },
         ]}
         onChoosePlan={onChoosePlan}
       />,
     );
 
     expect(screen.getByText("Your subscription has ended")).toBeOnTheScreen();
-    fireEvent.press(screen.getByLabelText("Choose yearly billing"));
-    expect(onChoosePlan).toHaveBeenCalledWith("yearly");
+    fireEvent.press(screen.getByLabelText("Choose annual billing"));
+    fireEvent.press(screen.getByLabelText("Subscribe — annual billing"));
+    expect(onChoosePlan).toHaveBeenCalledWith("annual");
   });
 });

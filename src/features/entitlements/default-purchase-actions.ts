@@ -71,9 +71,8 @@ export async function getStoreManagementUrl(): Promise<string> {
 }
 
 const PLAN_TO_PACKAGE_TYPE: Record<SubscriptionPlan, string> = {
-  weekly: "WEEKLY",
   monthly: "MONTHLY",
-  yearly: "ANNUAL",
+  annual: "ANNUAL",
 };
 
 /** Real RevenueCat-backed gateway used by the subscription route. */

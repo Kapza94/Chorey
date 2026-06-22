@@ -111,6 +111,7 @@ const RESULT: ParentOnboardingResult = {
     { name: "Dishes", valueCents: 250 },
     { name: "Walk the dog", valueCents: 300 },
   ],
+  choreDueTime: "16:00",
   causes: ["Animals", "Hunger"],
   joinCode: "CHKAP",
 };
@@ -130,6 +131,8 @@ describe("onboarding persistence", () => {
         split_spend: 40,
         split_save: 40,
         split_give: 20,
+        // Captured from the device's IANA zone (whatever the test host reports).
+        timezone: expect.any(String),
       },
     ]);
     expect(inserts.household_members[0]).toEqual({
@@ -174,6 +177,7 @@ describe("onboarding persistence", () => {
         title: "Dishes",
         reward_cents: 250,
         status: "assigned",
+        due_at: expect.any(String),
       },
       {
         household_id: "household-1",
@@ -181,6 +185,7 @@ describe("onboarding persistence", () => {
         title: "Walk the dog",
         reward_cents: 300,
         status: "assigned",
+        due_at: expect.any(String),
       },
     ]);
     expect(persisted.kids[0]).toEqual({

@@ -1,6 +1,7 @@
 import { createChildActions } from "@/features/children/child-actions";
 import { createChildAccessActions } from "@/features/children/child-access-actions";
 import { createChoreActions } from "@/features/chores/chore-actions";
+import { dueAtFromTime } from "@/features/chores/due-time";
 import { createHouseholdActions } from "@/features/household/household-actions";
 import type { OnboardingResult } from "@/features/onboarding/onboarding-flow";
 
@@ -26,6 +27,15 @@ export type PersistedOnboarding = {
   householdId: string;
   kids: PersistedKid[];
 };
+
+/** The device's IANA timezone, or undefined if the runtime can't report one. */
+function deviceTimezone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Onboarding `age` is a free-text string; keep only a sane whole number. */
 function parseAge(age: string): number | null {
@@ -63,6 +73,9 @@ export function createOnboardingPersistence(
         country: result.country || undefined,
         currency: result.currency,
         split: result.split,
+        // The device's zone makes chore "due by" times land at the family's
+        // local hour; falls back to the table default (UTC) if unavailable.
+        timezone: deviceTimezone(),
       });
 
       const children = createChildActions(client, household.id);
@@ -83,12 +96,15 @@ export function createOnboardingPersistence(
           householdId: household.id,
         });
 
-        // Seed every chosen chore as a starter chore for this kid.
+        // Seed every chosen chore as a starter chore for this kid, due by the
+        // single time the parent picked during onboarding.
+        const choreDueAt = dueAtFromTime(result.choreDueTime);
         for (const chore of result.chores) {
           await chores.createChore({
             childProfileId: child.id,
             title: chore.name,
             rewardCents: chore.valueCents,
+            dueAt: choreDueAt,
           });
         }
 

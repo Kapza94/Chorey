@@ -10,6 +10,8 @@ export type CreateChoreInput = {
   childProfileId: string;
   title: string;
   rewardCents: number;
+  /** ISO instant this one-off chore is due, or null for anytime. */
+  dueAt?: string | null;
 };
 
 export type CreatedChore = {
@@ -27,10 +29,12 @@ export type CreatedChore = {
   periodKey?: string | null;
   /** storage path of the kid's completion photo, if they attached one. */
   photoPath?: string | null;
+  /** ISO instant this chore is due (one-off or recurring), if any. */
+  dueAt?: string | null;
 };
 
 const CHORE_COLUMNS =
-  "id, household_id, child_profile_id, title, reward_cents, status, sent_back_reason, period_key, photo_path, chore_templates(recurrence)";
+  "id, household_id, child_profile_id, title, reward_cents, status, sent_back_reason, period_key, photo_path, due_at, chore_templates(recurrence)";
 
 function mapChore(row: any): CreatedChore {
   // The joined template (if any) carries the recurrence; one-off chores have none.
@@ -49,6 +53,7 @@ function mapChore(row: any): CreatedChore {
     recurrence: template?.recurrence ?? null,
     periodKey: row.period_key ?? null,
     photoPath: row.photo_path ?? null,
+    dueAt: row.due_at ?? null,
   };
 }
 
@@ -136,6 +141,7 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
           title,
           reward_cents: input.rewardCents,
           status: "assigned",
+          due_at: input.dueAt ?? null,
         })
         .select(CHORE_COLUMNS)
         .single();

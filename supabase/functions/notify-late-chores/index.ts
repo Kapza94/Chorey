@@ -1,14 +1,20 @@
-// Scheduled notifier: pings a child (via Expo push) when a recurring chore has
-// gone late and they still haven't done it. Idempotent — each overdue instance
-// is stamped `late_notified_at` so it's never pinged twice.
+// Scheduled notifier: pings a child (via Expo push) about chores tied to their
+// "due by" time. Two passes:
+//   • due-soon — a gentle nudge within the hour before the deadline
+//     (stamped `reminder_notified_at`)
+//   • late     — once the deadline has passed and it's still not done
+//     (stamped `late_notified_at`)
+// Delivery is at-least-once: the push is sent before the stamp, so a failed
+// stamp or an overlapping cron run could re-ping. We accept a rare duplicate
+// over a missed reminder; each pass stamps its own column to avoid steady spam.
 //
 // Deploy:   supabase functions deploy notify-late-chores --no-verify-jwt
-// Schedule: call it on a cron (e.g. hourly) via pg_cron + pg_net, or Supabase
-//           scheduled functions. See README.md in this folder.
+// Schedule: call it on a cron (e.g. every 15 min) via pg_cron + pg_net, or
+//           Supabase scheduled functions. See README.md in this folder.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-type LateChore = {
+type ChoreRow = {
   chore_id: string;
   child_profile_id: string;
   title: string;
@@ -20,7 +26,7 @@ type ExpoMessage = {
   sound: "default";
   title: string;
   body: string;
-  data: { choreId: string; type: "late_chore" };
+  data: { choreId: string; type: "late_chore" | "due_soon_chore" };
 };
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -35,40 +41,78 @@ Deno.serve(async () => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  const { data, error } = await supabase.rpc("get_late_chores_to_notify");
-  if (error) {
-    return json({ error: error.message }, 500);
+  // Pass 1: gentle pre-deadline reminders.
+  const dueSoon = await runPass(supabase, {
+    rpc: "get_due_soon_chores_to_notify",
+    stampColumn: "reminder_notified_at",
+    type: "due_soon_chore",
+    title: "A chore is due soon",
+    body: (t) => `${t} is due soon — finish it to keep your streak going.`,
+  });
+  if (dueSoon.error) {
+    return json({ error: dueSoon.error }, 500);
   }
 
-  const rows = (data ?? []) as LateChore[];
+  // Pass 2: overdue pings.
+  const late = await runPass(supabase, {
+    rpc: "get_late_chores_to_notify",
+    stampColumn: "late_notified_at",
+    type: "late_chore",
+    title: "A chore is late",
+    body: (t) => `${t} is overdue — do it now to keep your streak going.`,
+  });
+  if (late.error) {
+    return json({ error: late.error }, 500);
+  }
+
+  return json({ dueSoon: dueSoon.notified, late: late.notified });
+});
+
+/** Run one notification pass: fetch rows, push, stamp. Returns count or error. */
+async function runPass(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  config: {
+    rpc: string;
+    stampColumn: "late_notified_at" | "reminder_notified_at";
+    type: ExpoMessage["data"]["type"];
+    title: string;
+    body: (title: string) => string;
+  },
+): Promise<{ notified: number; error?: string }> {
+  const { data, error } = await supabase.rpc(config.rpc);
+  if (error) {
+    return { notified: 0, error: error.message };
+  }
+
+  const rows = (data ?? []) as ChoreRow[];
   if (rows.length === 0) {
-    return json({ notified: 0 });
+    return { notified: 0 };
   }
 
   // One push per device token; one body per chore (a chore may have several).
   const messages: ExpoMessage[] = rows.map((row) => ({
     to: row.token,
     sound: "default",
-    title: "A chore is late",
-    body: `${row.title} is overdue — do it now to keep your streak going.`,
-    data: { choreId: row.chore_id, type: "late_chore" },
+    title: config.title,
+    body: config.body(row.title),
+    data: { choreId: row.chore_id, type: config.type },
   }));
 
   await sendExpoPush(messages);
 
-  // Stamp every notified instance so it won't fire again.
   const choreIds = [...new Set(rows.map((row) => row.chore_id))];
   const { error: stampError } = await supabase
     .from("chore_instances")
-    .update({ late_notified_at: new Date().toISOString() })
+    .update({ [config.stampColumn]: new Date().toISOString() })
     .in("id", choreIds);
 
   if (stampError) {
-    return json({ error: stampError.message }, 500);
+    return { notified: 0, error: stampError.message };
   }
 
-  return json({ notified: choreIds.length, messages: messages.length });
-});
+  return { notified: choreIds.length };
+}
 
 /** Expo accepts up to 100 messages per request; chunk to be safe. */
 async function sendExpoPush(messages: ExpoMessage[]): Promise<void> {

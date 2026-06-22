@@ -38,6 +38,7 @@ import type { Split } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import type { Recurrence } from "@/features/chores/recurrence";
+import type { DueTime } from "@/features/chores/due-time";
 
 type Props = {
   subtitle?: string;
@@ -80,6 +81,7 @@ type Props = {
     rewardCents: number;
     assigneeId: string;
     recurrence?: Recurrence;
+    dueTime?: DueTime;
   }) => void;
   // Settings
   accessCodes?: { kidId: string; accessCode: string }[];

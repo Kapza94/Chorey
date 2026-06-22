@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(16);
 
 select has_table('public', 'household_entitlements', 'household entitlements table exists');
 select has_column('public', 'household_entitlements', 'status', 'entitlement has status');
@@ -105,6 +105,13 @@ select ok(
 select ok(
   'weekly' = any (enum_range(null::public.subscription_plan)::text[]),
   'weekly is a valid subscription plan'
+);
+
+-- Annual is the canonical plan name going forward (yearly stays in the enum for
+-- historical data).
+select ok(
+  'annual' = any (enum_range(null::public.subscription_plan)::text[]),
+  'annual is a valid subscription plan'
 );
 
 select * from finish();

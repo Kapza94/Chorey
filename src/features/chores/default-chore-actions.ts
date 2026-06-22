@@ -6,11 +6,13 @@ export async function createChoreForHousehold(input: {
   childProfileId: string;
   title: string;
   rewardCents: number;
+  dueAt?: string | null;
 }): Promise<CreatedChore> {
   return createChoreActions(supabase, input.householdId).createChore({
     childProfileId: input.childProfileId,
     title: input.title,
     rewardCents: input.rewardCents,
+    dueAt: input.dueAt ?? null,
   });
 }
 

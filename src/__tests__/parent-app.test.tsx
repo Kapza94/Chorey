@@ -448,6 +448,8 @@ describe("ParentApp · Chores", () => {
       name: "Dishes",
       rewardCents: 250,
       assigneeId: "k1",
+      recurrence: undefined,
+      dueTime: "16:00",
     });
   });
 
@@ -474,6 +476,7 @@ describe("ParentApp · Chores", () => {
       rewardCents: 200,
       assigneeId: "k1",
       recurrence: "daily",
+      dueTime: "16:00",
     });
   });
 
@@ -500,11 +503,14 @@ describe("ParentApp · Chores", () => {
     ).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Add chore"));
 
-    // The chore is still created — as a one-off, with no recurrence.
+    // The chore is still created — as a one-off, with no recurrence, carrying
+    // the default "due by" time.
     expect(onAddChore).toHaveBeenCalledWith({
       name: "Feed cat",
       rewardCents: 200,
       assigneeId: "k1",
+      recurrence: undefined,
+      dueTime: "16:00",
     });
   });
 
@@ -631,7 +637,10 @@ describe("ParentApp · Settings", () => {
     );
 
     expect(screen.getByText("Chorey Family")).toBeOnTheScreen();
-    expect(screen.getByText("Free trial · ends Jun 25, 2026")).toBeOnTheScreen();
+    expect(screen.getByText("Manage your plan")).toBeOnTheScreen();
+    // The trial countdown lives on the profile sheet, not in the settings list —
+    // we don't want it nagging the parent about days left here.
+    expect(screen.queryByText(/Free trial/)).toBeNull();
     fireEvent.press(screen.getByLabelText("Manage subscription"));
     expect(onManageSubscription).toHaveBeenCalledTimes(1);
   });

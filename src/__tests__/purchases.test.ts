@@ -7,31 +7,25 @@ import {
 } from "@/features/entitlements/purchases";
 
 describe("toPlanOffers", () => {
-  it("maps a RevenueCat offering to weekly+monthly+yearly offers with store prices, weekly first", () => {
+  it("maps a RevenueCat offering to monthly+annual offers with store prices, monthly first", () => {
     const offering: RcOffering = {
       availablePackages: [
         {
           identifier: "$rc_annual",
           packageType: "ANNUAL",
-          product: { priceString: "$39.99" },
+          product: { priceString: "$59.99" },
         },
         {
           identifier: "$rc_monthly",
           packageType: "MONTHLY",
-          product: { priceString: "$4.99" },
-        },
-        {
-          identifier: "$rc_weekly",
-          packageType: "WEEKLY",
-          product: { priceString: "$1.99" },
+          product: { priceString: "$7.99" },
         },
       ],
     };
 
     expect(toPlanOffers(offering)).toEqual([
-      { plan: "weekly", priceString: "$1.99", packageIdentifier: "$rc_weekly" },
-      { plan: "monthly", priceString: "$4.99", packageIdentifier: "$rc_monthly" },
-      { plan: "yearly", priceString: "$39.99", packageIdentifier: "$rc_annual" },
+      { plan: "monthly", priceString: "$7.99", packageIdentifier: "$rc_monthly" },
+      { plan: "annual", priceString: "$59.99", packageIdentifier: "$rc_annual" },
     ]);
   });
 

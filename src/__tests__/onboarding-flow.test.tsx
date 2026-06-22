@@ -69,7 +69,7 @@ describe("OnboardingFlow", () => {
     fireEvent.changeText(screen.getByLabelText("Search countries"), "Serbia");
     fireEvent.press(screen.getByLabelText("Serbia"));
     // caption reflects the chosen currency
-    expect(screen.getByText(/RSD \(дин\)/)).toBeOnTheScreen();
+    expect(screen.getByText(/RSD \(din\)/)).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue"));
 
     // Add a kid — the bottom Continue commits the filled-in kid and proceeds

@@ -6,7 +6,7 @@
  * (1/100 of the major unit); the formatter renders them per-locale.
  *
  * Design reference (handoff README):
- *   - Serbia  → RSD `1.500 дин`  (0 decimals, grouped with ".", symbol AFTER)
+ *   - Serbia  → RSD `1.500 din`  (0 decimals, grouped with ".", symbol AFTER)
  *   - US      → USD `$25.00`     (2 decimals, symbol before)
  *   - Eurozone→ EUR `€25,00`     (2 decimals, "," decimal separator, symbol before)
  *
@@ -68,7 +68,7 @@ export const CURRENCIES: Record<TunedCurrencyCode, CurrencyFormat> = {
   },
   RSD: {
     code: "RSD",
-    symbol: "дин",
+    symbol: "din",
     symbolPosition: "after",
     spaceBetweenSymbol: true,
     decimals: 0,
@@ -151,7 +151,7 @@ export type MoneyParts = {
   /** symbol + grouped integer (e.g. "$12", "1.500") */
   lead: string;
   /** decimal separator + digits, plus a trailing symbol for "after" currencies
-   *  (e.g. ".00", ",00", " дин"). Empty when there is nothing to render small. */
+   *  (e.g. ".00", ",00", " din"). Empty when there is nothing to render small. */
   fraction: string;
 };
 
@@ -195,7 +195,7 @@ export function formatMoneyParts(
  *
  *   formatMoney(2500, "USD")  → "$25.00"
  *   formatMoney(2500, "EUR")  → "€25,00"
- *   formatMoney(150000, "RSD")→ "1.500 дин"
+ *   formatMoney(150000, "RSD")→ "1.500 din"
  *
  * For 0-decimal currencies (RSD) the sub-major remainder is rounded to the
  * nearest whole major unit.

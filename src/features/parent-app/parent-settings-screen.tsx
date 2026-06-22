@@ -167,7 +167,7 @@ export function ParentSettingsScreen({
                     Chorey Family
                   </Text>
                   <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
-                    {subscriptionLabel}
+                    Manage your plan
                   </Text>
                 </View>
                 <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
@@ -221,7 +221,10 @@ export function ParentSettingsScreen({
                     }}
                   >
                     <KeyRound size={16} color={scheme.fgMuted} strokeWidth={2} />
-                    <Text style={[typography.text.label, { flex: 1, color: scheme.fg }]}>
+                    <Text
+                      numberOfLines={1}
+                      style={[typography.text.label, { flex: 1, color: scheme.fg }]}
+                    >
                       {kid?.name ?? "Child"}
                     </Text>
                     <Text
@@ -243,15 +246,22 @@ export function ParentSettingsScreen({
                         })
                       }
                       style={({ pressed }) => ({
-                        width: 34,
-                        height: 34,
-                        borderRadius: 999,
+                        flexDirection: "row",
                         alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: pressed ? scheme.bgSunken : "transparent",
+                        gap: 6,
+                        paddingLeft: 11,
+                        paddingRight: 13,
+                        height: 34,
+                        borderRadius: radius.pill,
+                        borderColor: scheme.toy.border,
+                        borderWidth: toybox.borderWidth,
+                        backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
                       })}
                     >
-                      <Share2 size={16} color={scheme.fgMuted} strokeWidth={2} />
+                      <Share2 size={15} color={palette.cream[4]} strokeWidth={2.4} />
+                      <Text style={[typography.text.label, { fontSize: 13, color: palette.cream[4] }]}>
+                        Share
+                      </Text>
                     </Pressable>
                   </View>
                 );

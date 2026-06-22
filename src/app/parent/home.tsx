@@ -68,6 +68,7 @@ import {
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
 import { isRecurringChoreLate } from "@/features/chores/recurrence";
+import { dueAtFromTime } from "@/features/chores/due-time";
 import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen";
 import {
   createChoreTemplateForHousehold,
@@ -256,6 +257,7 @@ export default function ParentHomeRoute() {
       status: chore.status,
       recurrence: chore.recurrence,
       late: isRecurringChoreLate(chore),
+      dueAt: chore.dueAt,
       sentBackReason: chore.sentBackReason,
     };
   });
@@ -518,7 +520,7 @@ export default function ParentHomeRoute() {
       choreBoard={choreBoard}
       assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
       recurringLocked={!isEntitled(subscription.status)}
-      onAddChore={async ({ name, rewardCents, assigneeId, recurrence }) => {
+      onAddChore={async ({ name, rewardCents, assigneeId, recurrence, dueTime }) => {
         if (!householdId || !name.trim()) {
           return;
         }
@@ -531,6 +533,8 @@ export default function ParentHomeRoute() {
         if (recurrence) {
           // Recurring chores are paid-only. The sheet already locks the option
           // for free homes, so this only runs for paid; guard quietly anyway.
+          // The template keeps the wall-clock time; the DB stamps each instance's
+          // due_at in the household's timezone.
           try {
             await Promise.all(
               targetIds.map((childProfileId) =>
@@ -540,6 +544,7 @@ export default function ParentHomeRoute() {
                   title,
                   rewardCents,
                   recurrence,
+                  dueTime,
                 }),
               ),
             );
@@ -548,6 +553,8 @@ export default function ParentHomeRoute() {
             return;
           }
         } else {
+          // One-off: resolve the chosen time to a concrete instant on the device.
+          const dueAt = dueAtFromTime(dueTime ?? null);
           await Promise.all(
             targetIds.map((childProfileId) =>
               createChoreForHousehold({
@@ -555,6 +562,7 @@ export default function ParentHomeRoute() {
                 childProfileId,
                 title,
                 rewardCents,
+                dueAt,
               }),
             ),
           );

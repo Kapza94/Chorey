@@ -44,6 +44,7 @@ describe("chore creation actions", () => {
       recurrence: null,
       periodKey: null,
       photoPath: null,
+      dueAt: null,
     });
     expect(client.from).toHaveBeenCalledWith("chore_instances");
     expect(client.from.mock.results[0]?.value.insert).toHaveBeenCalledWith({
@@ -52,6 +53,7 @@ describe("chore creation actions", () => {
       title: "Load dishwasher",
       reward_cents: 250,
       status: "assigned",
+      due_at: null,
     });
   });
 

@@ -75,7 +75,7 @@ function RootLayout() {
       >
         <Stack screenOptions={{ headerShown: false }} />
       </SafeAreaView>
-      {__DEV__ ? <DevRoleSwitcher /> : null}
+      {__DEV__ && !process.env.EXPO_PUBLIC_HIDE_DEV_SWITCHER ? <DevRoleSwitcher /> : null}
     </AnalyticsProvider>
   );
 }

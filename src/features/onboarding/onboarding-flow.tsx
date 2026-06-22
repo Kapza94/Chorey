@@ -44,6 +44,12 @@ import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo"
 import { SignaturePad } from "@/features/onboarding/signature-pad";
 import { ToySticker } from "@/components/toybox";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
+import type { SubscriptionPlan } from "@/features/entitlements/subscription-actions";
+import {
+  DEFAULT_DUE_TIME,
+  DUE_TIME_PRESETS,
+  type DueTime,
+} from "@/features/chores/due-time";
 
 /* ---------- reference data ---------- */
 
@@ -114,6 +120,8 @@ type OnboardingData = {
   cadence: "weekly" | "monthly";
   budgetDollars: number;
   chores: { name: string; valueCents: number }[];
+  /** "Due by" time applied to every starter chore (HH:MM, or null for anytime). */
+  choreDueTime: DueTime;
   causes: string[];
   kidName: string;
   kidTone: KidTone;
@@ -131,6 +139,7 @@ export type OnboardingResult =
       cadence: "weekly" | "monthly";
       budgetCents: number;
       chores: { name: string; valueCents: number }[];
+      choreDueTime: DueTime;
       causes: string[];
       joinCode: string;
     }
@@ -164,6 +173,7 @@ const INITIAL: OnboardingData = {
   cadence: "weekly",
   budgetDollars: 25,
   chores: [],
+  choreDueTime: DEFAULT_DUE_TIME,
   causes: [],
   kidName: "",
   kidTone: "allowance",
@@ -215,7 +225,7 @@ export function OnboardingFlow({
   /** Persist the finished parent setup (runs after the account is verified). */
   persist?: (result: ParentResult) => Promise<OnboardingPersistResult | void>;
   /** Record the chosen billing plan for the new household's trial. */
-  choosePlan?: (householdId: string, plan: "monthly" | "yearly") => Promise<void>;
+  choosePlan?: (householdId: string, plan: SubscriptionPlan) => Promise<void>;
   /** Returning parents: send them to sign-in instead of the setup wizard. */
   onSignIn?: () => void;
   /**
@@ -243,6 +253,7 @@ export function OnboardingFlow({
     cadence: data.cadence,
     budgetCents: data.budgetDollars * 100,
     chores: data.chores,
+    choreDueTime: data.choreDueTime,
     causes: data.causes,
     joinCode: joinCodeFor(data.familyName),
   });
@@ -940,7 +951,7 @@ function BudgetAmountField({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
 
-  // Group thousands (e.g. "1.000 дин") once the amount passes three digits, but
+  // Group thousands (e.g. "1.000 din") once the amount passes three digits, but
   // show the raw digits while editing so the keypad stays simple.
   const grouped = String(value).replace(/\B(?=(\d{3})+(?!\d))/g, groupSeparator);
   const text = editing ? draft : grouped;
@@ -1239,6 +1250,45 @@ function OBChores({
       }
     >
       <OBTitle title="First chores." subtitle="Tap a chore, or get a suggestion." />
+
+      {/* A single "due by" time for the starter chores; fine-tune each later. */}
+      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 2 }]}>
+        Done by
+      </Text>
+      <Text style={[typography.text.caption, { color: scheme.fgMuted, marginBottom: 9 }]}>
+        Applies to every starter chore — you can change each one later.
+      </Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
+        {DUE_TIME_PRESETS.map((option) => {
+          const selected = option.value === data.choreDueTime;
+          return (
+            <Pressable
+              key={option.label}
+              accessibilityRole="button"
+              accessibilityLabel={`Done by ${option.label}`}
+              accessibilityState={{ selected }}
+              onPress={() => patch({ choreDueTime: option.value })}
+              style={{
+                paddingHorizontal: 13,
+                paddingVertical: 8,
+                borderRadius: 999,
+                borderWidth: 1.5,
+                backgroundColor: selected ? allowance[200] : scheme.bgRaised,
+                borderColor: selected ? allowance[400] : scheme.border,
+              }}
+            >
+              <Text
+                style={[
+                  typography.text.label,
+                  { fontSize: 13, color: selected ? allowance[800] : scheme.fgMuted },
+                ]}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9 }}>
         {visiblePicks.map((c) => {
           const on = !!data.chores.find((x) => x.name === c.name);
@@ -1826,7 +1876,7 @@ const PLAN_MONTHS = [
 ];
 
 /**
- * The parent picks monthly or yearly before the 14-day trial begins. No
+ * The parent picks monthly or annual before the 14-day trial begins. No
  * prices appear here — amounts come from the App Store at purchase time and
  * are never hard-coded in the app.
  */
@@ -1842,12 +1892,12 @@ function OBPlanChoice({
   onContinue,
 }: {
   data: OnboardingData;
-  onChoose: (plan: "monthly" | "yearly") => Promise<void>;
+  onChoose: (plan: SubscriptionPlan) => Promise<void>;
   onContinue: () => void;
 }) {
   const { scheme, typography, palette, toybox } = useChoreyTheme();
   const spend = bucketTokens.spend.ramp;
-  const [plan, setPlan] = useState<"monthly" | "yearly">("yearly");
+  const [plan, setPlan] = useState<SubscriptionPlan>("annual");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -1922,7 +1972,7 @@ function OBPlanChoice({
         {(
           [
             { id: "monthly" as const, label: "Monthly", caption: "Simple, month to month" },
-            { id: "yearly" as const, label: "Yearly", caption: "2 months free" },
+            { id: "annual" as const, label: "Annual", caption: "5 months free" },
           ]
         ).map((option) => {
           const selected = plan === option.id;
@@ -1965,7 +2015,7 @@ function OBPlanChoice({
                     {option.caption}
                   </Text>
                 </View>
-                {option.id === "yearly" ? (
+                {option.id === "annual" ? (
                   <ToySticker label="Best deal" tone="spend" />
                 ) : null}
               </View>

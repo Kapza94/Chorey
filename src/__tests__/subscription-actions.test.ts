@@ -20,7 +20,7 @@ describe("subscription actions", () => {
   it("reads the household subscription with plan and dates", async () => {
     const client = createClient({
       status: "trialing",
-      plan: "yearly",
+      plan: "annual",
       trial_ends_at: "2026-06-25T00:00:00Z",
       current_period_ends_at: null,
     });
@@ -31,7 +31,7 @@ describe("subscription actions", () => {
 
     expect(subscription).toEqual({
       status: "trialing",
-      plan: "yearly",
+      plan: "annual",
       trialEndsAt: "2026-06-25T00:00:00Z",
       currentPeriodEndsAt: null,
     });
@@ -50,12 +50,8 @@ describe("subscription actions", () => {
 
   it.each([
     [
-      { status: "trialing", plan: null, trialEndsAt: "2026-06-25T00:00:00Z", currentPeriodEndsAt: null },
-      "Free trial · ends Jun 25, 2026",
-    ],
-    [
-      { status: "active", plan: "yearly", trialEndsAt: null, currentPeriodEndsAt: null },
-      "Active · billed yearly",
+      { status: "active", plan: "annual", trialEndsAt: null, currentPeriodEndsAt: null },
+      "Active · billed annually",
     ],
     [
       { status: "lapsed", plan: "monthly", trialEndsAt: null, currentPeriodEndsAt: null },
@@ -63,6 +59,33 @@ describe("subscription actions", () => {
     ],
   ] as const)("describes %p as %s", (subscription, expected) => {
     expect(describeSubscription(subscription)).toBe(expected);
+  });
+
+  it("describes a trial by the whole days left, rounded up", () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-06-22T00:00:00Z"));
+    try {
+      expect(
+        describeSubscription({
+          status: "trialing",
+          plan: null,
+          trialEndsAt: "2026-06-25T00:00:00Z",
+          currentPeriodEndsAt: null,
+        }),
+      ).toBe("Free trial · 3 days left");
+
+      // Within the final 24h it reads the last day, never "0 days".
+      jest.setSystemTime(new Date("2026-06-25T06:00:00Z"));
+      expect(
+        describeSubscription({
+          status: "trialing",
+          plan: null,
+          trialEndsAt: "2026-06-25T00:00:00Z",
+          currentPeriodEndsAt: null,
+        }),
+      ).toBe("Free trial · last day");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("records the plan choice through the RPC", async () => {

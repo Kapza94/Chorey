@@ -59,6 +59,7 @@ describe("createChoreTemplateActions.createTemplate", () => {
       title: "Feed the cat",
       reward_cents: 100,
       recurrence: "daily",
+      due_time: null,
     });
     expect(template.recurrence).toBe("daily");
   });

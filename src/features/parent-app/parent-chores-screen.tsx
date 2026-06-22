@@ -14,6 +14,13 @@ import {
 import { clampRewardInput, parseRewardCents } from "@/features/chores/money";
 import type { Recurrence } from "@/features/chores/recurrence";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
+import {
+  DEFAULT_DUE_TIME,
+  DUE_TIME_PRESETS,
+  describeOneOffDue,
+  formatDueAtTime,
+  type DueTime,
+} from "@/features/chores/due-time";
 import { DEFAULT_SPLIT, splitCents, type Split } from "@/features/money/split";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
 import { fieldStyle } from "@/components/field-style";
@@ -38,6 +45,8 @@ export type ChoreBoardItem = {
   recurrence?: Recurrence | null;
   /** an overdue recurring chore the child still hasn't done. */
   late?: boolean;
+  /** ISO instant this chore is due by, if a deadline was set. */
+  dueAt?: string | null;
   sentBackReason?: string | null;
 };
 
@@ -69,6 +78,7 @@ type Props = {
     rewardCents: number;
     assigneeId: string;
     recurrence?: Recurrence;
+    dueTime?: DueTime;
   }) => void;
   onApproveChore?: (choreId: string) => void;
   onSendBackChore?: (choreId: string, reason: string) => void;
@@ -525,6 +535,7 @@ function ChoreBoardRow({
           </View>
           <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
             {item.childName} · {formatMoney(item.rewardCents, currency)}
+            {formatDueAtTime(item.dueAt) ? ` · by ${formatDueAtTime(item.dueAt)}` : ""}
           </Text>
           {item.status === "sent_back" && item.sentBackReason ? (
             <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 3 }]}>
@@ -745,6 +756,7 @@ function AddChoreSheet({
     rewardCents: number;
     assigneeId: string;
     recurrence?: Recurrence;
+    dueTime?: DueTime;
   }) => void;
 }) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
@@ -754,6 +766,7 @@ function AddChoreSheet({
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [assigneeId, setAssigneeId] = useState(assignees[0]?.id ?? "all");
   const [repeat, setRepeat] = useState<"one-off" | Recurrence>("one-off");
+  const [dueTime, setDueTime] = useState<DueTime>(DEFAULT_DUE_TIME);
   const [showRecurUpsell, setShowRecurUpsell] = useState(false);
 
   // "Everyone" only makes sense with more than one kid. Names are capped at
@@ -780,6 +793,7 @@ function AddChoreSheet({
     setAssigneeId(assignees[0]?.id ?? "all");
     setShowAllAssignees(false);
     setRepeat("one-off");
+    setDueTime(DEFAULT_DUE_TIME);
     setShowRecurUpsell(false);
   };
 
@@ -997,6 +1011,50 @@ function AddChoreSheet({
           </Text>
         ) : null}
 
+        {/* Due-by time — when the chore should be done by. */}
+        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
+          Due by
+        </Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {DUE_TIME_PRESETS.map((option) => {
+            const selected = option.value === dueTime;
+            return (
+              <Pressable
+                key={option.label}
+                accessibilityRole="button"
+                accessibilityLabel={`Due by ${option.label}`}
+                accessibilityState={{ selected }}
+                onPress={() => setDueTime(option.value)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 9,
+                  borderRadius: radius.sm,
+                  backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
+                  borderWidth: 1.5,
+                  borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.text.label,
+                    { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* For a one-off, spell out the resolved date so a past time rolling to
+            tomorrow doesn't look like a bug. */}
+        {repeat === "one-off" && describeOneOffDue(dueTime) ? (
+          <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: -8, marginBottom: 16 }]}>
+            {describeOneOffDue(dueTime)}
+          </Text>
+        ) : null}
+
         {/* Live split preview */}
         <View
           style={{
@@ -1051,6 +1109,7 @@ function AddChoreSheet({
               rewardCents,
               assigneeId,
               recurrence: repeat === "one-off" ? undefined : repeat,
+              dueTime,
             });
             reset();
           }}

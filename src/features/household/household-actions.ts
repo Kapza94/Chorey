@@ -27,6 +27,9 @@ export type CreateHouseholdInput = {
   currency?: CurrencyCode;
   /** the family's spend/save/give percentages; defaults to the table 40/40/20. */
   split?: Split;
+  /** IANA timezone (e.g. "America/New_York"); turns chore "due by" times into
+   *  concrete instants. Defaults to the table's UTC when omitted. */
+  timezone?: string;
 };
 
 export type CreatedHousehold = {
@@ -50,6 +53,10 @@ export function createHouseholdActions(
         name,
         settlement_frequency: input.settlementFrequency ?? "weekly",
       };
+
+      if (input.timezone) {
+        payload.timezone = input.timezone;
+      }
 
       // Only set locale columns when a country is supplied, so callers that
       // create a household without onboarding locale keep the table defaults.
