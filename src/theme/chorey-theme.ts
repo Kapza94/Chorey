@@ -440,10 +440,14 @@ const darkScheme: ChoreyScheme = {
     info: semantic.info.tintDark,
   },
   shadow: shadowDark,
+  // The toybox tile language, translated for the near-black dark canvas: a solid
+  // *light* offset reads as the "tile dropped on its shadow" here, where a dark
+  // shadow (light mode's move) would vanish into the page. Border is a crisp warm
+  // light ink — the dark-mode analog of light mode's dark ink outline.
   toy: {
-    border: fgDark[4],
-    shadow: toyShadow("#000000", toybox.offset),
-    shadowSm: toyShadow("#000000", 2),
+    border: fgDark[2],
+    shadow: toyShadow(fgDark[2], toybox.offset),
+    shadowSm: toyShadow(fgDark[2], 2),
   },
 };
 
