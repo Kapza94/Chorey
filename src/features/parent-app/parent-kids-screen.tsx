@@ -17,6 +17,7 @@ import { ToyButton } from "@/components/toybox";
 import { aggregateShareStats } from "@/features/parent-app/share-stats";
 import { ShareStatsSheet, hasShareableWeek } from "@/features/parent-app/share-card";
 import type { ShareStatsActions } from "@/features/parent-app/share-actions";
+import type { WishNote } from "@/features/spend-wishlist/spend-wishlist-actions";
 
 /** A dashed, waiting-to-be-filled bucket for the empty state. */
 function EmptyBucket({ bucket, offset = false }: { bucket: "spend" | "savings" | "giving"; offset?: boolean }) {
@@ -75,6 +76,10 @@ export type PendingPurchase = {
   childName: string;
   itemName: string;
   targetCents: number;
+  /** the wish this request is for — keys its note thread. */
+  wishlistItemId: string;
+  /** an unseen note from the child on this wish. */
+  hasUnread?: boolean;
 };
 
 /** A kid's suggested giving cause awaiting parent approval. */
@@ -99,6 +104,10 @@ type Props = {
   onSendBackChore?: (choreId: string, reason: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
+  /** load a wish's note thread (marks the parent's side seen). */
+  onLoadWishNotes?: (wishlistItemId: string) => Promise<WishNote[]>;
+  /** post a parent note onto a wish. */
+  onAddWishNote?: (wishlistItemId: string, body: string) => Promise<WishNote>;
   /** when set, the household total offers a "Share this week" card */
   shareStats?: ShareStatsActions;
   headerRight?: ReactNode;
@@ -119,6 +128,8 @@ export function ParentKidsScreen({
   onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
+  onLoadWishNotes,
+  onAddWishNote,
   shareStats,
   headerRight,
 }: Props) {
@@ -344,6 +355,8 @@ export function ParentKidsScreen({
         onApproveGivingSuggestion={(suggestionId) =>
           onApproveGivingSuggestion?.(suggestionId)
         }
+        onLoadWishNotes={onLoadWishNotes}
+        onAddWishNote={onAddWishNote}
         onClose={() => setReviewOpen(false)}
       />
 
@@ -377,6 +390,8 @@ function ApprovalsReviewSheet({
   onSendBackChore,
   onApprovePurchase,
   onApproveGivingSuggestion,
+  onLoadWishNotes,
+  onAddWishNote,
   onClose,
 }: {
   visible: boolean;
@@ -388,6 +403,8 @@ function ApprovalsReviewSheet({
   onSendBackChore: (choreId: string, reason: string) => void;
   onApprovePurchase: (requestId: string) => void;
   onApproveGivingSuggestion: (suggestionId: string) => void;
+  onLoadWishNotes?: (wishlistItemId: string) => Promise<WishNote[]>;
+  onAddWishNote?: (wishlistItemId: string, body: string) => Promise<WishNote>;
   onClose: () => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
@@ -520,16 +537,16 @@ function ApprovalsReviewSheet({
               <>
                 {sectionLabel("Purchase requests")}
                 <View style={{ gap: 10 }}>
-                  {purchaseRequests.map((item) =>
-                    reviewRow(
-                      item.id,
-                      item.itemName,
-                      `${item.childName} · ${formatMoney(item.targetCents, currency)}`,
-                      `Approve purchase ${item.itemName}`,
-                      () => onApprovePurchase(item.id),
-                      bucketTokens.spend.ramp,
-                    ),
-                  )}
+                  {purchaseRequests.map((item) => (
+                    <PurchaseReviewRow
+                      key={item.id}
+                      item={item}
+                      currency={currency}
+                      onApprove={() => onApprovePurchase(item.id)}
+                      onLoadNotes={onLoadWishNotes}
+                      onAddNote={onAddWishNote}
+                    />
+                  ))}
                 </View>
               </>
             ) : null}
@@ -555,6 +572,212 @@ function ApprovalsReviewSheet({
         )}
       </View>
     </Modal>
+  );
+}
+
+/** A purchase request the parent can approve, with an inline note thread so
+ *  they can reply to the child about the wish. */
+function PurchaseReviewRow({
+  item,
+  currency,
+  onApprove,
+  onLoadNotes,
+  onAddNote,
+}: {
+  item: PendingPurchase;
+  currency: CurrencyCode;
+  onApprove: () => void;
+  onLoadNotes?: (wishlistItemId: string) => Promise<WishNote[]>;
+  onAddNote?: (wishlistItemId: string, body: string) => Promise<WishNote>;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const ramp = bucketTokens.spend.ramp;
+  const [open, setOpen] = useState(false);
+  const [notes, setNotes] = useState<WishNote[] | null>(null);
+  const [draft, setDraft] = useState("");
+  const [unread, setUnread] = useState(item.hasUnread ?? false);
+  const canSend = draft.trim().length > 0;
+
+  const toggle = async () => {
+    const next = !open;
+    setOpen(next);
+    if (next && notes === null && onLoadNotes) {
+      setUnread(false);
+      try {
+        setNotes(await onLoadNotes(item.wishlistItemId));
+      } catch {
+        setNotes([]);
+      }
+    }
+  };
+
+  const send = async () => {
+    if (!canSend || !onAddNote) {
+      return;
+    }
+    const body = draft.trim();
+    setDraft("");
+    try {
+      const note = await onAddNote(item.wishlistItemId, body);
+      setNotes((current) => [...(current ?? []), note]);
+    } catch {
+      // restore the draft so the parent can retry
+      setDraft(body);
+    }
+  };
+
+  return (
+    <View
+      style={{
+        backgroundColor: scheme.bgRaised,
+        borderColor: scheme.border,
+        borderWidth: 1,
+        borderRadius: radius.md,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
+            {item.itemName}
+          </Text>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+            {item.childName} · {formatMoney(item.targetCents, currency)}
+          </Text>
+        </View>
+        {onLoadNotes ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              unread ? `Notes for ${item.itemName}, new message` : `Notes for ${item.itemName}`
+            }
+            onPress={toggle}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 5,
+              paddingHorizontal: 12,
+              paddingVertical: 9,
+              borderRadius: radius.pill,
+              backgroundColor: scheme.bgSunken,
+            }}
+          >
+            <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 13 }]}>
+              Notes
+            </Text>
+            {unread ? (
+              <View
+                style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: palette.accent[600] }}
+              />
+            ) : null}
+          </Pressable>
+        ) : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Approve purchase ${item.itemName}`}
+          onPress={onApprove}
+          style={({ pressed }) => ({
+            paddingHorizontal: 14,
+            paddingVertical: 9,
+            borderRadius: radius.pill,
+            backgroundColor: pressed ? ramp[400] : ramp[200],
+          })}
+        >
+          <Text style={[typography.text.label, { color: ramp[800], fontSize: 13 }]}>Approve</Text>
+        </Pressable>
+      </View>
+
+      {open ? (
+        <View style={{ marginTop: 12, gap: 8 }}>
+          {notes === null ? (
+            <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>Loading…</Text>
+          ) : notes.length === 0 ? (
+            <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+              No notes yet. Leave a reply for your child.
+            </Text>
+          ) : (
+            notes.map((note) => {
+              const mine = note.authorKind === "parent";
+              return (
+                <View
+                  key={note.id}
+                  style={{
+                    alignSelf: mine ? "flex-end" : "flex-start",
+                    maxWidth: "82%",
+                    backgroundColor: mine ? ramp[200] : scheme.bgSunken,
+                    borderRadius: radius.md,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                  }}
+                >
+                  {!mine ? (
+                    <Text style={[typography.text.caption, { color: scheme.fgFaint, marginBottom: 2 }]}>
+                      {note.authorName || "Your child"}
+                    </Text>
+                  ) : null}
+                  <Text style={[typography.text.bodySm, { color: mine ? ramp[800] : scheme.fg }]}>
+                    {note.body}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+
+          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
+            <TextInput
+              accessibilityLabel={`Reply to ${item.itemName}`}
+              value={draft}
+              onChangeText={setDraft}
+              placeholder="Write a reply…"
+              placeholderTextColor={scheme.fgFaint}
+              multiline
+              style={{
+                flex: 1,
+                maxHeight: 90,
+                minHeight: 40,
+                paddingHorizontal: 12,
+                paddingVertical: 9,
+                borderRadius: radius.md,
+                backgroundColor: scheme.bgPage,
+                borderWidth: 1,
+                borderColor: scheme.border,
+                color: scheme.fg,
+                fontFamily: typography.family.body.regular,
+                textAlignVertical: "top",
+              }}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send reply"
+              accessibilityState={{ disabled: !canSend }}
+              disabled={!canSend}
+              onPress={send}
+              style={({ pressed }) => ({
+                paddingHorizontal: 14,
+                paddingVertical: 11,
+                borderRadius: radius.pill,
+                backgroundColor: canSend
+                  ? pressed
+                    ? palette.accent[800]
+                    : palette.accent[600]
+                  : scheme.bgSunken,
+                opacity: canSend ? 1 : 0.6,
+              })}
+            >
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: canSend ? palette.cream[4] : scheme.fgFaint, fontSize: 13 },
+                ]}
+              >
+                Send
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }
 

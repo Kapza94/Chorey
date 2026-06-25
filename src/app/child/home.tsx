@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppState, Pressable, Text, View } from "react-native";
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { KidApp } from "@/features/kid-home/kid-app";
@@ -20,11 +20,16 @@ import {
 } from "@/features/chores/default-child-photo-actions";
 import { getBucketBalancesForChild } from "@/features/ledger/default-ledger-actions";
 import {
+  addWishNoteForChild,
   createWishlistItemForChild,
   listWishlistForChild,
+  listWishNotesForChild,
   requestWishlistPurchase,
 } from "@/features/spend-wishlist/default-spend-wishlist-actions";
-import type { SpendWishlistItem } from "@/features/spend-wishlist/spend-wishlist-actions";
+import type {
+  SpendWishlistItem,
+  WishNote,
+} from "@/features/spend-wishlist/spend-wishlist-actions";
 import {
   listGivingOptionsForChild,
   suggestGivingOptionForChild,
@@ -140,6 +145,7 @@ export default function ChildHomeRoute() {
   }, [paramAccessCode, paramChildName]);
 
   const accessCode = session?.accessCode;
+  const childProfileId = session?.childProfileId;
 
   // Register this device for push once we know the child — so a late daily
   // chore can nudge them. Best-effort and idempotent (no-op without EAS/perms).
@@ -149,60 +155,106 @@ export default function ChildHomeRoute() {
     }
   }, [accessCode]);
 
-  useFocusEffect(
-    useCallback(() => {
-      let mounted = true;
+  const [refreshing, setRefreshing] = useState(false);
+  // Guards against setting state after the screen has gone away (the poll and
+  // foreground listeners can fire mid-teardown).
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-      // Bumping loadAttempt re-arms this effect after a failed load.
-      void loadAttempt;
+  // One fetch of everything the kid screens show. Shared by focus, pull-to-
+  // refresh, foreground, and the background poll so a parent's freshly-added
+  // chore appears without the kid restarting the app.
+  const loadData = useCallback(async () => {
+    if (!accessCode) {
+      return;
+    }
 
-      if (!accessCode) {
+    try {
+      const [nextChores, nextBalances, nextWishlistItems, nextGivingOptions, resolved, nextGameStats] =
+        await Promise.all([
+          listChoresForChild(accessCode),
+          getBucketBalancesForChild(accessCode),
+          listWishlistForChild(accessCode),
+          listGivingOptionsForChild(accessCode),
+          // Re-resolve every load so a pause (or resume) shows up promptly.
+          resolveChildAccessCode(accessCode),
+          getGameStatsForChild(accessCode),
+        ]);
+
+      if (!mountedRef.current) {
         return;
       }
 
-      Promise.all([
-        listChoresForChild(accessCode),
-        getBucketBalancesForChild(accessCode),
-        listWishlistForChild(accessCode),
-        listGivingOptionsForChild(accessCode),
-        // Re-resolve every visit so a pause (or resume) shows up promptly.
-        resolveChildAccessCode(accessCode),
-        getGameStatsForChild(accessCode),
-      ])
-        .then(([nextChores, nextBalances, nextWishlistItems, nextGivingOptions, resolved, nextGameStats]) => {
-          if (mounted) {
-            setLoadFailed(false);
-            setChores(nextChores);
-            setBucketBalances(nextBalances);
-            setWishlistItems(nextWishlistItems);
-            setGivingOptions(nextGivingOptions);
-            setPaused(resolved.paused);
-            setGameStats(nextGameStats);
+      setLoadFailed(false);
+      setChores(nextChores);
+      setBucketBalances(nextBalances);
+      setWishlistItems(nextWishlistItems);
+      setGivingOptions(nextGivingOptions);
+      setPaused(resolved.paused);
+      setGameStats(nextGameStats);
 
-            // Celebrate levels gained since this device last saw them. First
-            // run just records the baseline — no celebration for old progress.
-            const level = levelForPoints(nextGameStats.totalPoints);
-            const kidKey = session?.childProfileId || accessCode;
-            const lastSeen = getLastSeenLevel(kidKey);
-            if (lastSeen > 0 && level > lastSeen) {
-              setCelebrationLevel(level);
-            } else if (lastSeen === 0) {
-              setLastSeenLevel(kidKey, level);
-            }
-          }
-        })
-        .catch(() => {
-          // A network blip must not look like "all my chores are gone".
-          if (mounted) {
-            setLoadFailed(true);
-          }
-        });
+      // Celebrate levels gained since this device last saw them. First load
+      // just records the baseline — no celebration for old progress.
+      const level = levelForPoints(nextGameStats.totalPoints);
+      const kidKey = childProfileId || accessCode;
+      const lastSeen = getLastSeenLevel(kidKey);
+      if (lastSeen > 0 && level > lastSeen) {
+        setCelebrationLevel(level);
+      } else if (lastSeen === 0) {
+        setLastSeenLevel(kidKey, level);
+      }
+    } catch {
+      // A network blip must not look like "all my chores are gone".
+      if (mountedRef.current) {
+        setLoadFailed(true);
+      }
+    }
+  }, [accessCode, childProfileId]);
 
-      return () => {
-        mounted = false;
-      };
-    }, [accessCode, loadAttempt, session?.childProfileId]),
+  useFocusEffect(
+    useCallback(() => {
+      // Bumping loadAttempt re-arms this effect after a failed load.
+      void loadAttempt;
+      void loadData();
+    }, [loadData, loadAttempt]),
   );
+
+  // Auto-refresh: when the app comes back to the foreground, and on a gentle
+  // poll while it's open. Children aren't authenticated Supabase users, so
+  // RLS-gated realtime can't target them — polling is the robust path to live.
+  useEffect(() => {
+    if (!accessCode) {
+      return;
+    }
+
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void loadData();
+      }
+    });
+    const interval = setInterval(() => void loadData(), 45_000);
+
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
+  }, [accessCode, loadData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadData();
+    } finally {
+      if (mountedRef.current) {
+        setRefreshing(false);
+      }
+    }
+  }, [loadData]);
 
   const kidChores = useMemo<KidChore[]>(
     () =>
@@ -232,9 +284,14 @@ export default function ChildHomeRoute() {
         name: item.name,
         targetCents: item.targetCents,
         status: item.status,
+        hasUnread: item.hasUnread,
       })),
     [wishlistItems],
   );
+
+  // Wish-note thread for whichever wish the kid currently has open.
+  const [wishNotes, setWishNotes] = useState<WishNote[] | undefined>(undefined);
+  const [wishNotesLoading, setWishNotesLoading] = useState(false);
 
   // Drop any half-formed session and send the kid back to the start, where the
   // onboarding kid path lets them type a fresh code.
@@ -382,6 +439,8 @@ export default function ChildHomeRoute() {
       name={session.childName || undefined}
       currency={session.currency}
       chores={kidChores}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
       totalPoints={gameStats.totalPoints}
       celebrationLevel={celebrationLevel}
       journeyFromLevel={
@@ -460,6 +519,37 @@ export default function ChildHomeRoute() {
             item.id === wishId ? { ...item, status: "requested" } : item,
           ),
         );
+      }}
+      wishNotes={wishNotes}
+      wishNotesLoading={wishNotesLoading}
+      onOpenWishNotes={async (wishId) => {
+        if (!accessCode) {
+          return;
+        }
+
+        setWishNotes(undefined);
+        setWishNotesLoading(true);
+        // Reading the thread marks it seen server-side; clear the dot locally too.
+        setWishlistItems((current) =>
+          current.map((item) =>
+            item.id === wishId ? { ...item, hasUnread: false } : item,
+          ),
+        );
+        try {
+          setWishNotes(await listWishNotesForChild({ accessCode, wishlistItemId: wishId }));
+        } catch {
+          setWishNotes([]);
+        } finally {
+          setWishNotesLoading(false);
+        }
+      }}
+      onAddWishNote={async (wishId, body) => {
+        if (!accessCode) {
+          return;
+        }
+
+        const note = await addWishNoteForChild({ accessCode, wishlistItemId: wishId, body });
+        setWishNotes((current) => [...(current ?? []), note]);
       }}
       savingsCents={bucketBalances.savingsCents}
       givingCents={bucketBalances.givingCents}

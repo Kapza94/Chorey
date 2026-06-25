@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Animated, Pressable, ScrollView, Text, View } from "react-native";
+import { Animated, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { Check, Clock, Lock, Sparkles } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -49,6 +49,9 @@ type Props = {
   onOpenChore?: (id: string) => void;
   /** tap the level row to open the journey map */
   onOpenJourney?: () => void;
+  /** pull-to-refresh — re-fetch chores/balances so new chores show up live. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
 };
 
 const WEEKDAYS = [
@@ -73,6 +76,8 @@ export function KidHomeScreen({
   totalPoints = 0,
   onOpenChore,
   onOpenJourney,
+  onRefresh,
+  refreshing = false,
 }: Props) {
   const theme = useChoreyTheme();
   const { scheme, typography, space, radius, toybox } = theme;
@@ -95,6 +100,15 @@ export function KidHomeScreen({
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingBottom: 120 }}
         style={{ flex: 1 }}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={scheme.fgMuted}
+            />
+          ) : undefined
+        }
       >
         {/* Header — weekday + greeting + streak chip */}
         <View

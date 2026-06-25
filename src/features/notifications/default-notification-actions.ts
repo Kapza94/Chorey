@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 
 import { supabase } from "@/lib/supabase";
 import { createChildNotificationActions } from "@/features/notifications/notification-actions";
+import { createParentPushActions } from "@/features/notifications/parent-push-actions";
 import { getExpoPushToken } from "@/features/notifications/push-registration";
 
 /**
@@ -26,4 +27,15 @@ export async function registerChildForPushNotifications(
   } catch {
     // Registration is non-critical; the kid's app works without it.
   }
+}
+
+/**
+ * Best-effort: push a "new chore" nudge to a child's devices after a parent
+ * assigns one. Wired with the real client + global fetch.
+ */
+export async function notifyChildOfNewChore(input: {
+  childProfileId: string;
+  title: string;
+}): Promise<void> {
+  await createParentPushActions(supabase as never, fetch).notifyChildOfChore(input);
 }

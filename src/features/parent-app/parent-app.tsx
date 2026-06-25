@@ -32,6 +32,7 @@ import {
   type ParentAccount,
 } from "@/features/parent-app/parent-account";
 import type { ShareStatsActions } from "@/features/parent-app/share-actions";
+import type { WishNote } from "@/features/spend-wishlist/spend-wishlist-actions";
 import type { CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { Split } from "@/features/money/split";
@@ -55,8 +56,11 @@ type Props = {
   onApproveChore?: (choreId: string) => void;
   onSendBackChore?: (choreId: string, reason: string) => void;
   onDeleteChore?: (choreId: string) => void;
+  onSaveChoreNote?: (choreId: string, note: string) => void;
   onApprovePurchase?: (requestId: string) => void;
   onApproveGivingSuggestion?: (suggestionId: string) => void;
+  onLoadWishNotes?: (wishlistItemId: string) => Promise<WishNote[]>;
+  onAddWishNote?: (wishlistItemId: string, body: string) => Promise<WishNote>;
   /** when set, the Kids tab offers a shareable weekly stats card */
   shareStats?: ShareStatsActions;
   // Payments
@@ -121,8 +125,11 @@ export function ParentApp({
   onApproveChore,
   onSendBackChore,
   onDeleteChore,
+  onSaveChoreNote,
   onApprovePurchase,
   onApproveGivingSuggestion,
+  onLoadWishNotes,
+  onAddWishNote,
   shareStats,
   due,
   payoutHistory,
@@ -161,11 +168,11 @@ export function ParentApp({
   ) : undefined;
 
   // Approving is the parent's most frequent job — surface what's waiting from
-  // every tab, not just inside Kids.
-  const reviewCount =
-    (pendingApprovals?.length ?? 0) +
-    (purchaseRequests?.length ?? 0) +
-    (givingSuggestions?.length ?? 0);
+  // every tab. Chore approvals belong to the Chores tab; purchase and giving
+  // requests stay on Children, where the parent acts on them.
+  const choresWaiting = pendingApprovals?.length ?? 0;
+  const kidsWaiting =
+    (purchaseRequests?.length ?? 0) + (givingSuggestions?.length ?? 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -185,6 +192,8 @@ export function ParentApp({
           onSendBackChore={onSendBackChore}
           onApprovePurchase={onApprovePurchase}
           onApproveGivingSuggestion={onApproveGivingSuggestion}
+          onLoadWishNotes={onLoadWishNotes}
+          onAddWishNote={onAddWishNote}
           shareStats={shareStats}
           headerRight={headerRight}
         />
@@ -201,6 +210,7 @@ export function ParentApp({
           onApproveChore={onApproveChore}
           onSendBackChore={onSendBackChore}
           onDeleteChore={onDeleteChore}
+          onSaveNote={onSaveChoreNote}
           headerRight={headerRight}
         />
       ) : tab === "pay" ? (
@@ -230,7 +240,11 @@ export function ParentApp({
         />
       )}
 
-      <ParentTabBar active={tab} onChange={setTab} reviewCount={reviewCount} />
+      <ParentTabBar
+        active={tab}
+        onChange={setTab}
+        badges={{ chores: choresWaiting, kids: kidsWaiting }}
+      />
 
       {account ? (
         <ParentAccountSheet

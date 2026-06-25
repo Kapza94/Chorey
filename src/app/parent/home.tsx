@@ -22,8 +22,11 @@ import {
   toPayoutHistoryRows,
 } from "@/features/parent-app/payout-history";
 import {
+  addWishNoteForParent,
   approvePurchaseRequestForHousehold,
   listPurchaseRequestsForHousehold,
+  listWishNotesForParent,
+  markWishNotesSeenForParent,
 } from "@/features/spend-wishlist/default-spend-wishlist-actions";
 import type { HouseholdPurchaseRequest } from "@/features/spend-wishlist/spend-wishlist-actions";
 import {
@@ -59,12 +62,14 @@ import {
   type ParentIdentity,
 } from "@/features/auth/parent-identity-actions";
 import { pickAndUploadParentAvatar } from "@/features/account/default-avatar-actions";
+import { notifyChildOfNewChore } from "@/features/notifications/default-notification-actions";
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
   deleteChoreForHousehold,
   listChoresForHousehold,
   sendBackChoreForHousehold,
+  setChoreNote,
   signChorePhotoUrls,
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
@@ -188,10 +193,10 @@ export default function ParentHomeRoute() {
     setPayouts(nextPayouts);
     setChores(nextChores);
 
-    // Sign URLs only for submitted chores that carry a photo — that's all the
-    // approval cards render.
+    // Sign URLs for any chore that carries a photo — the approval cards render
+    // submitted ones, the Done detail card renders approved ones.
     const photoPaths = nextChores
-      .filter((chore) => chore.status === "submitted" && chore.photoPath)
+      .filter((chore) => chore.photoPath)
       .map((chore) => chore.photoPath as string);
     setPhotoUrls(await signChorePhotoUrls(photoPaths));
 
@@ -260,6 +265,8 @@ export default function ParentHomeRoute() {
       late: isRecurringChoreLate(chore),
       dueAt: chore.dueAt,
       sentBackReason: chore.sentBackReason,
+      photoUrl: chore.photoPath ? photoUrls[chore.photoPath] : undefined,
+      parentNote: chore.parentNote,
     };
   });
 
@@ -270,6 +277,8 @@ export default function ParentHomeRoute() {
       childName: request.childName,
       itemName: request.itemName,
       targetCents: request.targetCents,
+      wishlistItemId: request.wishlistItemId,
+      hasUnread: request.hasUnread,
     }));
 
   const givingSuggestions: PendingGivingSuggestion[] = suggestions
@@ -388,6 +397,10 @@ export default function ParentHomeRoute() {
         await deleteChoreForHousehold({ householdId, choreId });
         await reload();
       }}
+      onSaveChoreNote={async (choreId, note) => {
+        await setChoreNote({ choreId, note });
+        await reload();
+      }}
       onApprovePurchase={async (requestId) => {
         if (!householdId) {
           return;
@@ -403,6 +416,19 @@ export default function ParentHomeRoute() {
 
         await approveGivingSuggestionForHousehold({ householdId, suggestionId });
         await reload();
+      }}
+      onLoadWishNotes={async (wishlistItemId) => {
+        const notes = await listWishNotesForParent(wishlistItemId);
+        // Reading the thread clears the parent's unread mark; refresh so the
+        // request's dot clears after the sheet closes.
+        await markWishNotesSeenForParent(wishlistItemId);
+        await reload();
+        return notes;
+      }}
+      onAddWishNote={async (wishlistItemId, body) => {
+        const note = await addWishNoteForParent({ wishlistItemId, body });
+        await reload();
+        return note;
       }}
       shareStats={shareStatsActions}
       accessCodes={accessCodes}
@@ -574,6 +600,13 @@ export default function ParentHomeRoute() {
             ),
           );
         }
+
+        // Nudge each assigned child's devices (best-effort, fire-and-forget).
+        void Promise.all(
+          targetIds.map((childProfileId) =>
+            notifyChildOfNewChore({ childProfileId, title }),
+          ),
+        );
 
         await reload();
       }}
