@@ -45,6 +45,7 @@ describe("chore creation actions", () => {
       periodKey: null,
       photoPath: null,
       dueAt: null,
+      parentNote: null,
     });
     expect(client.from).toHaveBeenCalledWith("chore_instances");
     expect(client.from.mock.results[0]?.value.insert).toHaveBeenCalledWith({

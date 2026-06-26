@@ -76,12 +76,13 @@ export function ParentHeader({
 export function ParentTabBar({
   active,
   onChange,
-  reviewCount = 0,
+  badges,
 }: {
   active: ParentTab;
   onChange?: (tab: ParentTab) => void;
-  /** items waiting for parent review — badges the Kids tab from anywhere. */
-  reviewCount?: number;
+  /** per-tab count of things waiting for review — badges that tab from anywhere.
+   *  Chore approvals badge Chores; purchase/giving requests badge Children. */
+  badges?: Partial<Record<ParentTab, number>>;
 }) {
   const { scheme, typography, palette, toybox, radius, isDark } = useChoreyTheme();
   const spendRamp = palette.allowance;
@@ -113,7 +114,8 @@ export function ParentTabBar({
       {tabs.map((tab) => {
         const isActive = tab.id === active;
         const color = isActive ? (isDark ? spendRamp[200] : spendRamp[800]) : scheme.fgFaint;
-        const badged = tab.id === "kids" && reviewCount > 0;
+        const tabCount = badges?.[tab.id] ?? 0;
+        const badged = tabCount > 0;
 
         return (
           <Pressable
@@ -122,7 +124,7 @@ export function ParentTabBar({
             accessibilityState={{ selected: isActive }}
             accessibilityLabel={
               badged
-                ? `${tab.label} tab, ${reviewCount} waiting for review`
+                ? `${tab.label} tab, ${tabCount} waiting for review`
                 : `${tab.label} tab`
             }
             onPress={() => onChange?.(tab.id)}
@@ -167,7 +169,7 @@ export function ParentTabBar({
                       fontSize: 10,
                     }}
                   >
-                    {reviewCount > 9 ? "9+" : reviewCount}
+                    {tabCount > 9 ? "9+" : tabCount}
                   </Text>
                 </View>
               ) : null}

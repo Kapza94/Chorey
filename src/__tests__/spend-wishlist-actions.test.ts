@@ -23,6 +23,7 @@ describe("spend wishlist actions", () => {
         name: "Football",
         status: "active",
         targetCents: 2500,
+        hasUnread: false,
       },
     ]);
     expect(client.rpc).toHaveBeenCalledWith("list_child_wishlist_items", {
@@ -55,6 +56,7 @@ describe("spend wishlist actions", () => {
       name: "Football",
       status: "active",
       targetCents: 2500,
+      hasUnread: false,
     });
     expect(client.rpc).toHaveBeenCalledWith("create_child_wishlist_item", {
       input_access_code: "123456",
@@ -118,6 +120,7 @@ describe("spend wishlist actions", () => {
         status: "pending",
         targetCents: 2500,
         wishlistItemId: "wish-1",
+        hasUnread: false,
       },
     ]);
   });
@@ -148,6 +151,94 @@ describe("spend wishlist actions", () => {
     expect(client.rpc).toHaveBeenCalledWith("approve_purchase_request", {
       input_household_id: "household-1",
       input_request_id: "request-1",
+    });
+  });
+
+  it("lists a wish's note thread for the child", async () => {
+    const client = {
+      rpc: jest.fn().mockResolvedValue({
+        data: [
+          {
+            id: "note-1",
+            author_kind: "parent",
+            author_name: "Dad",
+            body: "Finish your chores first",
+            created_at: "2026-06-25T10:00:00Z",
+          },
+        ],
+        error: null,
+      }),
+    };
+    const actions = createSpendWishlistActions(client);
+
+    await expect(
+      actions.listChildWishNotes({ accessCode: "123456", wishlistItemId: "wish-1" }),
+    ).resolves.toEqual([
+      {
+        id: "note-1",
+        authorKind: "parent",
+        authorName: "Dad",
+        body: "Finish your chores first",
+        createdAt: "2026-06-25T10:00:00Z",
+      },
+    ]);
+    expect(client.rpc).toHaveBeenCalledWith("list_wish_notes", {
+      input_access_code: "123456",
+      input_wishlist_item_id: "wish-1",
+    });
+  });
+
+  it("adds a child note (trimmed) to a wish", async () => {
+    const client = {
+      rpc: jest.fn().mockResolvedValue({
+        data: {
+          id: "note-2",
+          author_kind: "child",
+          author_name: "Mia",
+          body: "Please?",
+          created_at: "2026-06-25T11:00:00Z",
+        },
+        error: null,
+      }),
+    };
+    const actions = createSpendWishlistActions(client);
+
+    await actions.addChildWishNote({
+      accessCode: "123456",
+      wishlistItemId: "wish-1",
+      body: "  Please?  ",
+    });
+    expect(client.rpc).toHaveBeenCalledWith("add_wish_note", {
+      input_access_code: "123456",
+      input_wishlist_item_id: "wish-1",
+      input_body: "Please?",
+    });
+  });
+
+  it("adds a parent note and marks a thread seen", async () => {
+    const client = {
+      rpc: jest.fn().mockResolvedValue({
+        data: {
+          id: "note-3",
+          author_kind: "parent",
+          author_name: "Dad",
+          body: "Sure!",
+          created_at: "2026-06-25T12:00:00Z",
+        },
+        error: null,
+      }),
+    };
+    const actions = createSpendWishlistActions(client);
+
+    await actions.addParentWishNote({ wishlistItemId: "wish-1", body: "Sure!" });
+    expect(client.rpc).toHaveBeenCalledWith("add_parent_wish_note", {
+      input_wishlist_item_id: "wish-1",
+      input_body: "Sure!",
+    });
+
+    await actions.markWishNotesSeen("wish-1");
+    expect(client.rpc).toHaveBeenCalledWith("mark_wish_notes_seen", {
+      input_wishlist_item_id: "wish-1",
     });
   });
 });

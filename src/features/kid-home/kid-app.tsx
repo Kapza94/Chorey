@@ -7,6 +7,7 @@ import { LevelUpBurst } from "@/components/level-up-burst";
 import { KidJourneyScreen } from "@/features/kid-home/kid-journey-screen";
 import { levelForPoints } from "@/features/game/leveling";
 import { KidWishlistScreen, type KidWish } from "@/features/kid-home/kid-wishlist-screen";
+import type { WishNote } from "@/features/spend-wishlist/spend-wishlist-actions";
 import { KidYouScreen } from "@/features/kid-home/kid-you-screen";
 import { KidTabBar, type KidTab } from "@/features/kid-home/kid-tab-bar";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -32,6 +33,11 @@ type Props = {
   wishes?: KidWish[];
   onRequestPurchase?: (wishId: string) => void;
   onAddWish?: (input: { name: string; targetCents: number }) => void;
+  /** wishlist notes thread */
+  wishNotes?: WishNote[];
+  wishNotesLoading?: boolean;
+  onOpenWishNotes?: (wishId: string) => void;
+  onAddWishNote?: (wishId: string, body: string) => void;
   /** lifetime game points (drives the level sticker + XP bar) */
   totalPoints?: number;
   /** when set, the full-screen level-up celebration shows for this level */
@@ -47,6 +53,9 @@ type Props = {
   causeName?: string | null;
   onSuggestCause?: (name: string) => void;
   onLogOut?: () => void;
+  /** pull-to-refresh on the Home tab — re-fetch so new chores appear. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
   /** override the starting tab (tests) */
   initialTab?: KidTab;
 };
@@ -68,6 +77,10 @@ export function KidApp({
   wishes,
   onRequestPurchase,
   onAddWish,
+  wishNotes,
+  wishNotesLoading,
+  onOpenWishNotes,
+  onAddWishNote,
   totalPoints,
   celebrationLevel,
   onCelebrationDone,
@@ -78,6 +91,8 @@ export function KidApp({
   causeName,
   onSuggestCause,
   onLogOut,
+  onRefresh,
+  refreshing,
   initialTab = "home",
 }: Props) {
   const { scheme } = useChoreyTheme();
@@ -101,6 +116,8 @@ export function KidApp({
           totalPoints={totalPoints}
           onOpenChore={setSelectedChoreId}
           onOpenJourney={() => setJourneyOpen(true)}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
         />
       ) : tab === "wish" ? (
         <KidWishlistScreen
@@ -109,6 +126,10 @@ export function KidApp({
           wishes={wishes}
           onRequestPurchase={onRequestPurchase}
           onAddWish={onAddWish}
+          notes={wishNotes}
+          notesLoading={wishNotesLoading}
+          onOpenNotes={onOpenWishNotes}
+          onAddNote={onAddWishNote}
         />
       ) : (
         <KidYouScreen

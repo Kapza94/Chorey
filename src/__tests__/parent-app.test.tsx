@@ -71,30 +71,31 @@ describe("ParentApp · Kids", () => {
     expect(screen.queryByText("Children.")).toBeNull();
   });
 
-  it("badges the Children tab with everything waiting for review", () => {
+  it("badges Chores with chore approvals and Children with purchase requests", () => {
     render(
       <ParentApp
-        initialTab="chores"
+        initialTab="kids"
         kids={[mia]}
         pendingApprovals={[
           { id: "ci1", childName: "Mia", title: "Dishes", rewardCents: 250, tone: "allowance" },
           { id: "ci2", childName: "Mia", title: "Trash", rewardCents: 100, tone: "allowance" },
         ]}
         purchaseRequests={[
-          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500 },
+          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500, wishlistItemId: "w1" },
         ]}
       />,
     );
 
-    // 2 chores + 1 purchase await review, visible from any tab.
-    expect(screen.getByLabelText("Children tab, 3 waiting for review")).toBeOnTheScreen();
-    expect(screen.getByText("3")).toBeOnTheScreen();
+    // Chore approvals badge the Chores tab; the purchase request badges Children.
+    expect(screen.getByLabelText("Chores tab, 2 waiting for review")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Children tab, 1 waiting for review")).toBeOnTheScreen();
   });
 
   it("shows no review badge when nothing is waiting", () => {
     render(<ParentApp initialTab="chores" kids={[{ ...mia, pendingApprovals: 0 }]} />);
 
     expect(screen.getByLabelText("Children tab")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Chores tab")).toBeOnTheScreen();
     expect(screen.queryByLabelText(/waiting for review/)).toBeNull();
   });
 
@@ -190,7 +191,7 @@ describe("ParentApp · Kids", () => {
       <ParentApp
         kids={[mia]}
         purchaseRequests={[
-          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500 },
+          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500, wishlistItemId: "w1" },
         ]}
         onApprovePurchase={onApprovePurchase}
       />,
@@ -760,5 +761,28 @@ describe("ParentApp · Chores board", () => {
     fireEvent.changeText(screen.getByLabelText("Send-back reason"), "Do it again");
     fireEvent.press(screen.getByLabelText("Confirm send back"));
     expect(onSendBackChore).toHaveBeenCalledWith("b1", "Do it again");
+  });
+
+  it("opens a done chore's detail and saves a note", () => {
+    const onSaveNote = jest.fn();
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        choreBoard={[
+          { ...board[2], parentNote: "Looked great" },
+        ]}
+        onSaveChoreNote={onSaveNote}
+      />,
+    );
+
+    // Tapping the done row opens its detail card, seeded with the saved note.
+    fireEvent.press(screen.getByLabelText("Open Make bed"));
+    const field = screen.getByLabelText("Chore note");
+    expect(field.props.value).toBe("Looked great");
+
+    fireEvent.changeText(field, "Nice work!");
+    fireEvent.press(screen.getByLabelText("Save note"));
+    expect(onSaveNote).toHaveBeenCalledWith("b3", "Nice work!");
   });
 });

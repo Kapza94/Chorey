@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import { Check, ChevronRight, Clock, Lock, Plus, Trash2, Undo2 } from "lucide-react-native";
@@ -48,6 +48,10 @@ export type ChoreBoardItem = {
   /** ISO instant this chore is due by, if a deadline was set. */
   dueAt?: string | null;
   sentBackReason?: string | null;
+  /** signed URL of the kid's completion photo, if they attached one. */
+  photoUrl?: string | null;
+  /** a short note the parent has attached to this chore. */
+  parentNote?: string | null;
 };
 
 export type ChoreAssignee = { id: string; name: string };
@@ -83,6 +87,8 @@ type Props = {
   onApproveChore?: (choreId: string) => void;
   onSendBackChore?: (choreId: string, reason: string) => void;
   onDeleteChore?: (choreId: string) => void;
+  /** save (or clear) the parent's note on a chore. */
+  onSaveNote?: (choreId: string, note: string) => void;
   headerRight?: ReactNode;
 };
 
@@ -98,10 +104,14 @@ export function ParentChoresScreen({
   onApproveChore,
   onSendBackChore,
   onDeleteChore,
+  onSaveNote,
   headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const [showAdd, setShowAdd] = useState(false);
+  // The chore whose detail card is open (tap any row to inspect it).
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const detailChore = board.find((item) => item.id === detailId) ?? null;
   // Which repeat-cadence the parent is viewing. "all" shows everything; a
   // crossed-off weekly chore stays visible under its own tab so the next
   // period's copy isn't a surprise.
@@ -187,6 +197,7 @@ export function ParentChoresScreen({
                     key={item.id}
                     item={item}
                     currency={currency}
+                    onOpen={() => setDetailId(item.id)}
                     onApprove={() => onApproveChore?.(item.id)}
                     onSendBack={(reason) => onSendBackChore?.(item.id, reason)}
                   />
@@ -205,6 +216,7 @@ export function ParentChoresScreen({
                     key={item.id}
                     item={item}
                     currency={currency}
+                    onOpen={() => setDetailId(item.id)}
                     onDelete={onDeleteChore ? () => onDeleteChore(item.id) : undefined}
                   />
                 ))}
@@ -214,7 +226,12 @@ export function ParentChoresScreen({
             {done.length > 0 ? (
               <BoardSection title="Done" count={done.length} muted>
                 {done.map((item) => (
-                  <ChoreBoardRow key={item.id} item={item} currency={currency} />
+                  <ChoreBoardRow
+                    key={item.id}
+                    item={item}
+                    currency={currency}
+                    onOpen={() => setDetailId(item.id)}
+                  />
                 ))}
               </BoardSection>
             ) : null}
@@ -316,7 +333,183 @@ export function ParentChoresScreen({
           setShowAdd(false);
         }}
       />
+
+      <ChoreDetailSheet
+        key={detailId ?? "none"}
+        chore={detailChore}
+        currency={currency}
+        onSaveNote={onSaveNote}
+        onClose={() => setDetailId(null)}
+      />
     </View>
+  );
+}
+
+/**
+ * Read-only-ish detail for a chore: reopen it to see the kid's photo and what
+ * was done, and attach a short note. Showable for any status, but most useful
+ * on a done chore the parent wants to remember or comment on.
+ */
+function ChoreDetailSheet({
+  chore,
+  currency,
+  onSaveNote,
+  onClose,
+}: {
+  chore: ChoreBoardItem | null;
+  currency: CurrencyCode;
+  onSaveNote?: (choreId: string, note: string) => void;
+  onClose: () => void;
+}) {
+  const { scheme, typography, palette, radius } = useChoreyTheme();
+  const keyboardHeight = useKeyboardHeight();
+  // Seed the editor from the chore's saved note; re-seed whenever the open
+  // chore changes (key remounts the sheet, see below).
+  const [note, setNote] = useState(chore?.parentNote ?? "");
+
+  const dueLabel = chore ? formatDueAtTime(chore.dueAt) : "";
+  const statusLabel = chore
+    ? chore.status === "approved"
+      ? "Done"
+      : chore.status === "submitted"
+        ? "Waiting for you"
+        : chore.status === "sent_back"
+          ? "Sent back"
+          : "To do"
+    : "";
+
+  return (
+    <Modal
+      visible={chore !== null}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <Pressable
+        accessibilityLabel="Dismiss"
+        onPress={onClose}
+        style={{ flex: 1, backgroundColor: "rgba(42, 32, 24, 0.32)" }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: keyboardHeight,
+          backgroundColor: scheme.bgModal,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingHorizontal: 22,
+          paddingTop: 14,
+          paddingBottom: 30,
+          ...scheme.shadow.lg,
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={onClose}
+          hitSlop={12}
+          style={{
+            width: 38,
+            height: 4,
+            borderRadius: radius.pill,
+            backgroundColor: palette.border.strong,
+            alignSelf: "center",
+            marginBottom: 16,
+          }}
+        />
+
+        {chore ? (
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24 }]}>
+              {chore.title}
+            </Text>
+            <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 4 }]}>
+              {chore.childName} · {formatMoney(chore.rewardCents, currency)} · {statusLabel}
+              {dueLabel ? ` · by ${dueLabel}` : ""}
+            </Text>
+
+            {chore.sentBackReason ? (
+              <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: 10 }]}>
+                Sent back: {chore.sentBackReason}
+              </Text>
+            ) : null}
+
+            {/* The kid's completion photo — proof of what was done. */}
+            {chore.photoUrl ? (
+              <Image
+                accessibilityLabel={`Photo of ${chore.title}`}
+                source={{ uri: chore.photoUrl }}
+                style={{
+                  width: "100%",
+                  aspectRatio: 1,
+                  borderRadius: radius.md,
+                  marginTop: 14,
+                  backgroundColor: scheme.bgSunken,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={{
+                  marginTop: 14,
+                  paddingVertical: 22,
+                  borderRadius: radius.md,
+                  backgroundColor: scheme.bgSunken,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+                  No photo for this chore.
+                </Text>
+              </View>
+            )}
+
+            <Text
+              style={[
+                typography.text.overline,
+                { color: scheme.fgFaint, marginTop: 18, marginBottom: 6 },
+              ]}
+            >
+              Note
+            </Text>
+            <TextInput
+              accessibilityLabel="Chore note"
+              value={note}
+              onChangeText={setNote}
+              placeholder="Add a note — e.g. great job, or what was done"
+              placeholderTextColor={scheme.fgFaint}
+              multiline
+              style={[
+                fieldStyle(scheme, typography.family.body.regular),
+                { minHeight: 76, textAlignVertical: "top", paddingTop: 12 },
+              ]}
+            />
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Save note"
+              onPress={() => {
+                onSaveNote?.(chore.id, note.trim());
+                onClose();
+              }}
+              style={({ pressed }) => ({
+                alignItems: "center",
+                marginTop: 14,
+                paddingVertical: 14,
+                borderRadius: radius.pill,
+                backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+              })}
+            >
+              <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 15 }]}>
+                Save note
+              </Text>
+            </Pressable>
+          </ScrollView>
+        ) : null}
+      </View>
+    </Modal>
   );
 }
 
@@ -464,12 +657,15 @@ function BoardSection({
 function ChoreBoardRow({
   item,
   currency,
+  onOpen,
   onApprove,
   onSendBack,
   onDelete,
 }: {
   item: ChoreBoardItem;
   currency: CurrencyCode;
+  /** open the chore's detail card (photo + note). */
+  onOpen?: () => void;
   onApprove?: () => void;
   onSendBack?: (reason: string) => void;
   onDelete?: () => void;
@@ -494,7 +690,13 @@ function ChoreBoardRow({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <Pressable
+          accessibilityRole={onOpen ? "button" : undefined}
+          accessibilityLabel={onOpen ? `Open ${item.title}` : undefined}
+          disabled={!onOpen}
+          onPress={onOpen}
+          style={{ flex: 1, minWidth: 0 }}
+        >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Text
               style={[
@@ -542,7 +744,7 @@ function ChoreBoardRow({
               Sent back: {item.sentBackReason}
             </Text>
           ) : null}
-        </View>
+        </Pressable>
 
         {submitted && !back ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

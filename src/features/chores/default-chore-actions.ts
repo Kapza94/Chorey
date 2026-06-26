@@ -52,6 +52,28 @@ export async function deleteChoreForHousehold(input: {
 }
 
 /**
+ * Attach (or clear) the parent's note on a chore. Goes through a security-
+ * definer RPC so it can write a done chore's note without the submitted-only
+ * update policy blocking it. An empty note clears it.
+ */
+export async function setChoreNote(input: {
+  choreId: string;
+  note: string;
+}): Promise<string | null> {
+  const { data, error } = await supabase.rpc("set_chore_note", {
+    input_chore_id: input.choreId,
+    input_note: input.note,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row?.parent_note as string | null | undefined) ?? null;
+}
+
+/**
  * Short-lived signed URLs for chore-completion photos, keyed by storage path.
  * The bucket is private; the household read policy lets a signed-in parent mint
  * these for their own household's photos. Paths that fail to sign are omitted.

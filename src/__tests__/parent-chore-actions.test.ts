@@ -63,6 +63,7 @@ describe("parent chore actions", () => {
         periodKey: null,
         photoPath: null,
         dueAt: null,
+        parentNote: null,
       },
     ]);
     expect(client.from).toHaveBeenCalledWith("chore_instances");
