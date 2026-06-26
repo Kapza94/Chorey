@@ -419,10 +419,9 @@ export default function ParentHomeRoute() {
       }}
       onLoadWishNotes={async (wishlistItemId) => {
         const notes = await listWishNotesForParent(wishlistItemId);
-        // Reading the thread clears the parent's unread mark; refresh so the
-        // request's dot clears after the sheet closes.
+        // Persist the seen-mark so the dot stays cleared on the next mount; the
+        // row already cleared it locally, so no full reload is needed here.
         await markWishNotesSeenForParent(wishlistItemId);
-        await reload();
         return notes;
       }}
       onAddWishNote={async (wishlistItemId, body) => {

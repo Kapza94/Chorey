@@ -1,6 +1,6 @@
 begin;
 
-select plan(6);
+select plan(8);
 
 insert into auth.users (id, email)
 values ('00000000-0000-0000-0000-0000000e0001', 'wish-parent@example.com');
@@ -37,6 +37,32 @@ values (
   '00000000-0000-0000-0000-0000000e0003',
   'Skateboard',
   6500
+);
+
+-- A second child (same household) and an outsider parent (different household)
+-- to prove isolation.
+insert into public.child_profiles (id, household_id, display_name)
+values ('00000000-0000-0000-0000-0000000e0004', '00000000-0000-0000-0000-0000000e0002', 'Theo');
+
+insert into public.child_access_codes (child_profile_id, household_id, access_code, created_by_user_id)
+values (
+  '00000000-0000-0000-0000-0000000e0004',
+  '00000000-0000-0000-0000-0000000e0002',
+  'CHOREY-WISH0002',
+  '00000000-0000-0000-0000-0000000e0001'
+);
+
+insert into auth.users (id, email)
+values ('00000000-0000-0000-0000-0000000e0009', 'wish-outsider@example.com');
+
+insert into public.households (id, owner_user_id, name)
+values ('00000000-0000-0000-0000-0000000e000a', '00000000-0000-0000-0000-0000000e0009', 'Other home');
+
+insert into public.household_members (household_id, user_id, role)
+values (
+  '00000000-0000-0000-0000-0000000e000a',
+  '00000000-0000-0000-0000-0000000e0009',
+  'parent_admin'
 );
 
 -- The child posts a note on their wish (security-definer RPC, access-code keyed).
@@ -90,6 +116,23 @@ select is(
   false,
   'opening the thread clears the child unread flag'
 );
+
+-- A different child cannot read someone else's wish thread.
+select throws_ok(
+  $$ select public.list_wish_notes('CHOREY-WISH0002', '00000000-0000-0000-0000-0000000e0010') $$,
+  'Wish not found.'
+);
+
+-- A parent from another household cannot post on this wish.
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000e0009', true);
+
+select throws_ok(
+  $$ select public.add_parent_wish_note('00000000-0000-0000-0000-0000000e0010', 'sneaky') $$,
+  'Wish not found or not in your household.'
+);
+
+reset role;
 
 select * from finish();
 rollback;

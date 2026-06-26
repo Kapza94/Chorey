@@ -34,6 +34,7 @@ using (
     from public.household_members member
     where member.household_id = wish_notes.household_id
       and member.user_id = auth.uid()
+      and member.role = 'parent_admin'
   )
 );
 
@@ -209,7 +210,8 @@ begin
   join public.household_members member
     on member.household_id = item.household_id
   where item.id = input_wishlist_item_id
-    and member.user_id = auth.uid();
+    and member.user_id = auth.uid()
+    and member.role = 'parent_admin';
 
   if item_row is null then
     raise exception 'Wish not found or not in your household.';
@@ -248,7 +250,8 @@ begin
   from public.household_members member
   where item.id = input_wishlist_item_id
     and member.household_id = item.household_id
-    and member.user_id = auth.uid();
+    and member.user_id = auth.uid()
+    and member.role = 'parent_admin';
 
   if not found then
     raise exception 'Wish not found or not in your household.';

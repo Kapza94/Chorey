@@ -302,6 +302,7 @@ export function KidWishlistScreen({
       />
 
       <WishNotesModal
+        key={notesWishId ?? "none"}
         wish={notesWish}
         notes={notes}
         loading={notesLoading}
