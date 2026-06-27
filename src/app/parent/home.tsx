@@ -79,6 +79,7 @@ import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen"
 import {
   createChoreTemplateForHousehold,
   ensureRecurringInstancesForHousehold,
+  repriceRecurringChoresForHousehold,
 } from "@/features/chores/default-chore-template-actions";
 import { updateChildSettingsForHousehold } from "@/features/children/default-child-actions";
 import { listChildAccessCodes } from "@/features/children/default-child-access-actions";
@@ -606,6 +607,17 @@ export default function ParentHomeRoute() {
               ),
             );
             await ensureRecurringInstancesForHousehold(householdId);
+            // Budget-first: re-share each kid's allowance across their recurring
+            // chores, so the new chore (and its siblings) carry the derived
+            // per-completion reward rather than anything typed in the sheet.
+            await Promise.all(
+              targetIds.map((childProfileId) =>
+                repriceRecurringChoresForHousehold({
+                  householdId,
+                  childProfileId,
+                }),
+              ),
+            );
           } catch {
             return;
           }
