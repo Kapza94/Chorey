@@ -471,6 +471,12 @@ export default function ParentHomeRoute() {
           childProfileId: kidId,
           budgetCents,
         });
+        // Budget-first: the allowance is the numerator, so re-share it across
+        // this kid's recurring chores whenever it changes.
+        await repriceRecurringChoresForHousehold({
+          householdId,
+          childProfileId: kidId,
+        });
         await reload();
       }}
       onChangeCadence={async (kidId, cadence) => {
@@ -482,6 +488,12 @@ export default function ParentHomeRoute() {
           householdId,
           childProfileId: kidId,
           cadence,
+        });
+        // Cadence changes how many completions a period holds, which reprices
+        // every recurring chore for this kid.
+        await repriceRecurringChoresForHousehold({
+          householdId,
+          childProfileId: kidId,
         });
         await reload();
       }}
