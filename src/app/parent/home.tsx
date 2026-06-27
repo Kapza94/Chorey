@@ -162,54 +162,79 @@ export default function ParentHomeRoute() {
     }
 
     // Materialize any recurring chores due this period before reading chores.
-    await ensureRecurringInstancesForHousehold(householdId);
-
-    const [
-      nextKids,
-      settings,
-      nextPayouts,
-      nextChores,
-      nextPurchases,
-      nextSuggestions,
-      nextPeriod,
-      nextAccess,
-      nextAccessCodes,
-    ] = await Promise.all([
-      listHouseholdKids(householdId),
-      getHouseholdSettings(householdId),
-      listPayoutsForHousehold(householdId),
-      listChoresForHousehold(householdId),
-      listPurchaseRequestsForHousehold(householdId),
-      listGivingSuggestionsForHousehold(householdId),
-      getActiveSettlementPeriod(householdId),
-      getHouseholdSubscription(householdId),
-      listChildAccessCodes(householdId),
-    ]);
-
-    setKids(nextKids);
-    setCurrency(settings.currency);
-    setSplit(settings.split);
-    setHouseholdName(settings.name);
-    setPayouts(nextPayouts);
-    setChores(nextChores);
-
-    // Sign URLs for any chore that carries a photo — the approval cards render
-    // submitted ones, the Done detail card renders approved ones.
-    const photoPaths = nextChores
-      .filter((chore) => chore.photoPath)
-      .map((chore) => chore.photoPath as string);
-    setPhotoUrls(await signChorePhotoUrls(photoPaths));
-
-    setPurchases(nextPurchases);
-    setSuggestions(nextSuggestions);
-    setSettlementPeriod(nextPeriod);
-    setSubscription(nextAccess);
-    setAccessCodes(
-      nextAccessCodes.map((code) => ({
-        kidId: code.childProfileId,
-        accessCode: code.accessCode,
-      })),
+    await ensureRecurringInstancesForHousehold(householdId).catch((error) =>
+      console.warn("home reload: ensureRecurringInstances failed", error),
     );
+
+    // Each section loads independently. A single failing query (e.g. a schema
+    // drift that 400s) must never blank the whole screen — most importantly it
+    // must not take down the kids list and make the home look empty.
+    const settle = <T,>(
+      promise: Promise<T>,
+      apply: (value: T) => void | Promise<void>,
+      label: string,
+    ) =>
+      promise
+        .then(apply)
+        .catch((error) => console.warn(`home reload: ${label} failed`, error));
+
+    await Promise.allSettled([
+      settle(listHouseholdKids(householdId), setKids, "kids"),
+      settle(
+        getHouseholdSettings(householdId),
+        (settings) => {
+          setCurrency(settings.currency);
+          setSplit(settings.split);
+          setHouseholdName(settings.name);
+        },
+        "settings",
+      ),
+      settle(listPayoutsForHousehold(householdId), setPayouts, "payouts"),
+      settle(
+        listChoresForHousehold(householdId),
+        async (nextChores) => {
+          setChores(nextChores);
+          // Sign URLs for any chore that carries a photo — the approval cards
+          // render submitted ones, the Done detail card renders approved ones.
+          const photoPaths = nextChores
+            .filter((chore) => chore.photoPath)
+            .map((chore) => chore.photoPath as string);
+          setPhotoUrls(await signChorePhotoUrls(photoPaths));
+        },
+        "chores",
+      ),
+      settle(
+        listPurchaseRequestsForHousehold(householdId),
+        setPurchases,
+        "purchases",
+      ),
+      settle(
+        listGivingSuggestionsForHousehold(householdId),
+        setSuggestions,
+        "suggestions",
+      ),
+      settle(
+        getActiveSettlementPeriod(householdId),
+        setSettlementPeriod,
+        "settlementPeriod",
+      ),
+      settle(
+        getHouseholdSubscription(householdId),
+        setSubscription,
+        "subscription",
+      ),
+      settle(
+        listChildAccessCodes(householdId),
+        (nextAccessCodes) =>
+          setAccessCodes(
+            nextAccessCodes.map((code) => ({
+              kidId: code.childProfileId,
+              accessCode: code.accessCode,
+            })),
+          ),
+        "accessCodes",
+      ),
+    ]);
   }, [householdId]);
 
   useFocusEffect(
