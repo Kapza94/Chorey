@@ -985,9 +985,12 @@ function AddChoreSheet({
   }
   const preview = splitCents(rewardCents, split);
 
-  // A chore must be named and carry a reward — a blank reward silently creates
-  // a $0 chore whose approval never reaches a wallet, which reads as a bug.
-  const canAdd = name.trim().length > 0 && rewardCents > 0;
+  // Recurring chores are priced from the kid's allowance after creation (shared
+  // across their repeating chores), so they need no typed amount. One-off chores
+  // still carry a manual reward — a blank one would create a $0 chore whose
+  // approval never reaches a wallet, which reads as a bug.
+  const isRecurring = repeat !== "one-off";
+  const canAdd = name.trim().length > 0 && (isRecurring || rewardCents > 0);
 
   const reset = () => {
     setName("");
@@ -1118,18 +1121,22 @@ function AddChoreSheet({
           style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
         />
 
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
-          Reward
-        </Text>
-        <TextInput
-          accessibilityLabel="Chore reward"
-          keyboardType="decimal-pad"
-          value={value}
-          onChangeText={(raw) => setValue(clampRewardInput(raw))}
-          placeholder="2.00"
-          placeholderTextColor={scheme.fgFaint}
-          style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
-        />
+        {isRecurring ? null : (
+          <>
+            <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
+              Reward
+            </Text>
+            <TextInput
+              accessibilityLabel="Chore reward"
+              keyboardType="decimal-pad"
+              value={value}
+              onChangeText={(raw) => setValue(clampRewardInput(raw))}
+              placeholder="2.00"
+              placeholderTextColor={scheme.fgFaint}
+              style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
+            />
+          </>
+        )}
 
         <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
           Assign to
@@ -1257,7 +1264,25 @@ function AddChoreSheet({
           </Text>
         ) : null}
 
-        {/* Live split preview */}
+        {/* Recurring chores are priced from the allowance later, so there's no
+            amount to preview yet — explain instead of showing a $0 split. */}
+        {isRecurring ? (
+          <View
+            style={{
+              backgroundColor: scheme.bgSunken,
+              borderRadius: radius.sm,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              marginBottom: 16,
+            }}
+          >
+            <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
+              The reward comes from this child&apos;s allowance, shared across their
+              repeating chores — nothing to enter. It still splits{" "}
+              {split.spend}/{split.save}/{split.give} like every reward.
+            </Text>
+          </View>
+        ) : (
         <View
           style={{
             backgroundColor: scheme.bgSunken,
@@ -1296,6 +1321,7 @@ function AddChoreSheet({
             </Text>
           </View>
         </View>
+        )}
 
         <Pressable
           accessibilityRole="button"
@@ -1334,7 +1360,9 @@ function AddChoreSheet({
               { color: scheme.fgFaint, textAlign: "center", marginTop: 10 },
             ]}
           >
-            Add a name and a reward to continue.
+            {isRecurring
+              ? "Add a name to continue."
+              : "Add a name and a reward to continue."}
           </Text>
         ) : null}
       </View>
