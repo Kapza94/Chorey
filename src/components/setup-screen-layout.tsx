@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { choreyTheme } from "@/theme/chorey-theme";
+import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type Props = {
   eyebrow: string;
@@ -27,11 +28,12 @@ export function SetupScreenLayout({
   footer,
   onBack,
 }: Props) {
+  const { scheme } = useChoreyTheme();
   return (
     // Lift the pinned footer (and scrollable fields) above the keyboard so the
     // submit button and lower inputs never end up hidden underneath it.
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: choreyTheme.colors.cream2 }}
+      style={{ flex: 1, backgroundColor: scheme.bgPage }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
@@ -53,10 +55,8 @@ export function SetupScreenLayout({
             style={({ pressed }) => ({
               alignItems: "center",
               alignSelf: "flex-start",
-              backgroundColor: pressed
-                ? choreyTheme.colors.primarySoft
-                : choreyTheme.colors.surface,
-              borderColor: choreyTheme.colors.borderMedium,
+              backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+              borderColor: scheme.borderHover,
               borderRadius: choreyTheme.radii.pill,
               borderWidth: 1,
               height: 44,
@@ -66,7 +66,7 @@ export function SetupScreenLayout({
           >
             <Text
               style={{
-                color: choreyTheme.colors.ink1,
+                color: scheme.fg,
                 fontSize: 24,
                 fontWeight: "700",
                 lineHeight: 26,
@@ -79,8 +79,8 @@ export function SetupScreenLayout({
 
         <View
           style={{
-            backgroundColor: choreyTheme.colors.surfaceWarm,
-            borderColor: choreyTheme.colors.borderSoft,
+            backgroundColor: scheme.bgRaised,
+            borderColor: scheme.border,
             borderRadius: choreyTheme.radii.lg,
             borderWidth: 1,
             gap: choreyTheme.spacing.sm,
@@ -91,7 +91,7 @@ export function SetupScreenLayout({
           <Text
             selectable
             style={{
-              color: choreyTheme.colors.inkMuted,
+              color: scheme.fgFaint,
               fontSize: 13,
               fontWeight: "800",
             }}
@@ -101,7 +101,7 @@ export function SetupScreenLayout({
           <Text
             selectable
             style={{
-              color: choreyTheme.colors.ink1,
+              color: scheme.fg,
               fontSize: 34,
               fontWeight: "800",
               letterSpacing: 0,
@@ -112,7 +112,7 @@ export function SetupScreenLayout({
           <Text
             selectable
             style={{
-              color: choreyTheme.colors.inkMuted,
+              color: scheme.fgMuted,
               fontSize: 16,
               lineHeight: 24,
             }}
@@ -126,8 +126,8 @@ export function SetupScreenLayout({
 
       <View
         style={{
-          backgroundColor: choreyTheme.colors.cream1,
-          borderColor: choreyTheme.colors.borderSoft,
+          backgroundColor: scheme.bgSunken,
+          borderColor: scheme.border,
           borderTopWidth: 1,
           paddingHorizontal: choreyTheme.spacing.xl,
           paddingTop: choreyTheme.spacing.md,
