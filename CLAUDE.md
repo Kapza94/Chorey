@@ -40,7 +40,8 @@ Releasing to the App Store / TestFlight:
 2. Merge `dev` → `main` and push `main`.
 3. Confirm there are no merge conflicts; resolve/squash any that exist.
 4. Verify `main` is green (`npm run typecheck` + `npm test`).
-5. Build + submit from `main` (`eas build --platform ios --profile production --auto-submit`).
+5. Verify migrations are pushed to the remote DB: `supabase db push` (or confirm `supabase migration list` shows no local-only rows). App code must never ship ahead of the deployed schema — a missing column 400s and can blank screens.
+6. Build + submit from `main` (`eas build --platform ios --profile production --auto-submit`).
 
 ## Environment
 
