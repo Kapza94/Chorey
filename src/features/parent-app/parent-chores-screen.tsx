@@ -54,7 +54,7 @@ export type ChoreBoardItem = {
   parentNote?: string | null;
 };
 
-export type ChoreAssignee = { id: string; name: string };
+export type ChoreAssignee = { id: string; name: string; budgetCents?: number };
 
 /** Which repeat cadence the Chores board is filtered to. */
 type RecurFilter = "all" | Recurrence | "one-off";
@@ -990,7 +990,15 @@ function AddChoreSheet({
   // still carry a manual reward — a blank one would create a $0 chore whose
   // approval never reaches a wallet, which reads as a bug.
   const isRecurring = repeat !== "one-off";
-  const canAdd = name.trim().length > 0 && (isRecurring || rewardCents > 0);
+  // A recurring chore is priced from the kid's allowance; with no allowance it
+  // would derive to a $0 (no-ledger) chore, so block it with a clear nudge.
+  const noAllowance =
+    isRecurring &&
+    (assigneeId === "all"
+      ? assignees.some((a) => (a.budgetCents ?? 0) <= 0)
+      : (assignees.find((a) => a.id === assigneeId)?.budgetCents ?? 0) <= 0);
+  const canAdd =
+    name.trim().length > 0 && (isRecurring || rewardCents > 0) && !noAllowance;
 
   const reset = () => {
     setName("");
@@ -1334,7 +1342,9 @@ function AddChoreSheet({
             }
             onConfirm({
               name: name.trim(),
-              rewardCents,
+              // Recurring chores are priced from the allowance by reprice; never
+              // leak a stale value typed before the user switched to a repeat.
+              rewardCents: isRecurring ? 0 : rewardCents,
               assigneeId,
               recurrence: repeat === "one-off" ? undefined : repeat,
               dueTime,
@@ -1360,9 +1370,11 @@ function AddChoreSheet({
               { color: scheme.fgFaint, textAlign: "center", marginTop: 10 },
             ]}
           >
-            {isRecurring
-              ? "Add a name to continue."
-              : "Add a name and a reward to continue."}
+            {noAllowance
+              ? "Set an allowance for this child in Settings to add repeating chores."
+              : isRecurring
+                ? "Add a name to continue."
+                : "Add a name and a reward to continue."}
           </Text>
         ) : null}
       </View>

@@ -588,7 +588,11 @@ export default function ParentHomeRoute() {
       // The board (To do / Needs you / Done) is the live chores view; the flat
       // library would just duplicate the same instances, so it's left empty.
       choreBoard={choreBoard}
-      assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
+      assignees={kids.map((kid) => ({
+        id: kid.id,
+        name: kid.name,
+        budgetCents: kid.budgetCents,
+      }))}
       recurringLocked={!isEntitled(subscription.status)}
       onAddChore={async ({ name, rewardCents, assigneeId, recurrence, dueTime }) => {
         if (!householdId || !name.trim()) {
@@ -631,6 +635,9 @@ export default function ParentHomeRoute() {
               ),
             );
           } catch {
+            // Don't leave a half-created recurring chore hidden behind a silent
+            // failure — reload so the board reflects whatever actually persisted.
+            await reload();
             return;
           }
         } else {
