@@ -180,11 +180,15 @@ export function ParentChoresScreen({
 
         {/* Assigned-vs-cap per kid */}
         {kids.length > 0 ? (
-          <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: 18, paddingBottom: 14 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 10, paddingHorizontal: 18, paddingBottom: 14 }}
+          >
             {kids.map((kid) => (
               <AssignedVsCap key={kid.id} kid={kid} currency={currency} />
             ))}
-          </View>
+          </ScrollView>
         ) : null}
 
         {/* Board: Needs you → To do → Done */}
@@ -890,7 +894,7 @@ function AssignedVsCap({ kid, currency }: { kid: ParentKid; currency: CurrencyCo
   return (
     <View
       style={{
-        flex: 1,
+        width: 172,
         backgroundColor: scheme.bgModal,
         borderColor: scheme.toy.border,
         borderWidth: toybox.borderWidth,
@@ -900,12 +904,23 @@ function AssignedVsCap({ kid, currency }: { kid: ParentKid; currency: CurrencyCo
         paddingVertical: 12,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={[typography.text.label, { color: scheme.fg }]}>{kid.name}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Text
+          numberOfLines={1}
+          style={[typography.text.label, { color: scheme.fg, flexShrink: 1 }]}
+        >
+          {kid.name}
+        </Text>
+        <Text
+          numberOfLines={1}
           style={[
             typography.text.caption,
-            { color: over ? palette.semantic.warning[600] : scheme.fgFaint, fontWeight: "700" },
+            {
+              color: over ? palette.semantic.warning[600] : scheme.fgFaint,
+              fontWeight: "700",
+              flexShrink: 0,
+              marginLeft: "auto",
+            },
           ]}
         >
           {over ? "over cap" : `${formatMoney(leftCents, currency)} left`}
