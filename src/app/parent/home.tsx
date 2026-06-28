@@ -79,6 +79,7 @@ import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen"
 import {
   createChoreTemplateForHousehold,
   ensureRecurringInstancesForHousehold,
+  repriceRecurringChoresForHousehold,
 } from "@/features/chores/default-chore-template-actions";
 import { updateChildSettingsForHousehold } from "@/features/children/default-child-actions";
 import { listChildAccessCodes } from "@/features/children/default-child-access-actions";
@@ -470,6 +471,12 @@ export default function ParentHomeRoute() {
           childProfileId: kidId,
           budgetCents,
         });
+        // Budget-first: the allowance is the numerator, so re-share it across
+        // this kid's recurring chores whenever it changes.
+        await repriceRecurringChoresForHousehold({
+          householdId,
+          childProfileId: kidId,
+        });
         await reload();
       }}
       onChangeCadence={async (kidId, cadence) => {
@@ -481,6 +488,12 @@ export default function ParentHomeRoute() {
           householdId,
           childProfileId: kidId,
           cadence,
+        });
+        // Cadence changes how many completions a period holds, which reprices
+        // every recurring chore for this kid.
+        await repriceRecurringChoresForHousehold({
+          householdId,
+          childProfileId: kidId,
         });
         await reload();
       }}
@@ -575,7 +588,11 @@ export default function ParentHomeRoute() {
       // The board (To do / Needs you / Done) is the live chores view; the flat
       // library would just duplicate the same instances, so it's left empty.
       choreBoard={choreBoard}
-      assignees={kids.map((kid) => ({ id: kid.id, name: kid.name }))}
+      assignees={kids.map((kid) => ({
+        id: kid.id,
+        name: kid.name,
+        budgetCents: kid.budgetCents,
+      }))}
       recurringLocked={!isEntitled(subscription.status)}
       onAddChore={async ({ name, rewardCents, assigneeId, recurrence, dueTime }) => {
         if (!householdId || !name.trim()) {
@@ -606,7 +623,21 @@ export default function ParentHomeRoute() {
               ),
             );
             await ensureRecurringInstancesForHousehold(householdId);
+            // Budget-first: re-share each kid's allowance across their recurring
+            // chores, so the new chore (and its siblings) carry the derived
+            // per-completion reward rather than anything typed in the sheet.
+            await Promise.all(
+              targetIds.map((childProfileId) =>
+                repriceRecurringChoresForHousehold({
+                  householdId,
+                  childProfileId,
+                }),
+              ),
+            );
           } catch {
+            // Don't leave a half-created recurring chore hidden behind a silent
+            // failure — reload so the board reflects whatever actually persisted.
+            await reload();
             return;
           }
         } else {

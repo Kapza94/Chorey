@@ -461,20 +461,23 @@ describe("ParentApp · Chores", () => {
         initialTab="chores"
         kids={[mia]}
         chores={chores}
-        assignees={[{ id: "k1", name: "Mia" }]}
+        assignees={[{ id: "k1", name: "Mia", budgetCents: 2000 }]}
         onAddChore={onAddChore}
       />,
     );
 
     fireEvent.press(screen.getByLabelText("New chore"));
     fireEvent.changeText(screen.getByLabelText("Chore name"), "Feed cat");
+    // Type a reward while it's still a one-off, then switch to Daily — the
+    // budget-first sheet must drop that stale value and emit 0 (the recurring
+    // reward is derived from the allowance after creation).
     fireEvent.changeText(screen.getByLabelText("Chore reward"), "2.00");
     fireEvent.press(screen.getByLabelText("Repeat Daily"));
     fireEvent.press(screen.getByLabelText("Add chore"));
 
     expect(onAddChore).toHaveBeenCalledWith({
       name: "Feed cat",
-      rewardCents: 200,
+      rewardCents: 0,
       assigneeId: "k1",
       recurrence: "daily",
       dueTime: "16:00",

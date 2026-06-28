@@ -5,6 +5,7 @@ import { SetupScreenLayout } from "@/components/setup-screen-layout";
 import { fieldStyle } from "@/components/field-style";
 import type { CreatedChore } from "@/features/chores/chore-actions";
 import {
+  clampRewardInput,
   formatReward,
   parseRewardCents,
   splitRewardCents,
@@ -206,7 +207,7 @@ export function CreateChoreScreen({
         <TextInput
           accessibilityLabel="Reward amount"
           keyboardType="decimal-pad"
-          onChangeText={setRewardAmount}
+          onChangeText={(raw) => setRewardAmount(clampRewardInput(raw))}
           placeholder="2.50"
           placeholderTextColor={scheme.fgFaint}
           style={fieldStyle(scheme, choreyTheme.typography.family.body.regular)}
