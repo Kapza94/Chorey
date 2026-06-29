@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { SetupScreenLayout } from "@/components/setup-screen-layout";
+import { ToyButton, ToyCard } from "@/components/toybox";
 import type { CreatedChild } from "@/features/children/child-actions";
 import { choreyTheme } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -32,7 +33,7 @@ export function ChildSetupScreen({
   onUpgrade,
   onBack,
 }: Props) {
-  const { scheme, palette } = useChoreyTheme();
+  const { scheme, palette, typography, toybox } = useChoreyTheme();
   const [displayName, setDisplayName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -48,7 +49,9 @@ export function ChildSetupScreen({
       await onChildCreated?.(child);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Child profile could not be created.";
+        error instanceof Error
+          ? error.message
+          : "Child profile could not be created.";
 
       if (/Chorey is paused/.test(message)) {
         setShowUpgradePrompt(true);
@@ -65,56 +68,21 @@ export function ChildSetupScreen({
       description="Start with a name. Chorey will use this for chores, balances, and the 40 / 40 / 20 buckets."
       eyebrow="Child setup"
       footer={
-        <Pressable
+        <ToyButton
           accessibilityLabel="Submit child setup"
-          accessibilityRole="button"
           disabled={isSubmitting}
           onPress={handleCreateChild}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            backgroundColor: pressed
-              ? palette.accent[800]
-              : palette.accent[600],
-            borderColor: palette.accent[800],
-            borderRadius: choreyTheme.radii.pill,
-            borderWidth: 1,
-            opacity: isSubmitting ? 0.65 : 1,
-            paddingVertical: 16,
-            ...choreyTheme.shadows.button,
-          })}
         >
-          <Text
-            style={{
-              color: palette.cream[4],
-              fontSize: 16,
-              fontWeight: "800",
-            }}
-          >
-            {isSubmitting ? "Adding child..." : "Add child"}
-          </Text>
-        </Pressable>
+          {isSubmitting ? "Adding child..." : "Add child"}
+        </ToyButton>
       }
       onBack={onBack}
       title="Add child"
     >
-      <View
-        style={{
-          backgroundColor: scheme.bgModal,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.md,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
+      <ToyCard style={{ gap: choreyTheme.spacing.md }}>
         <Text
           selectable
-          style={{
-            color: scheme.fg,
-            fontSize: 14,
-            fontWeight: "800",
-          }}
+          style={[typography.text.overline, { color: scheme.fgFaint }]}
         >
           Child name
         </Text>
@@ -125,16 +93,16 @@ export function ChildSetupScreen({
           placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            backgroundColor: scheme.bgRaised,
             color: scheme.fg,
             fontSize: 16,
             paddingHorizontal: choreyTheme.spacing.lg,
             paddingVertical: 15,
           }}
         />
-      </View>
+      </ToyCard>
 
       {errorMessage ? (
         <Text

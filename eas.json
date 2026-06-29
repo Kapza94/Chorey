@@ -9,6 +9,7 @@
       "distribution": "internal",
       "environment": "production",
       "env": {
+        "EXPO_NO_CAPABILITY_SYNC": "1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {
@@ -16,9 +17,11 @@
       }
     },
     "preview": {
+      "autoIncrement": true,
       "distribution": "internal",
       "environment": "production",
       "env": {
+        "EXPO_NO_CAPABILITY_SYNC": "1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "ios": {

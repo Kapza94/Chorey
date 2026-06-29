@@ -39,7 +39,6 @@ import type { Split } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import type { Recurrence } from "@/features/chores/recurrence";
-import type { DueTime } from "@/features/chores/due-time";
 
 type Props = {
   subtitle?: string;
@@ -85,7 +84,6 @@ type Props = {
     rewardCents: number;
     assigneeId: string;
     recurrence?: Recurrence;
-    dueTime?: DueTime;
   }) => void;
   // Settings
   accessCodes?: { kidId: string; accessCode: string }[];
@@ -95,6 +93,7 @@ type Props = {
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onChangeSplit?: (split: Split) => void;
   onLogOut?: () => void;
+  appVersionLabel?: string;
   // Account
   account?: ParentAccount;
   onEditName?: (name: string) => void;
@@ -150,6 +149,7 @@ export function ParentApp({
   onChangeCadence,
   onChangeSplit,
   onLogOut,
+  appVersionLabel,
   account,
   onEditName,
   onManageStoreSubscription,
@@ -164,7 +164,10 @@ export function ParentApp({
 
   // The same identity affordance rides the top-right of every tab's header.
   const headerRight = account ? (
-    <AccountAvatarButton account={account} onPress={() => setAccountOpen(true)} />
+    <AccountAvatarButton
+      account={account}
+      onPress={() => setAccountOpen(true)}
+    />
   ) : undefined;
 
   // Approving is the parent's most frequent job — surface what's waiting from
@@ -236,6 +239,7 @@ export function ParentApp({
           onChangeCadence={onChangeCadence}
           onChangeSplit={onChangeSplit}
           onLogOut={onLogOut}
+          appVersionLabel={appVersionLabel}
           headerRight={headerRight}
         />
       )}

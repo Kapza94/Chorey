@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Text, View } from "react-native";
 
 import type { ResolvedChildAccess } from "@/features/children/child-access-actions";
-import { choreyTheme } from "@/theme/chorey-theme";
+import {
+  OBField,
+  OBPrimary,
+  OBShell,
+  OBTitle,
+} from "@/features/onboarding/onboarding-kit";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type Props = {
@@ -42,12 +47,16 @@ export function ChildAccessScreen({
   onChildAccess,
   onResolveAccessCode = noopResolve,
 }: Props) {
-  const { scheme, palette } = useChoreyTheme();
+  const { scheme, typography } = useChoreyTheme();
   const [accessCode, setAccessCode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleAccess() {
+    if (!accessCode.trim() || isSubmitting) {
+      return;
+    }
+
     setErrorMessage(null);
     setIsSubmitting(true);
 
@@ -62,131 +71,47 @@ export function ChildAccessScreen({
   }
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      automaticallyAdjustKeyboardInsets
-      style={{ flex: 1, backgroundColor: scheme.bgPage }}
-      contentContainerStyle={{
-        padding: choreyTheme.spacing.xl,
-        paddingBottom: choreyTheme.spacing.xxl,
-        gap: choreyTheme.spacing.xl,
-      }}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
+    <OBShell
+      onBack={onBack}
+      footer={
+        <OBPrimary
+          accessibilityLabel="Continue as child"
+          disabled={isSubmitting || !accessCode.trim()}
+          onPress={handleAccess}
+        >
+          {isSubmitting ? "Checking code..." : "Continue"}
+        </OBPrimary>
+      }
     >
-      <Pressable
-        accessibilityLabel="Go back"
-        accessibilityRole="button"
-        onPress={onBack}
-        style={({ pressed }) => ({
-          alignItems: "center",
-          alignSelf: "flex-start",
-          backgroundColor: pressed
-            ? scheme.tint.allowance
-            : scheme.bgModal,
-          borderColor: scheme.borderHover,
-          borderRadius: choreyTheme.radii.pill,
-          borderWidth: 1,
-          height: 44,
-          justifyContent: "center",
-          width: 44,
-        })}
-      >
-        <Text
-          style={{
-            color: scheme.fg,
-            fontSize: 24,
-            fontWeight: "700",
-            lineHeight: 26,
-          }}
-        >
-          {"<"}
-        </Text>
-      </Pressable>
-
-      <View
-        style={{
-          backgroundColor: scheme.bgRaised,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.sm,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
-        <Text
-          selectable
-          style={{
-            color: scheme.fg,
-            fontSize: 34,
-            fontWeight: "800",
-          }}
-        >
-          Child access
-        </Text>
-        <Text
-          selectable
-          style={{
-            color: scheme.fgFaint,
-            fontSize: 16,
-            lineHeight: 24,
-          }}
-        >
-          Enter the code your parent gave you.
-        </Text>
-      </View>
+      <OBTitle
+        title="Enter your code."
+        subtitle="Use the join code your parent shared to open your Chorey profile."
+      />
 
       <View
         style={{
           backgroundColor: scheme.bgModal,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.md,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
+          borderColor: scheme.toy.border,
+          borderRadius: 18,
+          borderWidth: 2,
+          gap: 14,
+          padding: 16,
+          ...scheme.toy.shadow,
         }}
       >
-        <Text
-          selectable
-          style={{
-            color: scheme.fgFaint,
-            fontSize: 13,
-            fontWeight: "900",
-          }}
-        >
+        <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
           Parent-linked access only
         </Text>
-        <Text
-          selectable
-          style={{
-            color: scheme.fg,
-            fontSize: 14,
-            fontWeight: "800",
-          }}
-        >
-          Access code
-        </Text>
-        <TextInput
-          accessibilityLabel="Access code"
+        <OBField
+          label="Access code"
+          value={accessCode}
+          onChange={setAccessCode}
           autoCapitalize="characters"
           autoCorrect={false}
           autoComplete="off"
-          onChangeText={setAccessCode}
           placeholder="CHOREY-XXXXXXXX"
-          placeholderTextColor={scheme.fgFaint}
-          style={{
-            borderRadius: choreyTheme.radii.md,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            backgroundColor: scheme.bgModal,
-            color: scheme.fg,
-            fontSize: 20,
-            letterSpacing: 1,
-            paddingHorizontal: choreyTheme.spacing.lg,
-            paddingVertical: 15,
-          }}
+          returnKeyType="go"
+          onSubmitEditing={handleAccess}
         />
       </View>
 
@@ -197,40 +122,12 @@ export function ChildAccessScreen({
             color: scheme.fgFaint,
             fontSize: 14,
             lineHeight: 20,
+            marginTop: 18,
           }}
         >
           {errorMessage}
         </Text>
       ) : null}
-
-      <Pressable
-        accessibilityLabel="Continue as child"
-        accessibilityRole="button"
-        disabled={isSubmitting}
-        onPress={handleAccess}
-        style={({ pressed }) => ({
-          alignItems: "center",
-          backgroundColor: pressed
-            ? palette.accent[800]
-            : palette.accent[600],
-          borderColor: palette.accent[800],
-          borderRadius: choreyTheme.radii.pill,
-          borderWidth: 1,
-          opacity: isSubmitting ? 0.65 : 1,
-          paddingVertical: 16,
-          ...choreyTheme.shadows.button,
-        })}
-      >
-        <Text
-          style={{
-            color: palette.cream[4],
-            fontSize: 16,
-            fontWeight: "800",
-          }}
-        >
-          {isSubmitting ? "Checking code..." : "Continue"}
-        </Text>
-      </Pressable>
-    </ScrollView>
+    </OBShell>
   );
 }

@@ -74,7 +74,6 @@ import {
 } from "@/features/chores/default-chore-actions";
 import type { CreatedChore } from "@/features/chores/chore-actions";
 import { isRecurringChoreLate } from "@/features/chores/recurrence";
-import { dueAtFromTime } from "@/features/chores/due-time";
 import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen";
 import {
   createChoreTemplateForHousehold,
@@ -87,7 +86,10 @@ import {
   listPayoutsForHousehold,
   recordPayoutForHousehold,
 } from "@/features/payments/default-payment-actions";
-import { payoutsThisMonthCents, type Payout } from "@/features/payments/payment-actions";
+import {
+  payoutsThisMonthCents,
+  type Payout,
+} from "@/features/payments/payment-actions";
 import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 import { DEFAULT_CURRENCY, type CurrencyCode } from "@/features/money/currency";
 import type { DuePayout } from "@/features/parent-app/parent-payments-screen";
@@ -113,7 +115,8 @@ export default function ParentHomeRoute() {
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [purchases, setPurchases] = useState<HouseholdPurchaseRequest[]>([]);
   const [suggestions, setSuggestions] = useState<GivingSuggestion[]>([]);
-  const [settlementPeriod, setSettlementPeriod] = useState<SettlementPeriod | null>(null);
+  const [settlementPeriod, setSettlementPeriod] =
+    useState<SettlementPeriod | null>(null);
   const [accessCodes, setAccessCodes] = useState<
     { kidId: string; accessCode: string }[]
   >([]);
@@ -132,7 +135,10 @@ export default function ParentHomeRoute() {
   // leaves the parent in the read-only app (data stays readable by design).
   const [pausedTakeoverDismissed, setPausedTakeoverDismissed] = useState(false);
   // A kid just crossed a level via an approval — celebrate for the parent too.
-  const [levelUp, setLevelUp] = useState<{ name: string; level: number } | null>(null);
+  const [levelUp, setLevelUp] = useState<{
+    name: string;
+    level: number;
+  } | null>(null);
   // The signed-in parent's identity (header avatar + account sheet).
   const [identity, setIdentity] = useState<ParentIdentity | null>(null);
   const [householdName, setHouseholdName] = useState("");
@@ -254,7 +260,8 @@ export default function ParentHomeRoute() {
     if (chore.status === "approved") {
       pointsByKid.set(
         chore.childProfileId,
-        (pointsByKid.get(chore.childProfileId) ?? 0) + pointsForChore(chore.rewardCents),
+        (pointsByKid.get(chore.childProfileId) ?? 0) +
+          pointsForChore(chore.rewardCents),
       );
     }
   }
@@ -376,304 +383,313 @@ export default function ParentHomeRoute() {
 
   return (
     <>
-    <ParentApp
-      subtitle="This week"
-      currency={currency}
-      split={split}
-      kids={leveledKids}
-      pendingApprovals={pendingApprovals}
-      purchaseRequests={purchaseRequests}
-      givingSuggestions={givingSuggestions}
-      payments={kidPayments}
-      onApproveChore={async (choreId) => {
-        if (!householdId) {
-          return;
-        }
-
-        // Did this approval push the kid past a level threshold?
-        const chore = chores.find((c) => c.id === choreId);
-        const prePoints = chore ? (pointsByKid.get(chore.childProfileId) ?? 0) : 0;
-
-        await approveChoreForHousehold({ householdId, choreId });
-
-        if (chore && chore.status !== "approved") {
-          const postLevel = levelForPoints(prePoints + pointsForChore(chore.rewardCents));
-          if (postLevel > levelForPoints(prePoints)) {
-            setLevelUp({
-              name: kidsById.get(chore.childProfileId)?.name ?? "Your child",
-              level: postLevel,
-            });
+      <ParentApp
+        subtitle="This week"
+        currency={currency}
+        split={split}
+        kids={leveledKids}
+        pendingApprovals={pendingApprovals}
+        purchaseRequests={purchaseRequests}
+        givingSuggestions={givingSuggestions}
+        payments={kidPayments}
+        onApproveChore={async (choreId) => {
+          if (!householdId) {
+            return;
           }
-        }
-        await reload();
-      }}
-      onSendBackChore={async (choreId, reason) => {
-        if (!householdId) {
-          return;
-        }
 
-        await sendBackChoreForHousehold({ householdId, choreId, reason });
-        await reload();
-      }}
-      onDeleteChore={async (choreId) => {
-        if (!householdId) {
-          return;
-        }
+          // Did this approval push the kid past a level threshold?
+          const chore = chores.find((c) => c.id === choreId);
+          const prePoints = chore
+            ? (pointsByKid.get(chore.childProfileId) ?? 0)
+            : 0;
 
-        await deleteChoreForHousehold({ householdId, choreId });
-        await reload();
-      }}
-      onSaveChoreNote={async (choreId, note) => {
-        await setChoreNote({ choreId, note });
-        await reload();
-      }}
-      onApprovePurchase={async (requestId) => {
-        if (!householdId) {
-          return;
-        }
+          await approveChoreForHousehold({ householdId, choreId });
 
-        await approvePurchaseRequestForHousehold({ householdId, requestId });
-        await reload();
-      }}
-      onApproveGivingSuggestion={async (suggestionId) => {
-        if (!householdId) {
-          return;
-        }
-
-        await approveGivingSuggestionForHousehold({ householdId, suggestionId });
-        await reload();
-      }}
-      onLoadWishNotes={async (wishlistItemId) => {
-        const notes = await listWishNotesForParent(wishlistItemId);
-        // Persist the seen-mark so the dot stays cleared on the next mount; the
-        // row already cleared it locally, so no full reload is needed here.
-        await markWishNotesSeenForParent(wishlistItemId);
-        return notes;
-      }}
-      onAddWishNote={async (wishlistItemId, body) => {
-        const note = await addWishNoteForParent({ wishlistItemId, body });
-        await reload();
-        return note;
-      }}
-      shareStats={shareStatsActions}
-      accessCodes={accessCodes}
-      subscriptionLabel={describeSubscription(subscription)}
-      onManageSubscription={() =>
-        router.push({ pathname: "/parent/subscription", params: { householdId } })
-      }
-      onChangeBudget={async (kidId, budgetCents) => {
-        if (!householdId) {
-          return;
-        }
-
-        await updateChildSettingsForHousehold({
-          householdId,
-          childProfileId: kidId,
-          budgetCents,
-        });
-        // Budget-first: the allowance is the numerator, so re-share it across
-        // this kid's recurring chores whenever it changes.
-        await repriceRecurringChoresForHousehold({
-          householdId,
-          childProfileId: kidId,
-        });
-        await reload();
-      }}
-      onChangeCadence={async (kidId, cadence) => {
-        if (!householdId) {
-          return;
-        }
-
-        await updateChildSettingsForHousehold({
-          householdId,
-          childProfileId: kidId,
-          cadence,
-        });
-        // Cadence changes how many completions a period holds, which reprices
-        // every recurring chore for this kid.
-        await repriceRecurringChoresForHousehold({
-          householdId,
-          childProfileId: kidId,
-        });
-        await reload();
-      }}
-      onChangeSplit={async (nextSplit) => {
-        if (!householdId) {
-          return;
-        }
-        // Optimistic: reflect the new split immediately, then persist.
-        setSplit(nextSplit);
-        await updateHouseholdSplit(householdId, nextSplit);
-      }}
-      onAddKid={() =>
-        router.push({
-          pathname: "/parent/children/new",
-          params: { householdId: householdId ?? "" },
-        })
-      }
-      onLogOut={async () => {
-        await createDefaultParentAuthActions().signOut();
-        router.replace("/");
-      }}
-      onDeleteAccount={async () => {
-        await deleteParentAccount();
-        // The account is already gone; a failed sign-out (e.g. offline) must not
-        // strand the user on a now-invalid session — sign out best-effort, then
-        // always return to the welcome screen.
-        try {
-          await createDefaultParentAuthActions().signOut();
-        } catch {
-          // ignore — the session is already invalid server-side
-        }
-        router.replace("/");
-      }}
-      account={
-        identity
-          ? {
-              name: identity.name,
-              email: identity.email,
-              provider: identity.provider,
-              avatarUrl: identity.avatarUrl,
-              householdName,
+          if (chore && chore.status !== "approved") {
+            const postLevel = levelForPoints(
+              prePoints + pointsForChore(chore.rewardCents),
+            );
+            if (postLevel > levelForPoints(prePoints)) {
+              setLevelUp({
+                name: kidsById.get(chore.childProfileId)?.name ?? "Your child",
+                level: postLevel,
+              });
             }
-          : undefined
-      }
-      onEditName={async (name) => {
-        setIdentity((prev) => (prev ? { ...prev, name } : prev));
-        await updateParentDisplayName(name);
-      }}
-      onChangePhoto={async () => {
-        const url = await pickAndUploadParentAvatar();
-        if (url) {
-          setIdentity((prev) => (prev ? { ...prev, avatarUrl: url } : prev));
-        }
-      }}
-      onManageStoreSubscription={async () => {
-        const url = await getStoreManagementUrl();
-        await Linking.openURL(url);
-      }}
-      onSubmitContact={(message) => submitAppFeedback("contact", message, householdId)}
-      onSubmitFeedback={(message) => submitAppFeedback("feedback", message, householdId)}
-      due={due}
-      payoutHistory={toPayoutHistoryRows(payouts, kids)}
-      paidThisMonthCents={payoutsThisMonthCents(payouts)}
-      settlementPeriod={settlementPeriod}
-      onMarkAllSettled={async () => {
-        if (!householdId || !settlementPeriod) {
-          return;
-        }
+          }
+          await reload();
+        }}
+        onSendBackChore={async (choreId, reason) => {
+          if (!householdId) {
+            return;
+          }
 
-        await settleAllSettlementBuckets({
-          householdId,
-          periodId: settlementPeriod.id,
-        });
-        await reload();
-      }}
-      onMarkPaid={async (kidId, amountCents, method, detail) => {
-        if (!householdId) {
-          return;
+          await sendBackChoreForHousehold({ householdId, choreId, reason });
+          await reload();
+        }}
+        onDeleteChore={async (choreId) => {
+          if (!householdId) {
+            return;
+          }
+
+          await deleteChoreForHousehold({ householdId, choreId });
+          await reload();
+        }}
+        onSaveChoreNote={async (choreId, note) => {
+          await setChoreNote({ choreId, note });
+          await reload();
+        }}
+        onApprovePurchase={async (requestId) => {
+          if (!householdId) {
+            return;
+          }
+
+          await approvePurchaseRequestForHousehold({ householdId, requestId });
+          await reload();
+        }}
+        onApproveGivingSuggestion={async (suggestionId) => {
+          if (!householdId) {
+            return;
+          }
+
+          await approveGivingSuggestionForHousehold({
+            householdId,
+            suggestionId,
+          });
+          await reload();
+        }}
+        onLoadWishNotes={async (wishlistItemId) => {
+          const notes = await listWishNotesForParent(wishlistItemId);
+          // Persist the seen-mark so the dot stays cleared on the next mount; the
+          // row already cleared it locally, so no full reload is needed here.
+          await markWishNotesSeenForParent(wishlistItemId);
+          return notes;
+        }}
+        onAddWishNote={async (wishlistItemId, body) => {
+          const note = await addWishNoteForParent({ wishlistItemId, body });
+          await reload();
+          return note;
+        }}
+        shareStats={shareStatsActions}
+        accessCodes={accessCodes}
+        subscriptionLabel={describeSubscription(subscription)}
+        onManageSubscription={() =>
+          router.push({
+            pathname: "/parent/subscription",
+            params: { householdId },
+          })
         }
+        onChangeBudget={async (kidId, budgetCents) => {
+          if (!householdId) {
+            return;
+          }
 
-        await recordPayoutForHousehold(householdId, {
-          childProfileId: kidId,
-          amountCents,
-          method,
-          note: detail,
-        });
-        // Reload everything, not just payouts: the payout deducts the kid's
-        // Spend balance in the ledger, so "Ready to pay out" must refetch kids
-        // or it keeps showing money that's already been handed over.
-        await reload();
-      }}
-      // The board (To do / Needs you / Done) is the live chores view; the flat
-      // library would just duplicate the same instances, so it's left empty.
-      choreBoard={choreBoard}
-      assignees={kids.map((kid) => ({
-        id: kid.id,
-        name: kid.name,
-        budgetCents: kid.budgetCents,
-      }))}
-      recurringLocked={!isEntitled(subscription.status)}
-      onAddChore={async ({ name, rewardCents, assigneeId, recurrence, dueTime }) => {
-        if (!householdId || !name.trim()) {
-          return;
+          await updateChildSettingsForHousehold({
+            householdId,
+            childProfileId: kidId,
+            budgetCents,
+          });
+          // Budget-first: the allowance is the numerator, so re-share it across
+          // this kid's recurring chores whenever it changes.
+          await repriceRecurringChoresForHousehold({
+            householdId,
+            childProfileId: kidId,
+          });
+          await reload();
+        }}
+        onChangeCadence={async (kidId, cadence) => {
+          if (!householdId) {
+            return;
+          }
+
+          await updateChildSettingsForHousehold({
+            householdId,
+            childProfileId: kidId,
+            cadence,
+          });
+          // Cadence changes how many completions a period holds, which reprices
+          // every recurring chore for this kid.
+          await repriceRecurringChoresForHousehold({
+            householdId,
+            childProfileId: kidId,
+          });
+          await reload();
+        }}
+        onChangeSplit={async (nextSplit) => {
+          if (!householdId) {
+            return;
+          }
+          // Optimistic: reflect the new split immediately, then persist.
+          setSplit(nextSplit);
+          await updateHouseholdSplit(householdId, nextSplit);
+        }}
+        onAddKid={() =>
+          router.push({
+            pathname: "/parent/children/new",
+            params: { householdId: householdId ?? "" },
+          })
         }
-
-        // "all" fans the chore out to every kid (one instance / template each).
-        const targetIds =
-          assigneeId === "all" ? kids.map((kid) => kid.id) : [assigneeId];
-        const title = name.trim();
-
-        if (recurrence) {
-          // Recurring chores are paid-only. The sheet already locks the option
-          // for free homes, so this only runs for paid; guard quietly anyway.
-          // The template keeps the wall-clock time; the DB stamps each instance's
-          // due_at in the household's timezone.
+        onLogOut={async () => {
+          await createDefaultParentAuthActions().signOut();
+          router.replace("/");
+        }}
+        onDeleteAccount={async () => {
+          await deleteParentAccount();
+          // The account is already gone; a failed sign-out (e.g. offline) must not
+          // strand the user on a now-invalid session — sign out best-effort, then
+          // always return to the welcome screen.
           try {
+            await createDefaultParentAuthActions().signOut();
+          } catch {
+            // ignore — the session is already invalid server-side
+          }
+          router.replace("/");
+        }}
+        account={
+          identity
+            ? {
+                name: identity.name,
+                email: identity.email,
+                provider: identity.provider,
+                avatarUrl: identity.avatarUrl,
+                householdName,
+              }
+            : undefined
+        }
+        onEditName={async (name) => {
+          setIdentity((prev) => (prev ? { ...prev, name } : prev));
+          await updateParentDisplayName(name);
+        }}
+        onChangePhoto={async () => {
+          const url = await pickAndUploadParentAvatar();
+          if (url) {
+            setIdentity((prev) => (prev ? { ...prev, avatarUrl: url } : prev));
+          }
+        }}
+        onManageStoreSubscription={async () => {
+          const url = await getStoreManagementUrl();
+          await Linking.openURL(url);
+        }}
+        onSubmitContact={(message) =>
+          submitAppFeedback("contact", message, householdId)
+        }
+        onSubmitFeedback={(message) =>
+          submitAppFeedback("feedback", message, householdId)
+        }
+        due={due}
+        payoutHistory={toPayoutHistoryRows(payouts, kids)}
+        paidThisMonthCents={payoutsThisMonthCents(payouts)}
+        settlementPeriod={settlementPeriod}
+        onMarkAllSettled={async () => {
+          if (!householdId || !settlementPeriod) {
+            return;
+          }
+
+          await settleAllSettlementBuckets({
+            householdId,
+            periodId: settlementPeriod.id,
+          });
+          await reload();
+        }}
+        onMarkPaid={async (kidId, amountCents, method, detail) => {
+          if (!householdId) {
+            return;
+          }
+
+          await recordPayoutForHousehold(householdId, {
+            childProfileId: kidId,
+            amountCents,
+            method,
+            note: detail,
+          });
+          // Reload everything, not just payouts: the payout deducts the kid's
+          // Spend balance in the ledger, so "Ready to pay out" must refetch kids
+          // or it keeps showing money that's already been handed over.
+          await reload();
+        }}
+        // The board (To do / Needs you / Done) is the live chores view; the flat
+        // library would just duplicate the same instances, so it's left empty.
+        choreBoard={choreBoard}
+        assignees={kids.map((kid) => ({
+          id: kid.id,
+          name: kid.name,
+          budgetCents: kid.budgetCents,
+        }))}
+        recurringLocked={!isEntitled(subscription.status)}
+        onAddChore={async ({ name, rewardCents, assigneeId, recurrence }) => {
+          if (!householdId || !name.trim()) {
+            return;
+          }
+
+          // "all" fans the chore out to every kid (one instance / template each).
+          const targetIds =
+            assigneeId === "all" ? kids.map((kid) => kid.id) : [assigneeId];
+          const title = name.trim();
+
+          if (recurrence) {
+            // Recurring chores are paid-only. The sheet already locks the option
+            // for free homes, so this only runs for paid; guard quietly anyway.
+            try {
+              await Promise.all(
+                targetIds.map((childProfileId) =>
+                  createChoreTemplateForHousehold({
+                    householdId,
+                    childProfileId,
+                    title,
+                    rewardCents,
+                    recurrence,
+                  }),
+                ),
+              );
+              await ensureRecurringInstancesForHousehold(householdId);
+              // Budget-first: re-share each kid's allowance across their recurring
+              // chores, so the new chore (and its siblings) carry the derived
+              // per-completion reward rather than anything typed in the sheet.
+              await Promise.all(
+                targetIds.map((childProfileId) =>
+                  repriceRecurringChoresForHousehold({
+                    householdId,
+                    childProfileId,
+                  }),
+                ),
+              );
+            } catch {
+              // Don't leave a half-created recurring chore hidden behind a silent
+              // failure — reload so the board reflects whatever actually persisted.
+              await reload();
+              return;
+            }
+          } else {
             await Promise.all(
               targetIds.map((childProfileId) =>
-                createChoreTemplateForHousehold({
+                createChoreForHousehold({
                   householdId,
                   childProfileId,
                   title,
                   rewardCents,
-                  recurrence,
-                  dueTime,
+                  dueAt: null,
                 }),
               ),
             );
-            await ensureRecurringInstancesForHousehold(householdId);
-            // Budget-first: re-share each kid's allowance across their recurring
-            // chores, so the new chore (and its siblings) carry the derived
-            // per-completion reward rather than anything typed in the sheet.
-            await Promise.all(
-              targetIds.map((childProfileId) =>
-                repriceRecurringChoresForHousehold({
-                  householdId,
-                  childProfileId,
-                }),
-              ),
-            );
-          } catch {
-            // Don't leave a half-created recurring chore hidden behind a silent
-            // failure — reload so the board reflects whatever actually persisted.
-            await reload();
-            return;
           }
-        } else {
-          // One-off: resolve the chosen time to a concrete instant on the device.
-          const dueAt = dueAtFromTime(dueTime ?? null);
-          await Promise.all(
+
+          // Nudge each assigned child's devices (best-effort, fire-and-forget).
+          void Promise.all(
             targetIds.map((childProfileId) =>
-              createChoreForHousehold({
-                householdId,
-                childProfileId,
-                title,
-                rewardCents,
-                dueAt,
-              }),
+              notifyChildOfNewChore({ childProfileId, title }),
             ),
           );
-        }
 
-        // Nudge each assigned child's devices (best-effort, fire-and-forget).
-        void Promise.all(
-          targetIds.map((childProfileId) =>
-            notifyChildOfNewChore({ childProfileId, title }),
-          ),
-        );
-
-        await reload();
-      }}
-    />
-    {levelUp ? (
-      <LevelUpToast
-        key={`${levelUp.name}-${levelUp.level}`}
-        level={levelUp.level}
-        kidName={levelUp.name}
-        onDone={() => setLevelUp(null)}
+          await reload();
+        }}
       />
-    ) : null}
+      {levelUp ? (
+        <LevelUpToast
+          key={`${levelUp.name}-${levelUp.level}`}
+          level={levelUp.level}
+          kidName={levelUp.name}
+          onDone={() => setLevelUp(null)}
+        />
+      ) : null}
     </>
   );
 }

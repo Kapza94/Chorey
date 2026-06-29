@@ -3,6 +3,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 
 import { SetupScreenLayout } from "@/components/setup-screen-layout";
 import { fieldStyle } from "@/components/field-style";
+import { ToyButton, ToyCard } from "@/components/toybox";
 import type { CreatedChore } from "@/features/chores/chore-actions";
 import {
   clampRewardInput,
@@ -71,7 +72,8 @@ export function CreateChoreScreen({
   onChoreCreated,
   onCreateChore = noopCreateChore,
 }: Props) {
-  const { scheme, palette } = useChoreyTheme();
+  const { scheme, palette, typography, toybox, isDark, bucketInk } =
+    useChoreyTheme();
   const [title, setTitle] = useState("");
   const [rewardAmount, setRewardAmount] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -103,34 +105,13 @@ export function CreateChoreScreen({
       description="Create a one-off chore. When the work is approved later, the reward will split into Spend, Savings, and Giving."
       eyebrow="Manual chore"
       footer={
-        <Pressable
+        <ToyButton
           accessibilityLabel="Submit chore"
-          accessibilityRole="button"
           disabled={isSubmitting}
           onPress={handleCreateChore}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            backgroundColor: pressed
-              ? palette.accent[800]
-              : palette.accent[600],
-            borderColor: palette.accent[800],
-            borderRadius: choreyTheme.radii.pill,
-            borderWidth: 1,
-            opacity: isSubmitting ? 0.65 : 1,
-            paddingVertical: 16,
-            ...choreyTheme.shadows.button,
-          })}
         >
-          <Text
-            style={{
-              color: palette.cream[4],
-              fontSize: 16,
-              fontWeight: "800",
-            }}
-          >
-            {isSubmitting ? "Creating chore..." : "Create chore"}
-          </Text>
-        </Pressable>
+          {isSubmitting ? "Creating chore..." : "Create chore"}
+        </ToyButton>
       }
       onBack={onBack}
       title="Create chore"
@@ -153,24 +134,10 @@ export function CreateChoreScreen({
         For {childName}
       </Text>
 
-      <View
-        style={{
-          backgroundColor: scheme.bgModal,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.md,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
+      <ToyCard style={{ gap: choreyTheme.spacing.md }}>
         <Text
           selectable
-          style={{
-            color: scheme.fg,
-            fontSize: 14,
-            fontWeight: "800",
-          }}
+          style={[typography.text.overline, { color: scheme.fgFaint }]}
         >
           Chore title
         </Text>
@@ -181,26 +148,12 @@ export function CreateChoreScreen({
           placeholderTextColor={scheme.fgFaint}
           style={fieldStyle(scheme, choreyTheme.typography.family.body.regular)}
         />
-      </View>
+      </ToyCard>
 
-      <View
-        style={{
-          backgroundColor: scheme.bgModal,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.md,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
+      <ToyCard style={{ gap: choreyTheme.spacing.md }}>
         <Text
           selectable
-          style={{
-            color: scheme.fg,
-            fontSize: 14,
-            fontWeight: "800",
-          }}
+          style={[typography.text.overline, { color: scheme.fgFaint }]}
         >
           Reward amount
         </Text>
@@ -212,31 +165,16 @@ export function CreateChoreScreen({
           placeholderTextColor={scheme.fgFaint}
           style={fieldStyle(scheme, choreyTheme.typography.family.body.regular)}
         />
-      </View>
+      </ToyCard>
 
-      <View
-        style={{
-          backgroundColor: scheme.bgRaised,
-          borderColor: scheme.borderHover,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.md,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
-        <Text
-          style={{
-            color: scheme.fg,
-            fontSize: 16,
-            fontWeight: "900",
-          }}
-        >
+      <ToyCard style={{ gap: choreyTheme.spacing.md }}>
+        <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 16 }]}>
           40 / 40 / 20 preview
         </Text>
         <View style={{ gap: choreyTheme.spacing.sm }}>
           {(["spend", "savings", "giving"] as const).map((bucket) => {
             const bucketTheme = choreyTheme.buckets[bucket];
+            const ramp = bucketTheme.ramp;
             const previewCents =
               bucket === "spend"
                 ? previewSplit.spendCents
@@ -249,13 +187,19 @@ export function CreateChoreScreen({
                 key={bucket}
                 style={{
                   alignItems: "center",
+                  backgroundColor: isDark ? ramp.tintDark : ramp[200],
+                  borderColor: scheme.toy.border,
+                  borderRadius: 12,
+                  borderWidth: toybox.borderWidth,
                   flexDirection: "row",
                   gap: choreyTheme.spacing.sm,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
                 }}
               >
                 <View
                   style={{
-                    backgroundColor: bucketTheme.color,
+                    backgroundColor: ramp[400],
                     borderRadius: choreyTheme.radii.pill,
                     height: 10,
                     width: 10,
@@ -263,9 +207,9 @@ export function CreateChoreScreen({
                 />
                 <Text
                   style={{
-                    color: scheme.fgMuted,
+                    color: bucketInk(bucket),
+                    fontFamily: typography.family.body.bold,
                     fontSize: 14,
-                    fontWeight: "900",
                   }}
                 >
                   {bucketTheme.label} {bucketTheme.percent}%
@@ -275,7 +219,7 @@ export function CreateChoreScreen({
             );
           })}
         </View>
-      </View>
+      </ToyCard>
 
       {errorMessage ? (
         <Text

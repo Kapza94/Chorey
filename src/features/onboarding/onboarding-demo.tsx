@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Animated, Pressable, Text, View } from "react-native";
+import { Animated, Image, Pressable, Text, View } from "react-native";
 import { Check } from "lucide-react-native";
 
 import { splitRewardCents } from "@/features/chores/money";
 import { KidHomeScreen } from "@/features/kid-home/kid-home-screen";
 import { DEFAULT_CURRENCY, formatMoney } from "@/features/money/currency";
-import { OBPrimary, OBSecondary, OBShell, OBTitle } from "@/features/onboarding/onboarding-kit";
+import {
+  OBPrimary,
+  OBSecondary,
+  OBShell,
+  OBTitle,
+} from "@/features/onboarding/onboarding-kit";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { ToyAvatar } from "@/components/toybox";
@@ -26,9 +31,24 @@ const DEMO_BUCKETS = [
 ] as const;
 
 const DEMO_KID_CHORES = [
-  { id: "demo-dog", name: DEMO_CHORE.name, valueCents: DEMO_CHORE.valueCents, state: "approved" as const },
-  { id: "demo-bed", name: "Make the bed", valueCents: 100, state: "todo" as const },
-  { id: "demo-plants", name: "Water the plants", valueCents: 100, state: "todo" as const },
+  {
+    id: "demo-dog",
+    name: DEMO_CHORE.name,
+    valueCents: DEMO_CHORE.valueCents,
+    state: "approved" as const,
+  },
+  {
+    id: "demo-bed",
+    name: "Make the bed",
+    valueCents: 100,
+    state: "todo" as const,
+  },
+  {
+    id: "demo-plants",
+    name: "Water the plants",
+    valueCents: 100,
+    state: "todo" as const,
+  },
 ];
 
 /* ---------- tour moment 1: approve a chore, watch the split ---------- */
@@ -49,6 +69,7 @@ export function OBDemoApprove({
   return (
     <OBShell
       onBack={onBack}
+      progress={{ index: 0, total: 4 }}
       footer={
         <>
           <OBPrimary
@@ -79,13 +100,33 @@ export function OBDemoApprove({
           ...scheme.toy.shadow,
         }}
       >
+        <Image
+          source={require("../../../assets/onboarding-mia-feeding-dog.png")}
+          accessibilityLabel="Mia feeding a dog"
+          style={{
+            width: "100%",
+            aspectRatio: 1.45,
+            borderRadius: 14,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            marginBottom: 2,
+          }}
+          resizeMode="cover"
+        />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <ToyAvatar name={DEMO_KID_NAME} tone="savings" size={44} />
           <View style={{ flex: 1 }}>
-            <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 17 }]}>
+            <Text
+              style={[typography.text.h3, { color: scheme.fg, fontSize: 17 }]}
+            >
               {DEMO_CHORE.name}
             </Text>
-            <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
+            <Text
+              style={[
+                typography.text.caption,
+                { color: scheme.fgFaint, marginTop: 2 },
+              ]}
+            >
               {`${DEMO_KID_NAME} · ${formatMoney(DEMO_CHORE.valueCents, DEFAULT_CURRENCY)}`}
             </Text>
           </View>
@@ -102,7 +143,12 @@ export function OBDemoApprove({
               }}
             >
               <Check size={13} color={giving[800]} strokeWidth={3} />
-              <Text style={[typography.text.label, { fontSize: 12, color: giving[800] }]}>
+              <Text
+                style={[
+                  typography.text.label,
+                  { fontSize: 12, color: giving[800] },
+                ]}
+              >
                 Approved
               </Text>
             </View>
@@ -115,7 +161,12 @@ export function OBDemoApprove({
                 paddingVertical: 5,
               }}
             >
-              <Text style={[typography.text.label, { fontSize: 12, color: scheme.fgMuted }]}>
+              <Text
+                style={[
+                  typography.text.label,
+                  { fontSize: 12, color: scheme.fgMuted },
+                ]}
+              >
                 Done · waiting
               </Text>
             </View>
@@ -132,7 +183,9 @@ export function OBDemoApprove({
               paddingVertical: 13,
               borderRadius: 999,
               alignItems: "center",
-              backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+              backgroundColor: pressed
+                ? palette.accent[800]
+                : palette.accent[600],
               borderColor: scheme.toy.border,
               borderWidth: toybox.borderWidth,
               ...(pressed
@@ -140,7 +193,12 @@ export function OBDemoApprove({
                 : scheme.toy.shadow),
             })}
           >
-            <Text style={[typography.text.label, { fontSize: 15, color: palette.cream[4] }]}>
+            <Text
+              style={[
+                typography.text.label,
+                { fontSize: 15, color: palette.cream[4] },
+              ]}
+            >
               Approve
             </Text>
           </Pressable>
@@ -159,8 +217,14 @@ export function OBDemoApprove({
               delay={index * 180}
             />
           ))}
-          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 4 }]}>
-            That split is fixed — 40% Spend, 40% Save, 20% Give. Every chore, every time.
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, marginTop: 4 },
+            ]}
+          >
+            That split is fixed — 40% Spend, 40% Save, 20% Give. Every chore,
+            every time.
           </Text>
         </View>
       ) : null}
@@ -218,7 +282,11 @@ function DemoBucketBar({
           >
             {pct}%
           </Text>
-          <Text style={[typography.text.label, { fontSize: 14, color: scheme.fg }]}>{label}</Text>
+          <Text
+            style={[typography.text.label, { fontSize: 14, color: scheme.fg }]}
+          >
+            {label}
+          </Text>
         </View>
         <Text style={[typography.text.money, { color: ramp[600] }]}>
           {`+${formatMoney(cents, DEFAULT_CURRENCY)}`}
@@ -234,7 +302,10 @@ function DemoBucketBar({
       >
         <Animated.View
           style={{
-            width: grow.interpolate({ inputRange: [0, 1], outputRange: ["0%", `${pct}%`] }),
+            width: grow.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["0%", `${pct}%`],
+            }),
             height: "100%",
             backgroundColor: ramp[400],
             borderRadius: 999,
@@ -247,12 +318,19 @@ function DemoBucketBar({
 
 /* ---------- tour moment 2: the kid's side, on the real kid screen ---------- */
 
-export function OBDemoKid({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+export function OBDemoKid({
+  onNext,
+  onBack,
+}: {
+  onNext: () => void;
+  onBack: () => void;
+}) {
   const { scheme } = useChoreyTheme();
 
   return (
     <OBShell
       onBack={onBack}
+      progress={{ index: 0, total: 4 }}
       footer={<OBPrimary onPress={onNext}>Continue</OBPrimary>}
     >
       <OBTitle

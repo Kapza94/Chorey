@@ -17,6 +17,7 @@ export default function IndexRoute() {
   const { scheme, palette } = useChoreyTheme();
   const router = useRouter();
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [resumeOnboarding, setResumeOnboarding] = useState(false);
   const [launchError, setLaunchError] = useState(false);
   const [launchAttempt, setLaunchAttempt] = useState(0);
   const parentAuth = createDefaultParentAuthActions();
@@ -54,9 +55,14 @@ export default function IndexRoute() {
         if (!active) return;
 
         if (householdId) {
+          // Onboarding already done (a household exists) — straight to home,
+          // which gates the app on the subscription. They never re-onboard.
           router.replace({ pathname: "/parent/home", params: { householdId } });
         } else {
-          router.replace("/parent/household/new");
+          // Signed in but never finished setup — resume onboarding past the
+          // auth screen.
+          setResumeOnboarding(true);
+          setSessionChecked(true);
         }
       } catch {
         if (active) {
@@ -152,9 +158,14 @@ export default function IndexRoute() {
 
   return (
     <OnboardingFlow
+      initialStep={resumeOnboarding ? "idea" : "auth"}
       auth={auth}
       persist={persistOnboardingForSignedInParent}
       choosePlan={chooseSubscriptionPlan}
+      resolveSignedInHousehold={getPrimaryHouseholdId}
+      onExistingAccount={(householdId) => {
+        router.replace({ pathname: "/parent/home", params: { householdId } });
+      }}
       validateKidCode={async (code) => {
         try {
           await resolveChildAccessCode(code);
@@ -166,7 +177,6 @@ export default function IndexRoute() {
           return /not found/i.test(message) ? "bad" : "unknown";
         }
       }}
-      onSignIn={() => router.push("/parent/sign-in")}
       onComplete={(result, persisted) => {
         if (result.role === "parent") {
           router.push({

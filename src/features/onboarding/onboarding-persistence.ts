@@ -1,16 +1,21 @@
 import { createChildActions } from "@/features/children/child-actions";
 import { createChildAccessActions } from "@/features/children/child-access-actions";
 import { createChoreActions } from "@/features/chores/chore-actions";
-import { dueAtFromTime } from "@/features/chores/due-time";
 import { createHouseholdActions } from "@/features/household/household-actions";
 import type { OnboardingResult } from "@/features/onboarding/onboarding-flow";
 
 /** The parent variant of an onboarding result — the only one we persist. */
-export type ParentOnboardingResult = Extract<OnboardingResult, { role: "parent" }>;
+export type ParentOnboardingResult = Extract<
+  OnboardingResult,
+  { role: "parent" }
+>;
 
 type PersistenceClient = {
   from(table: string): any;
-  rpc?(fn: string, args: Record<string, unknown>): PromiseLike<{
+  rpc?(
+    fn: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<{
     data: any;
     error: Error | null;
   }>;
@@ -62,7 +67,9 @@ export function createOnboardingPersistence(
   const access = createChildAccessActions(client);
 
   return {
-    async persist(result: ParentOnboardingResult): Promise<PersistedOnboarding> {
+    async persist(
+      result: ParentOnboardingResult,
+    ): Promise<PersistedOnboarding> {
       const familyName =
         result.familyName.trim() ||
         `${result.parentName.trim() || "My"} family`;
@@ -96,15 +103,14 @@ export function createOnboardingPersistence(
           householdId: household.id,
         });
 
-        // Seed every chosen chore as a starter chore for this kid, due by the
-        // single time the parent picked during onboarding.
-        const choreDueAt = dueAtFromTime(result.choreDueTime);
+        // Seed every chosen chore as a starter chore. No fixed due-by time:
+        // cadence/late state handles daily, weekly, and monthly expectations.
         for (const chore of result.chores) {
           await chores.createChore({
             childProfileId: child.id,
             title: chore.name,
             rewardCents: chore.valueCents,
-            dueAt: choreDueAt,
+            dueAt: null,
           });
         }
 

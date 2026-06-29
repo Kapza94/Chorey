@@ -45,18 +45,31 @@ export function OBShell({
         }}
       >
         <BackChevron onPress={onBack} />
-        {progress ? <OBProgress index={progress.index} total={progress.total} /> : null}
+        {progress ? (
+          <OBProgress index={progress.index} total={progress.total} />
+        ) : null}
       </View>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 10, paddingBottom: 20 }}
+        contentContainerStyle={{
+          paddingHorizontal: 26,
+          paddingTop: 10,
+          paddingBottom: 20,
+        }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
         {children}
       </ScrollView>
       {footer ? (
-        <View style={{ paddingHorizontal: 26, paddingTop: 14, paddingBottom: 30, gap: 10 }}>
+        <View
+          style={{
+            paddingHorizontal: 26,
+            paddingTop: 14,
+            paddingBottom: 30,
+            gap: 10,
+          }}
+        >
           {footer}
         </View>
       ) : null}
@@ -100,7 +113,8 @@ export function OBProgress({ index, total }: { index: number; total: number }) {
             height: 4,
             borderRadius: 999,
             width: i === index ? 22 : 6,
-            backgroundColor: i <= index ? palette.accent[600] : palette.border.strong,
+            backgroundColor:
+              i <= index ? palette.accent[600] : palette.border.strong,
           }}
         />
       ))}
@@ -112,15 +126,18 @@ export function OBPrimary({
   children,
   onPress,
   disabled,
+  accessibilityLabel,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   disabled?: boolean;
+  accessibilityLabel?: string;
 }) {
   const { scheme, typography, palette, toybox } = useChoreyTheme();
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!disabled }}
       onPress={disabled ? undefined : onPress}
       style={({ pressed }) => ({
@@ -144,7 +161,10 @@ export function OBPrimary({
       <Text
         style={[
           typography.text.label,
-          { fontSize: 16, color: disabled ? scheme.fgDisabled : palette.cream[4] },
+          {
+            fontSize: 16,
+            color: disabled ? scheme.fgDisabled : palette.cream[4],
+          },
         ]}
       >
         {children}
@@ -167,7 +187,9 @@ export function OBSecondary({
       onPress={onPress}
       style={{ width: "100%", paddingVertical: 13, alignItems: "center" }}
     >
-      <Text style={[typography.text.label, { color: scheme.fgMuted }]}>{children}</Text>
+      <Text style={[typography.text.label, { color: scheme.fgMuted }]}>
+        {children}
+      </Text>
     </Pressable>
   );
 }
@@ -182,9 +204,16 @@ export function OBTitle({
   const { scheme, typography } = useChoreyTheme();
   return (
     <View style={{ marginTop: 6, marginBottom: 22 }}>
-      <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 32 }]}>{title}</Text>
+      <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 32 }]}>
+        {title}
+      </Text>
       {subtitle ? (
-        <Text style={[typography.text.body, { color: scheme.fgMuted, marginTop: 10 }]}>
+        <Text
+          style={[
+            typography.text.body,
+            { color: scheme.fgMuted, marginTop: 10 },
+          ]}
+        >
           {subtitle}
         </Text>
       ) : null}
@@ -225,7 +254,12 @@ export function OBField({
   return (
     <View>
       {label ? (
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginBottom: 7 },
+          ]}
+        >
           {label}
         </Text>
       ) : null}
@@ -314,7 +348,14 @@ export function OBStepButton({
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontSize: 18, fontWeight: "700", color: ramp[800], lineHeight: 20 }}>
+      <Text
+        style={{
+          fontSize: 18,
+          fontWeight: "700",
+          color: ramp[800],
+          lineHeight: 20,
+        }}
+      >
         {symbol}
       </Text>
     </Pressable>

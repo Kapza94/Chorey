@@ -12,7 +12,7 @@ describe("ChildAccessScreen", () => {
   it("collects a child access code", () => {
     render(<ChildAccessScreen />);
 
-    expect(screen.getByText("Child access")).toBeOnTheScreen();
+    expect(screen.getByText("Enter your code.")).toBeOnTheScreen();
     expect(screen.getByLabelText("Access code")).toBeOnTheScreen();
   });
 
@@ -21,7 +21,7 @@ describe("ChildAccessScreen", () => {
 
     render(<ChildAccessScreen onBack={onBack} />);
 
-    fireEvent.press(screen.getByLabelText("Go back"));
+    fireEvent.press(screen.getByLabelText("Back"));
 
     expect(onBack).toHaveBeenCalledTimes(1);
   });

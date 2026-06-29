@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Image, Pressable, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Image, Pressable, Share, Text, TextInput, View } from "react-native";
 import {
   Apple,
   Check,
@@ -11,8 +11,8 @@ import {
   Lock,
   PawPrint,
   Plus,
+  Share2,
   Sparkles,
-  User,
   X,
 } from "lucide-react-native";
 
@@ -40,16 +40,14 @@ import {
   OBStepButton,
   OBTitle,
 } from "@/features/onboarding/onboarding-kit";
-import { OBDemoApprove, OBDemoKid } from "@/features/onboarding/onboarding-demo";
+import {
+  OBDemoApprove,
+  OBDemoKid,
+} from "@/features/onboarding/onboarding-demo";
 import { SignaturePad } from "@/features/onboarding/signature-pad";
 import { ToySticker } from "@/components/toybox";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
 import type { SubscriptionPlan } from "@/features/entitlements/subscription-actions";
-import {
-  DEFAULT_DUE_TIME,
-  DUE_TIME_PRESETS,
-  type DueTime,
-} from "@/features/chores/due-time";
 
 /* ---------- reference data ---------- */
 
@@ -120,8 +118,6 @@ type OnboardingData = {
   cadence: "weekly" | "monthly";
   budgetDollars: number;
   chores: { name: string; valueCents: number }[];
-  /** "Due by" time applied to every starter chore (HH:MM, or null for anytime). */
-  choreDueTime: DueTime;
   causes: string[];
   kidName: string;
   kidTone: KidTone;
@@ -139,16 +135,14 @@ export type OnboardingResult =
       cadence: "weekly" | "monthly";
       budgetCents: number;
       chores: { name: string; valueCents: number }[];
-      choreDueTime: DueTime;
       causes: string[];
       joinCode: string;
     }
   | { role: "kid"; code: string; kidName: string; kidTone: KidTone };
 
 type Step =
-  | "welcome"
+  | "auth"
   | "idea"
-  | "role"
   | "p_demo"
   | "p_demo_kid"
   | "p_family"
@@ -173,14 +167,16 @@ const INITIAL: OnboardingData = {
   cadence: "weekly",
   budgetDollars: 25,
   chores: [],
-  choreDueTime: DEFAULT_DUE_TIME,
   causes: [],
   kidName: "",
   kidTone: "allowance",
 };
 
 function joinCodeFor(familyName: string) {
-  return "CH" + (familyName.replace(/[^A-Za-z]/g, "").toUpperCase() + "KID").slice(0, 4);
+  return (
+    "CH" +
+    (familyName.replace(/[^A-Za-z]/g, "").toUpperCase() + "KID").slice(0, 4)
+  );
 }
 
 /* ---------- flow controller ---------- */
@@ -208,11 +204,12 @@ type ParentResult = Extract<OnboardingResult, { role: "parent" }>;
 
 export function OnboardingFlow({
   onComplete,
-  initialStep = "welcome",
+  initialStep = "auth",
   auth,
   persist,
   choosePlan,
-  onSignIn,
+  resolveSignedInHousehold,
+  onExistingAccount,
   validateKidCode,
 }: {
   onComplete?: (
@@ -226,8 +223,10 @@ export function OnboardingFlow({
   persist?: (result: ParentResult) => Promise<OnboardingPersistResult | void>;
   /** Record the chosen billing plan for the new household's trial. */
   choosePlan?: (householdId: string, plan: SubscriptionPlan) => Promise<void>;
-  /** Returning parents: send them to sign-in instead of the setup wizard. */
-  onSignIn?: () => void;
+  /** After account auth, detect existing families before writing new setup rows. */
+  resolveSignedInHousehold?: () => Promise<string | null>;
+  /** Existing signed-in family: leave setup and route there. */
+  onExistingAccount?: (householdId: string) => void;
   /**
    * Check a kid's join code before the avatar step so a typo is caught up front
    * instead of after they've picked a colour and a name. "unknown" (e.g. the
@@ -238,8 +237,11 @@ export function OnboardingFlow({
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
   const [code, setCode] = useState("");
-  const [persisted, setPersisted] = useState<OnboardingPersistResult | null>(null);
-  const patch = (next: Partial<OnboardingData>) => setData((d) => ({ ...d, ...next }));
+  const [persisted, setPersisted] = useState<OnboardingPersistResult | null>(
+    null,
+  );
+  const patch = (next: Partial<OnboardingData>) =>
+    setData((d) => ({ ...d, ...next }));
 
   const buildParentResult = (): ParentResult => ({
     role: "parent",
@@ -253,7 +255,6 @@ export function OnboardingFlow({
     cadence: data.cadence,
     budgetCents: data.budgetDollars * 100,
     chores: data.chores,
-    choreDueTime: data.choreDueTime,
     causes: data.causes,
     joinCode: joinCodeFor(data.familyName),
   });
@@ -269,19 +270,29 @@ export function OnboardingFlow({
   };
 
   const finishKid = () =>
-    onComplete?.({ role: "kid", code, kidName: data.kidName.trim(), kidTone: data.kidTone });
+    onComplete?.({
+      role: "kid",
+      code,
+      kidName: data.kidName.trim(),
+      kidTone: data.kidTone,
+    });
 
   switch (step) {
-    case "welcome":
-      return <OBWelcome onNext={() => setStep("idea")} onSignIn={onSignIn} />;
-    case "idea":
-      return <OBIdea onNext={() => setStep("role")} onBack={() => setStep("welcome")} />;
-    case "role":
+    case "auth":
       return (
-        <OBRole
-          onBack={() => setStep("idea")}
-          onParent={() => setStep("p_demo")}
+        <OBAuth
+          auth={auth}
+          resolveSignedInHousehold={resolveSignedInHousehold}
+          onExistingAccount={onExistingAccount}
+          onNext={() => setStep("idea")}
           onKid={() => setStep("k_code")}
+        />
+      );
+    case "idea":
+      return (
+        <OBIdea
+          onNext={() => setStep("p_demo")}
+          onBack={() => setStep("auth")}
         />
       );
     case "p_demo":
@@ -289,18 +300,23 @@ export function OnboardingFlow({
         <OBDemoApprove
           onNext={() => setStep("p_demo_kid")}
           onSkip={() => setStep("p_family")}
-          onBack={() => setStep("role")}
+          onBack={() => setStep("idea")}
         />
       );
     case "p_demo_kid":
-      return <OBDemoKid onNext={() => setStep("p_family")} onBack={() => setStep("p_demo")} />;
+      return (
+        <OBDemoKid
+          onNext={() => setStep("p_family")}
+          onBack={() => setStep("p_demo")}
+        />
+      );
     case "p_family":
       return (
         <OBFamily
           data={data}
           patch={patch}
           onNext={() => setStep("p_addkid")}
-          onBack={() => setStep("role")}
+          onBack={() => setStep("p_demo_kid")}
         />
       );
     case "p_addkid":
@@ -335,18 +351,14 @@ export function OnboardingFlow({
         <OBCauses
           data={data}
           patch={patch}
-          // Chorey Family covers every kid — no gate between causes and account.
-          onNext={() => setStep("p_account")}
+          // "What Matters Most" is the last setup step: the parent is already
+          // signed in (auth is step 1), so write everything they set up to
+          // Supabase now, then head to the family promise + paywall.
+          onNext={async () => {
+            await persistParent();
+            setStep("p_pledge");
+          }}
           onBack={() => setStep("p_chores")}
-        />
-      );
-    case "p_account":
-      return (
-        <OBParentAccount
-          auth={auth}
-          onPersist={persistParent}
-          onNext={() => setStep("p_plan")}
-          onBack={() => setStep("p_causes")}
         />
       );
     case "p_plan":
@@ -358,19 +370,26 @@ export function OnboardingFlow({
               await choosePlan?.(persisted.householdId, plan);
             }
           }}
-          onContinue={() => setStep("p_pledge")}
+          onContinue={() => setStep("p_done")}
+          onBack={() => setStep("p_pledge")}
         />
       );
     case "p_pledge":
       return (
         <OBPledge
           data={data}
-          onNext={() => setStep("p_done")}
-          onBack={() => setStep("p_plan")}
+          onNext={() => setStep("p_plan")}
+          onBack={() => setStep("p_causes")}
         />
       );
     case "p_done":
-      return <OBParentDone data={data} persisted={persisted} onFinish={finishParent} />;
+      return (
+        <OBParentDone
+          data={data}
+          persisted={persisted}
+          onFinish={finishParent}
+        />
+      );
     case "k_code":
       return (
         <OBKidCode
@@ -378,7 +397,7 @@ export function OnboardingFlow({
           setCode={setCode}
           validate={validateKidCode}
           onNext={() => setStep("k_avatar")}
-          onBack={() => setStep("role")}
+          onBack={() => setStep("auth")}
         />
       );
     case "k_avatar":
@@ -391,69 +410,27 @@ export function OnboardingFlow({
         />
       );
     case "k_how":
-      return <OBKidHow data={data} onFinish={finishKid} onBack={() => setStep("k_avatar")} />;
+      return (
+        <OBKidHow
+          data={data}
+          onFinish={finishKid}
+          onBack={() => setStep("k_avatar")}
+        />
+      );
     default:
       return null;
   }
 }
 
-/* ---------- 1. Welcome ---------- */
-
-function OBWelcome({
-  onNext,
-  onSignIn,
-}: {
-  onNext: () => void;
-  onSignIn?: () => void;
-}) {
-  const { scheme, typography, palette } = useChoreyTheme();
-  return (
-    <OBShell
-      footer={
-        <>
-          <OBPrimary onPress={onNext}>Get started</OBPrimary>
-          <OBSecondary onPress={onSignIn ?? onNext}>
-            I already have an account
-          </OBSecondary>
-        </>
-      }
-    >
-      <View style={{ alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
-        <Image
-          source={require("../../../assets/c-mark.png")}
-          style={{ width: 72, height: 72, marginBottom: 18 }}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
-        <Text
-          style={{
-            fontFamily: typography.family.display.extra,
-            fontSize: 52,
-            letterSpacing: -2,
-            color: scheme.fg,
-          }}
-        >
-          chorey
-        </Text>
-        <Text
-          style={[
-            typography.text.body,
-            { fontSize: 17, color: scheme.fgMuted, textAlign: "center", marginTop: 14, maxWidth: 280 },
-          ]}
-        >
-          Chores that teach kids to{" "}
-          <Text style={{ color: bucketTokens.spend.ramp[600], fontWeight: "700" }}>spend</Text>,{" "}
-          <Text style={{ color: bucketTokens.savings.ramp[600], fontWeight: "700" }}>save</Text>, and{" "}
-          <Text style={{ color: bucketTokens.giving.ramp[600], fontWeight: "700" }}>give</Text>.
-        </Text>
-      </View>
-    </OBShell>
-  );
-}
-
 /* ---------- 2. The big idea ---------- */
 
-function OBIdea({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+function OBIdea({
+  onNext,
+  onBack,
+}: {
+  onNext: () => void;
+  onBack: () => void;
+}) {
   const { scheme, typography, bucketInk } = useChoreyTheme();
   const bars = [
     { tone: "spend" as const, pct: 40, label: "Spend", cents: 400 },
@@ -482,11 +459,24 @@ function OBIdea({ onNext, onBack }: { onNext: () => void; onBack: () => void }) 
                 marginBottom: 8,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={{ fontFamily: typography.family.display.bold, fontSize: 22, color: bucketInk(bar.tone) }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <Text
+                  style={{
+                    fontFamily: typography.family.display.bold,
+                    fontSize: 22,
+                    color: bucketInk(bar.tone),
+                  }}
+                >
                   {bar.pct}%
                 </Text>
-                <Text style={[typography.text.label, { fontSize: 15, color: scheme.fg }]}>
+                <Text
+                  style={[
+                    typography.text.label,
+                    { fontSize: 15, color: scheme.fg },
+                  ]}
+                >
                   {bar.label}
                 </Text>
               </View>
@@ -494,8 +484,22 @@ function OBIdea({ onNext, onBack }: { onNext: () => void; onBack: () => void }) 
                 {formatMoney(bar.cents, "USD")}
               </Text>
             </View>
-            <View style={{ height: 12, backgroundColor: scheme.bgSunken, borderRadius: 999, overflow: "hidden" }}>
-              <View style={{ width: `${bar.pct}%`, height: "100%", backgroundColor: ramp[400], borderRadius: 999 }} />
+            <View
+              style={{
+                height: 12,
+                backgroundColor: scheme.bgSunken,
+                borderRadius: 999,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  width: `${bar.pct}%`,
+                  height: "100%",
+                  backgroundColor: ramp[400],
+                  borderRadius: 999,
+                }}
+              />
             </View>
           </View>
         );
@@ -513,104 +517,22 @@ function OBIdea({ onNext, onBack }: { onNext: () => void; onBack: () => void }) 
           alignItems: "flex-start",
         }}
       >
-        <Lock size={18} color={bucketTokens.savings.ramp[600]} strokeWidth={2.2} />
-        <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted, fontSize: 13 }]}>
-          Savings stays locked — no spend button. That&apos;s how the habit sticks.
+        <Lock
+          size={18}
+          color={bucketTokens.savings.ramp[600]}
+          strokeWidth={2.2}
+        />
+        <Text
+          style={[
+            typography.text.caption,
+            { flex: 1, color: scheme.fgMuted, fontSize: 13 },
+          ]}
+        >
+          Savings stays locked — no spend button. That&apos;s how the habit
+          sticks.
         </Text>
       </View>
     </OBShell>
-  );
-}
-
-/* ---------- 3. Choose role ---------- */
-
-function OBRole({
-  onParent,
-  onKid,
-  onBack,
-}: {
-  onParent: () => void;
-  onKid: () => void;
-  onBack: () => void;
-}) {
-  return (
-    <OBShell onBack={onBack} progress={{ index: 1, total: 4 }}>
-      <OBTitle
-        title="Who's setting up?"
-        subtitle="Parents set up the family first, then children join with a code."
-      />
-      <RoleCard
-        tone="allowance"
-        Icon={User}
-        title="I'm a parent"
-        body="Set chores, the split, and approve payouts."
-        onPress={onParent}
-      />
-      <RoleCard
-        tone="savings"
-        Icon={Sparkles}
-        title="Join as a child"
-        body="Got a code from a parent? Hop in here."
-        onPress={onKid}
-      />
-    </OBShell>
-  );
-}
-
-function RoleCard({
-  tone,
-  Icon,
-  title,
-  body,
-  onPress,
-}: {
-  tone: "allowance" | "savings";
-  Icon: typeof User;
-  title: string;
-  body: string;
-  onPress: () => void;
-}) {
-  const { scheme, typography, toybox, motion } = useChoreyTheme();
-  const ramp = bucketTokens[tone === "allowance" ? "spend" : "savings"].ramp;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 16,
-        backgroundColor: scheme.bgModal,
-        borderColor: scheme.toy.border,
-        borderWidth: toybox.borderWidth,
-        borderRadius: 18,
-        padding: 18,
-        marginBottom: 12,
-        transform: [{ scale: pressed ? motion.pressScale : 1 }],
-        ...(pressed ? scheme.toy.shadowSm : scheme.toy.shadow),
-      })}
-    >
-      <View
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: toybox.squircle,
-          backgroundColor: ramp[200],
-          borderColor: scheme.toy.border,
-          borderWidth: toybox.borderWidth,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Icon size={26} color={ramp[800]} strokeWidth={2.2} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 17 }]}>{title}</Text>
-        <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>{body}</Text>
-      </View>
-      <ChevronRight size={18} color={scheme.fgFaint} strokeWidth={2} />
-    </Pressable>
   );
 }
 
@@ -630,7 +552,8 @@ function OBFamily({
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const country = COUNTRIES.find((c) => c.code === data.country);
-  const ready = data.parentName.trim() && data.familyName.trim() && !!data.country;
+  const ready =
+    data.parentName.trim() && data.familyName.trim() && !!data.country;
 
   return (
     <OBShell
@@ -642,7 +565,10 @@ function OBFamily({
         </OBPrimary>
       }
     >
-      <OBTitle title="Set up your family." subtitle="Just the basics — you can change anything later." />
+      <OBTitle
+        title="Set up your family."
+        subtitle="Just the basics — you can change anything later."
+      />
       <View style={{ gap: 18 }}>
         <OBField
           label="Your name"
@@ -658,7 +584,12 @@ function OBFamily({
         />
 
         <View>
-          <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+          <Text
+            style={[
+              typography.text.overline,
+              { color: scheme.fgFaint, marginBottom: 7 },
+            ]}
+          >
             Country
           </Text>
           <Pressable
@@ -687,7 +618,12 @@ function OBFamily({
             </Text>
             <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
           </Pressable>
-          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 8 }]}>
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, marginTop: 8 },
+            ]}
+          >
             {country ? (
               <>
                 Amounts will show in{" "}
@@ -766,7 +702,9 @@ function OBAddKid({
             Continue
           </OBPrimary>
           {hasDraft ? (
-            <OBSecondary onPress={handleAddAnother}>+ Add another child</OBSecondary>
+            <OBSecondary onPress={handleAddAnother}>
+              + Add another child
+            </OBSecondary>
           ) : null}
         </>
       }
@@ -799,7 +737,12 @@ function OBAddKid({
       >
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
           <View style={{ flex: 2 }}>
-            <OBField label="Name" value={name} onChange={setName} placeholder="Child's name" />
+            <OBField
+              label="Name"
+              value={name}
+              onChange={setName}
+              placeholder="Child's name"
+            />
           </View>
           <View style={{ flex: 1 }}>
             <OBField
@@ -821,7 +764,14 @@ function OBAddKid({
             Enter a name for this child.
           </Text>
         ) : null}
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>Color</Text>
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginBottom: 8 },
+          ]}
+        >
+          Color
+        </Text>
         <View style={{ flexDirection: "row", gap: 10 }}>
           {KID_TONES.map((t) => (
             <ColorSwatch
@@ -865,12 +815,20 @@ function KidRow({ kid, onRemove }: { kid: Kid; onRemove?: () => void }) {
           justifyContent: "center",
         }}
       >
-        <Text style={{ fontFamily: typography.family.display.bold, fontSize: 18, color: toneStyle.text }}>
+        <Text
+          style={{
+            fontFamily: typography.family.display.bold,
+            fontSize: 18,
+            color: toneStyle.text,
+          }}
+        >
           {kid.name.charAt(0).toUpperCase()}
         </Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>{kid.name}</Text>
+        <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
+          {kid.name}
+        </Text>
         <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
           {kid.age ? `${kid.age} years` : "Age not set"}
         </Text>
@@ -893,7 +851,11 @@ function KidRow({ kid, onRemove }: { kid: Kid; onRemove?: () => void }) {
           <X size={15} color={scheme.fgMuted} strokeWidth={2.4} />
         </Pressable>
       ) : (
-        <Check size={18} color={bucketTokens.giving.ramp[600]} strokeWidth={2.6} />
+        <Check
+          size={18}
+          color={bucketTokens.giving.ramp[600]}
+          strokeWidth={2.6}
+        />
       )}
     </View>
   );
@@ -953,7 +915,10 @@ function BudgetAmountField({
 
   // Group thousands (e.g. "1.000 din") once the amount passes three digits, but
   // show the raw digits while editing so the keypad stays simple.
-  const grouped = String(value).replace(/\B(?=(\d{3})+(?!\d))/g, groupSeparator);
+  const grouped = String(value).replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    groupSeparator,
+  );
   const text = editing ? draft : grouped;
   // Drop a font size at five+ visible chars so four digits (plus a separator)
   // never clip; the field also widens with the content.
@@ -966,7 +931,13 @@ function BudgetAmountField({
 
   return (
     <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
-      <Text style={{ fontFamily: typography.family.display.bold, fontSize, color: scheme.fg }}>
+      <Text
+        style={{
+          fontFamily: typography.family.display.bold,
+          fontSize,
+          color: scheme.fg,
+        }}
+      >
         {symbol}
       </Text>
       <TextInput
@@ -976,7 +947,14 @@ function BudgetAmountField({
           setDraft(String(value));
           setEditing(true);
         }}
-        onChangeText={(t) => setDraft(t.replace(/[^0-9]/g, ""))}
+        onChangeText={(t) => {
+          const nextDraft = t.replace(/[^0-9]/g, "");
+          setDraft(nextDraft);
+          const parsed = parseInt(nextDraft, 10);
+          if (Number.isFinite(parsed) && parsed > 0) {
+            onChange(parsed);
+          }
+        }}
         onBlur={commit}
         onSubmitEditing={commit}
         keyboardType="number-pad"
@@ -1015,7 +993,9 @@ function OBBudgetSplit({
   const { scheme, typography } = useChoreyTheme();
   const country = COUNTRIES.find((c) => c.code === data.country);
   const symbol = country?.symbol ?? "$";
-  const groupSeparator = resolveCurrencyFormat(currencyForCountry(data.country)).groupSeparator;
+  const groupSeparator = resolveCurrencyFormat(
+    currencyForCountry(data.country),
+  ).groupSeparator;
   // 40 / 40 / 20 is the recommended default; parents may nudge Spend and Giving.
   // Savings is the remainder; Giving never drops below the floor.
   const spend = data.split.spend;
@@ -1055,9 +1035,25 @@ function OBBudgetSplit({
           marginBottom: 18,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>Budget cap</Text>
-          <View style={{ flexDirection: "row", backgroundColor: scheme.bgSunken, borderRadius: 999, padding: 3 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 12,
+          }}
+        >
+          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
+            Budget cap
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: scheme.bgSunken,
+              borderRadius: 999,
+              padding: 3,
+            }}
+          >
             {(["weekly", "monthly"] as const).map((c) => {
               const selected = data.cadence === c;
               return (
@@ -1078,7 +1074,11 @@ function OBBudgetSplit({
                   <Text
                     style={[
                       typography.text.caption,
-                      { color: selected ? scheme.fg : scheme.fgFaint, fontWeight: "700", textTransform: "capitalize" },
+                      {
+                        color: selected ? scheme.fg : scheme.fgFaint,
+                        fontWeight: "700",
+                        textTransform: "capitalize",
+                      },
                     ]}
                   >
                     {c}
@@ -1088,7 +1088,13 @@ function OBBudgetSplit({
             })}
           </View>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <BudgetAmountField
             symbol={symbol}
             value={data.budgetDollars}
@@ -1101,7 +1107,9 @@ function OBBudgetSplit({
               symbol="−"
               label="Decrease budget"
               tone="spend"
-              onPress={() => patch({ budgetDollars: Math.max(1, data.budgetDollars - 5) })}
+              onPress={() =>
+                patch({ budgetDollars: Math.max(1, data.budgetDollars - 5) })
+              }
             />
             <OBStepButton
               symbol="+"
@@ -1111,30 +1119,64 @@ function OBBudgetSplit({
             />
           </View>
         </View>
-        <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 10 }]}>
-          Chores add up toward this. Extra chores beyond the cap still earn — your call.
+        <Text
+          style={[
+            typography.text.caption,
+            { color: scheme.fgFaint, marginTop: 10 },
+          ]}
+        >
+          Chores add up toward this. Extra chores beyond the cap still earn —
+          your call.
         </Text>
       </View>
 
-      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 10 }]}>
+      <Text
+        style={[
+          typography.text.overline,
+          { color: scheme.fgFaint, marginBottom: 10 },
+        ]}
+      >
         How it divides
       </Text>
-      <View style={{ flexDirection: "row", height: 16, borderRadius: 999, overflow: "hidden", gap: 3, marginBottom: 18 }}>
-        <View style={{ flex: spend, backgroundColor: bucketTokens.spend.ramp[400] }} />
-        <View style={{ flex: save, backgroundColor: bucketTokens.savings.ramp[400] }} />
-        <View style={{ flex: give, backgroundColor: bucketTokens.giving.ramp[400] }} />
+      <View
+        style={{
+          flexDirection: "row",
+          height: 16,
+          borderRadius: 999,
+          overflow: "hidden",
+          gap: 3,
+          marginBottom: 18,
+        }}
+      >
+        <View
+          style={{ flex: spend, backgroundColor: bucketTokens.spend.ramp[400] }}
+        />
+        <View
+          style={{
+            flex: save,
+            backgroundColor: bucketTokens.savings.ramp[400],
+          }}
+        />
+        <View
+          style={{ flex: give, backgroundColor: bucketTokens.giving.ramp[400] }}
+        />
       </View>
 
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
-        <SplitTile tone="spend" label="Spend" value={spend} onStep={stepSpend} />
+        <SplitTile
+          tone="spend"
+          label="Spend"
+          value={spend}
+          onStep={stepSpend}
+        />
         <SplitTile tone="savings" label="Save" value={save} hint="auto" />
         <SplitTile tone="giving" label="Give" value={give} onStep={stepGive} />
       </View>
 
       <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
-        We recommend 40 / 40 / 20 — spend a little, save a little more, and always
-        give some. Nudge Spend and Giving to fit your family; Giving stays at least
-        {" "}{MIN_GIVE_PCT}%.
+        We recommend 40 / 40 / 20 — spend a little, save a little more, and
+        always give some. Nudge Spend and Giving to fit your family; Giving
+        stays at least {MIN_GIVE_PCT}%.
       </Text>
     </OBShell>
   );
@@ -1157,21 +1199,57 @@ function SplitTile({
   const tintKey = tone === "spend" ? "allowance" : tone;
   const ink = bucketInk(tone);
   return (
-    <View style={{ flex: 1, backgroundColor: scheme.tint[tintKey], borderRadius: 14, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }}>
-      <Text style={[typography.text.overline, { color: ink, fontSize: 10, textAlign: "center" }]}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: scheme.tint[tintKey],
+        borderRadius: 14,
+        paddingHorizontal: 12,
+        paddingTop: 12,
+        paddingBottom: 12,
+      }}
+    >
+      <Text
+        style={[
+          typography.text.overline,
+          { color: ink, fontSize: 10, textAlign: "center" },
+        ]}
+      >
         {label}
       </Text>
-      <Text style={{ fontFamily: typography.family.display.bold, fontSize: 28, color: ink, textAlign: "center" }}>
+      <Text
+        style={{
+          fontFamily: typography.family.display.bold,
+          fontSize: 28,
+          color: ink,
+          textAlign: "center",
+        }}
+      >
         {value}
         <Text style={{ fontSize: 14 }}>%</Text>
       </Text>
       {onStep ? (
         <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
-          <OBStepButton symbol="−" label={`Decrease ${label}`} tone={tone} onPress={() => onStep(-SPLIT_STEP)} />
-          <OBStepButton symbol="+" label={`Increase ${label}`} tone={tone} onPress={() => onStep(SPLIT_STEP)} />
+          <OBStepButton
+            symbol="−"
+            label={`Decrease ${label}`}
+            tone={tone}
+            onPress={() => onStep(-SPLIT_STEP)}
+          />
+          <OBStepButton
+            symbol="+"
+            label={`Increase ${label}`}
+            tone={tone}
+            onPress={() => onStep(SPLIT_STEP)}
+          />
         </View>
       ) : hint ? (
-        <Text style={[typography.text.caption, { color: ink, opacity: 0.7, textAlign: "center", marginTop: 6 }]}>
+        <Text
+          style={[
+            typography.text.caption,
+            { color: ink, opacity: 0.7, textAlign: "center", marginTop: 6 },
+          ]}
+        >
           {hint}
         </Text>
       ) : null}
@@ -1202,7 +1280,10 @@ function OBChores({
   // How many extra presets (beyond the default 3) have been suggested so far.
   const [suggestCount, setSuggestCount] = useState(0);
 
-  const visiblePicks = CHORE_LIBRARY.slice(0, CHORE_DEFAULT_COUNT + suggestCount);
+  const visiblePicks = CHORE_LIBRARY.slice(
+    0,
+    CHORE_DEFAULT_COUNT + suggestCount,
+  );
   const canSuggest =
     suggestCount < CHORE_MAX_SUGGESTIONS &&
     CHORE_DEFAULT_COUNT + suggestCount < CHORE_LIBRARY.length;
@@ -1222,12 +1303,16 @@ function OBChores({
 
   const rewardUnits = parseInt(customReward, 10);
   const canAddCustom =
-    customName.trim().length > 0 && Number.isFinite(rewardUnits) && rewardUnits > 0;
+    customName.trim().length > 0 &&
+    Number.isFinite(rewardUnits) &&
+    rewardUnits > 0;
 
   const addCustom = () => {
     const name = customName.trim();
     if (!canAddCustom || data.chores.some((c) => c.name === name)) return;
-    patch({ chores: [...data.chores, { name, valueCents: rewardUnits * 100 }] });
+    patch({
+      chores: [...data.chores, { name, valueCents: rewardUnits * 100 }],
+    });
     setCustomName("");
     setCustomReward("");
   };
@@ -1249,46 +1334,10 @@ function OBChores({
         </OBPrimary>
       }
     >
-      <OBTitle title="First chores." subtitle="Tap a chore, or get a suggestion." />
-
-      {/* A single "due by" time for the starter chores; fine-tune each later. */}
-      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 2 }]}>
-        Done by
-      </Text>
-      <Text style={[typography.text.caption, { color: scheme.fgMuted, marginBottom: 9 }]}>
-        Applies to every starter chore — you can change each one later.
-      </Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
-        {DUE_TIME_PRESETS.map((option) => {
-          const selected = option.value === data.choreDueTime;
-          return (
-            <Pressable
-              key={option.label}
-              accessibilityRole="button"
-              accessibilityLabel={`Done by ${option.label}`}
-              accessibilityState={{ selected }}
-              onPress={() => patch({ choreDueTime: option.value })}
-              style={{
-                paddingHorizontal: 13,
-                paddingVertical: 8,
-                borderRadius: 999,
-                borderWidth: 1.5,
-                backgroundColor: selected ? allowance[200] : scheme.bgRaised,
-                borderColor: selected ? allowance[400] : scheme.border,
-              }}
-            >
-              <Text
-                style={[
-                  typography.text.label,
-                  { fontSize: 13, color: selected ? allowance[800] : scheme.fgMuted },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <OBTitle
+        title="First chores."
+        subtitle="Tap a chore, or get a suggestion. Daily, weekly, and monthly repeats happen on their own schedule."
+      />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9 }}>
         {visiblePicks.map((c) => {
           const on = !!data.chores.find((x) => x.name === c.name);
@@ -1316,10 +1365,20 @@ function OBChores({
               ) : (
                 <Plus size={14} color={scheme.fgFaint} strokeWidth={2.4} />
               )}
-              <Text style={[typography.text.label, { color: on ? allowance[800] : scheme.fg }]}>
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: on ? allowance[800] : scheme.fg },
+                ]}
+              >
                 {c.name}
               </Text>
-              <Text style={[typography.text.caption, { color: on ? allowance[800] : scheme.fgFaint }]}>
+              <Text
+                style={[
+                  typography.text.caption,
+                  { color: on ? allowance[800] : scheme.fgFaint },
+                ]}
+              >
                 {formatMoney(c.valueCents, currency)}
               </Text>
             </Pressable>
@@ -1364,7 +1423,12 @@ function OBChores({
           borderWidth: 1,
         }}
       >
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 10 }]}>
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginBottom: 10 },
+          ]}
+        >
           Add your own
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -1399,7 +1463,9 @@ function OBChores({
               paddingHorizontal: 10,
             }}
           >
-            <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>{symbol}</Text>
+            <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>
+              {symbol}
+            </Text>
             <TextInput
               accessibilityLabel="Chore reward"
               value={customReward}
@@ -1436,7 +1502,11 @@ function OBChores({
               opacity: canAddCustom ? 1 : 0.6,
             }}
           >
-            <Plus size={20} color={canAddCustom ? allowance[800] : scheme.fgFaint} strokeWidth={2.6} />
+            <Plus
+              size={20}
+              color={canAddCustom ? allowance[800] : scheme.fgFaint}
+              strokeWidth={2.6}
+            />
           </Pressable>
         </View>
 
@@ -1455,10 +1525,17 @@ function OBChores({
                   backgroundColor: allowance[200],
                 }}
               >
-                <Text style={[typography.text.label, { flex: 1, color: allowance[800] }]}>
+                <Text
+                  style={[
+                    typography.text.label,
+                    { flex: 1, color: allowance[800] },
+                  ]}
+                >
                   {c.name}
                 </Text>
-                <Text style={[typography.text.caption, { color: allowance[800] }]}>
+                <Text
+                  style={[typography.text.caption, { color: allowance[800] }]}
+                >
                   {formatMoney(c.valueCents, currency)}
                 </Text>
                 <Pressable
@@ -1492,8 +1569,10 @@ function OBChores({
         >
           <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
             Up to{" "}
-            <Text style={{ color: scheme.fg, fontWeight: "700" }}>{formatMoney(totalCents, currency)}</Text> a
-            day, if all done
+            <Text style={{ color: scheme.fg, fontWeight: "700" }}>
+              {formatMoney(totalCents, currency)}
+            </Text>{" "}
+            a day, if all done
           </Text>
           <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
             {data.chores.length} picked
@@ -1591,11 +1670,29 @@ function OBCauses({
                   justifyContent: "center",
                 }}
               >
-                <c.Icon size={22} color={on ? giving[800] : scheme.fgFaint} strokeWidth={2} />
+                <c.Icon
+                  size={22}
+                  color={on ? giving[800] : scheme.fgFaint}
+                  strokeWidth={2}
+                />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>{c.name}</Text>
-                <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>{c.desc}</Text>
+                <Text
+                  style={[
+                    typography.text.h3,
+                    { color: scheme.fg, fontSize: 15 },
+                  ]}
+                >
+                  {c.name}
+                </Text>
+                <Text
+                  style={[
+                    typography.text.caption,
+                    { color: scheme.fgFaint, marginTop: 1 },
+                  ]}
+                >
+                  {c.desc}
+                </Text>
               </View>
               <View
                 style={{
@@ -1609,7 +1706,9 @@ function OBCauses({
                   borderColor: scheme.fgFaint,
                 }}
               >
-                {on ? <Check size={14} color={giving[800]} strokeWidth={3} /> : null}
+                {on ? (
+                  <Check size={14} color={giving[800]} strokeWidth={3} />
+                ) : null}
               </View>
             </Pressable>
           );
@@ -1617,7 +1716,14 @@ function OBCauses({
       </View>
 
       {/* Add your own cause. */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 14,
+        }}
+      >
         <TextInput
           accessibilityLabel="Add your own idea"
           value={customCause}
@@ -1654,12 +1760,23 @@ function OBCauses({
             opacity: customCause.trim() ? 1 : 0.6,
           }}
         >
-          <Plus size={20} color={customCause.trim() ? giving[800] : scheme.fgFaint} strokeWidth={2.6} />
+          <Plus
+            size={20}
+            color={customCause.trim() ? giving[800] : scheme.fgFaint}
+            strokeWidth={2.6}
+          />
         </Pressable>
       </View>
 
       {customCauses.length > 0 ? (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+            marginTop: 12,
+          }}
+        >
           {customCauses.map((name) => (
             <Pressable
               key={name}
@@ -1676,7 +1793,9 @@ function OBCauses({
                 backgroundColor: giving[200],
               }}
             >
-              <Text style={[typography.text.label, { color: giving[800] }]}>{name}</Text>
+              <Text style={[typography.text.label, { color: giving[800] }]}>
+                {name}
+              </Text>
               <X size={14} color={giving[800]} strokeWidth={2.6} />
             </Pressable>
           ))}
@@ -1690,35 +1809,75 @@ function OBCauses({
 
 /* ---------- 9. Create account (email 6-digit code) ---------- */
 
+const EMAIL_CODE_RESEND_MS = 2 * 60 * 1000;
+const EMAIL_CODE_LOCKOUT_MS = 15 * 60 * 1000;
+const EMAIL_CODE_MAX_FAILURES = 3;
+
 function errorMessage(error: unknown): string | null {
   return error instanceof Error && error.message ? error.message : null;
 }
 
-function OBParentAccount({
+function formatWait(ms: number) {
+  const seconds = Math.max(0, Math.ceil(ms / 1000));
+  const mins = Math.floor(seconds / 60);
+  const rem = seconds % 60;
+  return mins > 0 ? `${mins}:${String(rem).padStart(2, "0")}` : `${rem}s`;
+}
+
+function OBAuth({
   auth,
-  onPersist,
+  resolveSignedInHousehold,
+  onExistingAccount,
   onNext,
-  onBack,
+  onKid,
 }: {
   auth?: OnboardingAuth;
-  onPersist: () => Promise<unknown> | undefined;
+  resolveSignedInHousehold?: () => Promise<string | null>;
+  onExistingAccount?: (householdId: string) => void;
   onNext: () => void;
-  onBack: () => void;
+  onKid: () => void;
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
-  const [phase, setPhase] = useState<"email" | "code">("email");
+  const [phase, setPhase] = useState<"choose" | "email" | "code">("choose");
   const [email, setEmail] = useState("");
   const [codeValue, setCodeValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resendAfter, setResendAfter] = useState(0);
+  const [failedCodes, setFailedCodes] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
   const hasSocial = !!(auth?.signInWithApple || auth?.signInWithGoogle);
+  const resendRemaining = Math.max(0, resendAfter - now);
+  const lockRemaining = Math.max(0, lockedUntil - now);
+
+  useEffect(() => {
+    if (phase !== "code" && resendRemaining === 0 && lockRemaining === 0) {
+      return;
+    }
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [lockRemaining, phase, resendRemaining]);
+
+  const continueAfterAuth = async () => {
+    // Auth is the first step, so there's no family data yet. A parent who
+    // already finished onboarding has a household → jump straight home;
+    // everyone else heads into setup (their family is persisted at the end).
+    const householdId = await resolveSignedInHousehold?.();
+    if (householdId) {
+      onExistingAccount?.(householdId);
+      return;
+    }
+    onNext();
+  };
 
   // One-tap Apple/Google sign-up: only persist + advance when a session was
   // actually established (cancelling the provider browser returns false/void),
   // matching the email path and the sign-in screen.
   const signUpWith = async (provider: "apple" | "google") => {
-    const run = provider === "apple" ? auth?.signInWithApple : auth?.signInWithGoogle;
+    const run =
+      provider === "apple" ? auth?.signInWithApple : auth?.signInWithGoogle;
     if (!run || busy) {
       return;
     }
@@ -1727,8 +1886,7 @@ function OBParentAccount({
     try {
       const signedIn = await run();
       if (signedIn) {
-        await onPersist();
-        onNext();
+        await continueAfterAuth();
       }
     } catch (e) {
       setError(errorMessage(e) ?? "Couldn't sign in. Try again.");
@@ -1738,108 +1896,208 @@ function OBParentAccount({
   };
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const canSendEmail = emailValid && !busy && resendRemaining === 0;
   // The emailed code is alphanumeric (server-validated). Gate the button on a
   // sane minimum length only — never assume an exact length/charset here, or a
   // format change locks users out of finishing signup.
   const codeValid = codeValue.length >= 6;
 
   const sendCode = async () => {
-    if (!emailValid || busy) {
+    if (!canSendEmail) {
       return;
     }
     setBusy(true);
     setError(null);
     try {
       await auth?.sendEmailCode(email.trim());
+      const nextNow = Date.now();
+      setNow(nextNow);
+      setResendAfter(nextNow + EMAIL_CODE_RESEND_MS);
       setPhase("code");
     } catch (e) {
-      setError(errorMessage(e) ?? "Couldn't send the code. Check the email and try again.");
+      setError(
+        errorMessage(e) ??
+          "Couldn't send the code. Check the email and try again.",
+      );
     } finally {
       setBusy(false);
     }
   };
 
   const verifyAndSave = async () => {
-    if (!codeValid || busy) {
+    if (!codeValid || busy || lockRemaining > 0) {
+      if (lockRemaining > 0) {
+        setError(
+          `Too many failed codes. Try again in ${formatWait(lockRemaining)}.`,
+        );
+      }
       return;
     }
     setBusy(true);
     setError(null);
     try {
       await auth?.verifyEmailCode(email.trim(), codeValue);
-      await onPersist();
-      onNext();
+      setFailedCodes(0);
+      await continueAfterAuth();
     } catch (e) {
-      setError(errorMessage(e) ?? "That code didn't work. Try again.");
+      const nextFailed = failedCodes + 1;
+      setFailedCodes(nextFailed);
+      if (nextFailed >= EMAIL_CODE_MAX_FAILURES) {
+        const nextNow = Date.now();
+        setNow(nextNow);
+        setLockedUntil(nextNow + EMAIL_CODE_LOCKOUT_MS);
+        setError("Too many failed codes. Try again in 15 minutes.");
+      } else {
+        setError(errorMessage(e) ?? "That code didn't work. Try again.");
+      }
     } finally {
       setBusy(false);
     }
   };
 
+  const errorText = error ? (
+    <Text
+      style={[
+        typography.text.bodySm,
+        { color: palette.semantic.danger[600], marginTop: 12 },
+      ]}
+    >
+      {error}
+    </Text>
+  ) : null;
+
+  // Step 1: leftovr-style landing — log in / sign up before anything else.
+  if (phase === "choose") {
+    return (
+      <OBShell
+        footer={
+          // ponytail: plain text until Terms/Privacy pages exist, then link them.
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, textAlign: "center" },
+            ]}
+          >
+            By continuing you agree to our Terms and Privacy.
+          </Text>
+        }
+      >
+        <View style={{ alignItems: "center", paddingTop: 64, marginBottom: 36 }}>
+          <Image
+            source={require("../../../assets/c-mark.png")}
+            style={{ width: 64, height: 64, marginBottom: 16 }}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
+          <Text
+            style={{
+              fontFamily: typography.family.display.extra,
+              fontSize: 48,
+              letterSpacing: -2,
+              color: scheme.fg,
+            }}
+          >
+            chorey
+          </Text>
+          <Text
+            style={[
+              typography.text.body,
+              {
+                fontSize: 16,
+                color: scheme.fgMuted,
+                textAlign: "center",
+                marginTop: 12,
+                maxWidth: 280,
+              },
+            ]}
+          >
+            Create an account so your family stays in sync across devices.
+          </Text>
+        </View>
+        <View style={{ gap: 10 }}>
+          {hasSocial ? (
+            <SocialAuthButtons
+              onApple={() => signUpWith("apple")}
+              onGoogle={() => signUpWith("google")}
+              disabled={busy}
+            />
+          ) : null}
+          <OBPrimary onPress={() => setPhase("email")} disabled={busy}>
+            Continue with email
+          </OBPrimary>
+        </View>
+        <View style={{ marginTop: 24 }}>
+          <OBSecondary onPress={onKid}>I&apos;m a kid — enter a code</OBSecondary>
+        </View>
+        {errorText}
+      </OBShell>
+    );
+  }
+
   return (
     <OBShell
-      onBack={
-        phase === "code"
-          ? () => {
-              setPhase("email");
-              setError(null);
-            }
-          : onBack
-      }
+      onBack={() => {
+        setPhase(phase === "code" ? "email" : "choose");
+        setError(null);
+      }}
       footer={
         phase === "email" ? (
-          <OBPrimary onPress={sendCode} disabled={!emailValid || busy}>
-            {busy ? "Sending…" : "Email me a code"}
+          <OBPrimary onPress={sendCode} disabled={!canSendEmail}>
+            {busy
+              ? "Sending…"
+              : resendRemaining > 0
+                ? `Resend in ${formatWait(resendRemaining)}`
+                : "Email me a code"}
           </OBPrimary>
         ) : (
           <>
-            <OBPrimary onPress={verifyAndSave} disabled={!codeValid || busy}>
-              {busy ? "Saving…" : "Create account & finish"}
+            <OBPrimary
+              onPress={verifyAndSave}
+              disabled={!codeValid || busy || lockRemaining > 0}
+            >
+              {busy ? "Signing in…" : "Continue"}
             </OBPrimary>
-            <OBSecondary onPress={sendCode}>Resend code</OBSecondary>
+            {resendRemaining > 0 ? (
+              <Text
+                style={[
+                  typography.text.label,
+                  {
+                    color: scheme.fgMuted,
+                    textAlign: "center",
+                    paddingVertical: 13,
+                  },
+                ]}
+              >
+                Resend in {formatWait(resendRemaining)}
+              </Text>
+            ) : (
+              <OBSecondary onPress={sendCode}>Resend code</OBSecondary>
+            )}
           </>
         )
       }
     >
       <OBTitle
-        title={phase === "email" ? "Save your family." : "Enter your code."}
+        title={phase === "email" ? "What's your email?" : "Enter your code."}
         subtitle={
           phase === "email"
-            ? "Create your free parent account so everything you just set up is saved."
-            : `We sent a code to ${email.trim()}. Enter it to finish.`
+            ? "We'll email you a 6-digit code to sign in."
+            : `We sent a code to ${email.trim()}. Enter it to continue.`
         }
       />
       {phase === "email" ? (
-        <>
-          {hasSocial ? (
-            <View style={{ gap: 10, marginBottom: 18 }}>
-              <SocialAuthButtons
-                onApple={() => signUpWith("apple")}
-                onGoogle={() => signUpWith("google")}
-                disabled={busy}
-              />
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: scheme.border }} />
-                <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
-                  or use email
-                </Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: scheme.border }} />
-              </View>
-            </View>
-          ) : null}
-          <OBField
-            label="Email"
-            value={email}
-            onChange={(v) => {
-              setEmail(v);
-              setError(null);
-            }}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            returnKeyType="go"
-            onSubmitEditing={sendCode}
-          />
-        </>
+        <OBField
+          label="Email"
+          value={email}
+          onChange={(v) => {
+            setEmail(v);
+            setError(null);
+          }}
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          returnKeyType="go"
+          onSubmitEditing={sendCode}
+        />
       ) : (
         <OBField
           label="Verification code"
@@ -1859,11 +2117,7 @@ function OBParentAccount({
           onSubmitEditing={verifyAndSave}
         />
       )}
-      {error ? (
-        <Text style={[typography.text.bodySm, { color: palette.semantic.danger[600], marginTop: 12 }]}>
-          {error}
-        </Text>
-      ) : null}
+      {errorText}
     </OBShell>
   );
 }
@@ -1871,8 +2125,18 @@ function OBParentAccount({
 /* ---------- 9b. Choose the plan, start the trial ---------- */
 
 const PLAN_MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 /**
@@ -1890,10 +2154,12 @@ function OBPlanChoice({
   data,
   onChoose,
   onContinue,
+  onBack,
 }: {
   data: OnboardingData;
   onChoose: (plan: SubscriptionPlan) => Promise<void>;
   onContinue: () => void;
+  onBack: () => void;
 }) {
   const { scheme, typography, palette, toybox } = useChoreyTheme();
   const spend = bucketTokens.spend.ramp;
@@ -1903,7 +2169,9 @@ function OBPlanChoice({
 
   // Captured once on mount: the trial clock started when the household was
   // created moments ago, so "now + 14 days" matches the DB trigger.
-  const [trialEnd] = useState(() => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  const [trialEnd] = useState(
+    () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+  );
   const trialEndLabel = `${PLAN_MONTHS[trialEnd.getMonth()]} ${trialEnd.getDate()}, ${trialEnd.getFullYear()}`;
 
   const start = async () => {
@@ -1922,6 +2190,7 @@ function OBPlanChoice({
 
   return (
     <OBShell
+      onBack={onBack}
       footer={
         <OBPrimary onPress={start} disabled={submitting}>
           Start my free trial
@@ -1929,7 +2198,14 @@ function OBPlanChoice({
       }
     >
       {/* Sticker shelf — the honest perks, worn like badges. */}
-      <View style={{ flexDirection: "row", gap: 12, marginTop: 4, marginBottom: 14 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 12,
+          marginTop: 4,
+          marginBottom: 14,
+        }}
+      >
         <ToySticker label="14 days free" />
         <ToySticker label="Every child included" tone="giving" straight />
       </View>
@@ -1969,12 +2245,14 @@ function OBPlanChoice({
       ) : null}
 
       <View style={{ gap: 10, marginBottom: 14 }}>
-        {(
-          [
-            { id: "monthly" as const, label: "Monthly", caption: "Simple, month to month" },
-            { id: "annual" as const, label: "Annual", caption: "5 months free" },
-          ]
-        ).map((option) => {
+        {[
+          {
+            id: "monthly" as const,
+            label: "Monthly",
+            caption: "Simple, month to month",
+          },
+          { id: "annual" as const, label: "Annual", caption: "5 months free" },
+        ].map((option) => {
           const selected = plan === option.id;
           return (
             <Pressable
@@ -1987,7 +2265,9 @@ function OBPlanChoice({
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                backgroundColor: selected ? scheme.tint.allowance : scheme.bgModal,
+                backgroundColor: selected
+                  ? scheme.tint.allowance
+                  : scheme.bgModal,
                 borderColor: scheme.toy.border,
                 borderWidth: toybox.borderWidth,
                 borderRadius: 16,
@@ -1996,12 +2276,17 @@ function OBPlanChoice({
                 ...(selected ? scheme.toy.shadow : scheme.toy.shadowSm),
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              >
                 <View>
                   <Text
                     style={[
                       typography.text.h3,
-                      { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
+                      {
+                        color: selected ? spend[800] : scheme.fg,
+                        fontSize: 15,
+                      },
                     ]}
                   >
                     {option.label}
@@ -2009,7 +2294,10 @@ function OBPlanChoice({
                   <Text
                     style={[
                       typography.text.caption,
-                      { color: selected ? spend[600] : scheme.fgFaint, marginTop: 2 },
+                      {
+                        color: selected ? spend[600] : scheme.fgFaint,
+                        marginTop: 2,
+                      },
                     ]}
                   >
                     {option.caption}
@@ -2031,7 +2319,9 @@ function OBPlanChoice({
                   justifyContent: "center",
                 }}
               >
-                {selected ? <Check size={13} color={palette.cream[4]} strokeWidth={3} /> : null}
+                {selected ? (
+                  <Check size={13} color={palette.cream[4]} strokeWidth={3} />
+                ) : null}
               </View>
             </Pressable>
           );
@@ -2052,13 +2342,23 @@ function OBPlanChoice({
         }}
       >
         <Sparkles size={16} color={spend[600]} strokeWidth={2.2} />
-        <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted, lineHeight: 18 }]}>
-          Free until {trialEndLabel}. Renews automatically on the plan you pick —
-          cancel anytime before then and pay nothing.
+        <Text
+          style={[
+            typography.text.caption,
+            { flex: 1, color: scheme.fgMuted, lineHeight: 18 },
+          ]}
+        >
+          Free until {trialEndLabel}. Renews automatically on the plan you pick
+          — cancel anytime before then and pay nothing.
         </Text>
       </View>
 
-      <Text style={[typography.text.caption, { color: scheme.fgFaint, textAlign: "center" }]}>
+      <Text
+        style={[
+          typography.text.caption,
+          { color: scheme.fgFaint, textAlign: "center" },
+        ]}
+      >
         You won&apos;t be charged today. Pricing is confirmed in the App Store
         before any charge.
       </Text>
@@ -2067,7 +2367,11 @@ function OBPlanChoice({
         <Text
           style={[
             typography.text.caption,
-            { color: palette.semantic.danger[600], textAlign: "center", marginTop: 8 },
+            {
+              color: palette.semantic.danger[600],
+              textAlign: "center",
+              marginTop: 8,
+            },
           ]}
         >
           {errorMessage}
@@ -2093,7 +2397,11 @@ function OBPledge({
 
   const names = data.kids.map((kid) => kid.name.trim()).filter(Boolean);
   const kidLabel =
-    names.length === 0 ? "your child" : names.length === 1 ? names[0] : "your children";
+    names.length === 0
+      ? "your child"
+      : names.length === 1
+        ? names[0]
+        : "your children";
   const them = names.length > 1 ? "them" : kidLabel;
 
   return (
@@ -2101,7 +2409,7 @@ function OBPledge({
       onBack={onBack}
       footer={
         <OBPrimary onPress={onNext} disabled={!signed}>
-          {signed ? "We pinky promise" : "Sign to promise"}
+          {signed ? "We promise" : "Sign to promise"}
         </OBPrimary>
       }
     >
@@ -2116,11 +2424,15 @@ function OBPledge({
           marginTop: 6,
         }}
       >
-        <HandHeart size={28} color={bucketTokens.giving.ramp[800]} strokeWidth={2.2} />
+        <HandHeart
+          size={28}
+          color={bucketTokens.giving.ramp[800]}
+          strokeWidth={2.2}
+        />
       </View>
 
       <OBTitle
-        title="Pinky promise."
+        title="Family promise."
         subtitle={`A real deal between you and ${kidLabel}. Sign it below, then show ${them} — that's what makes it count.`}
       />
 
@@ -2135,16 +2447,28 @@ function OBPledge({
           marginBottom: 22,
         }}
       >
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginBottom: 8 },
+          ]}
+        >
           The deal
         </Text>
-        <Text style={[typography.text.body, { color: scheme.fg, lineHeight: 24 }]}>
+        <Text
+          style={[typography.text.body, { color: scheme.fg, lineHeight: 24 }]}
+        >
           I promise to pay you fairly for every chore you finish, and to always
           keep my word. You promise to do your best. We&apos;re a team now.
         </Text>
       </View>
 
-      <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 7 }]}>
+      <Text
+        style={[
+          typography.text.overline,
+          { color: scheme.fgFaint, marginBottom: 7 },
+        ]}
+      >
         Your signature
       </Text>
       <SignaturePad onChange={setSigned} />
@@ -2161,10 +2485,16 @@ function OBPledge({
           backgroundColor: scheme.tint.info,
         }}
       >
-        <Sparkles size={16} color={palette.semantic.info[600]} strokeWidth={2.2} />
-        <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}>
+        <Sparkles
+          size={16}
+          color={palette.semantic.info[600]}
+          strokeWidth={2.2}
+        />
+        <Text
+          style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}
+        >
           Now show {them} the screen so they know it&apos;s a real promise — you
-          just shook on it.
+          just agreed to it together.
         </Text>
       </View>
     </OBShell>
@@ -2187,6 +2517,13 @@ function OBParentDone({
   // Prefer the real generated access code; fall back to a derived placeholder
   // only when persistence didn't run (e.g. previews/tests without a backend).
   const code = persisted?.kids[0]?.accessCode ?? joinCodeFor(data.familyName);
+  const kidName =
+    persisted?.kids[0]?.name ?? data.kids[0]?.name.trim() ?? "Your child";
+  const shareJoinCode = () => {
+    void Share.share({
+      message: `${kidName}'s Chorey join code: ${code}\n\nOpen Chorey, tap "Join as a child", and enter this code.`,
+    });
+  };
 
   return (
     <OBShell footer={<OBPrimary onPress={onFinish}>Go to dashboard</OBPrimary>}>
@@ -2203,11 +2540,22 @@ function OBParentDone({
         >
           <Check size={38} color={giving[800]} strokeWidth={3} />
         </View>
-        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 34, marginTop: 20 }]}>
+        <Text
+          style={[
+            typography.text.h1,
+            { color: scheme.fg, fontSize: 34, marginTop: 20 },
+          ]}
+        >
           You&apos;re all set.
         </Text>
-        <Text style={[typography.text.body, { color: scheme.fgMuted, marginTop: 10 }]}>
-          {data.kids.length} {data.kids.length === 1 ? "child" : "children"} · {data.chores.length} chores · up to{" "}
+        <Text
+          style={[
+            typography.text.body,
+            { color: scheme.fgMuted, marginTop: 10 },
+          ]}
+        >
+          {data.kids.length} {data.kids.length === 1 ? "child" : "children"} ·{" "}
+          {data.chores.length} chores · up to{" "}
           {formatMoney(totalCents, currency)}/day.
         </Text>
 
@@ -2221,27 +2569,50 @@ function OBParentDone({
             borderWidth: 1,
           }}
         >
-          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>Child join code</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-            <Text style={{ fontFamily: typography.family.display.bold, fontSize: 34, letterSpacing: 4, color: scheme.fg }}>
-              {code}
+          <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
+            Child join code
+          </Text>
+          <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.62}
+            numberOfLines={1}
+            style={{
+              color: scheme.fg,
+              fontFamily: typography.family.display.bold,
+              fontSize: 30,
+              letterSpacing: 3,
+              marginTop: 8,
+            }}
+          >
+            {code}
+          </Text>
+          <Pressable
+            accessibilityLabel="Share child join code"
+            accessibilityRole="button"
+            onPress={shareJoinCode}
+            style={({ pressed }) => ({
+              alignItems: "center",
+              alignSelf: "flex-start",
+              backgroundColor: pressed ? scheme.bgRaised : scheme.bgSunken,
+              borderRadius: 999,
+              flexDirection: "row",
+              gap: 7,
+              marginTop: 14,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+            })}
+          >
+            <Share2 size={14} color={scheme.fgMuted} strokeWidth={2.3} />
+            <Text style={[typography.text.label, { color: scheme.fgMuted }]}>
+              Share
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: scheme.bgSunken,
-              }}
-            >
-              <ChevronRight size={14} color={scheme.fgMuted} strokeWidth={2} />
-              <Text style={[typography.text.label, { color: scheme.fgMuted }]}>Share</Text>
-            </View>
-          </View>
-          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 8 }]}>
+          </Pressable>
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, marginTop: 8 },
+            ]}
+          >
             Your kids enter this in the app to join the family.
           </Text>
         </View>
@@ -2374,7 +2745,10 @@ function OBKidAvatar({
         </OBPrimary>
       }
     >
-      <OBTitle title="Make it yours." subtitle="Pick a color and tell us your name." />
+      <OBTitle
+        title="Make it yours."
+        subtitle="Pick a color and tell us your name."
+      />
       <View style={{ alignItems: "center", marginBottom: 22 }}>
         <View
           style={{
@@ -2386,12 +2760,25 @@ function OBKidAvatar({
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontFamily: typography.family.display.bold, fontSize: 44, color: toneStyle.text }}>
+          <Text
+            style={{
+              fontFamily: typography.family.display.bold,
+              fontSize: 44,
+              color: toneStyle.text,
+            }}
+          >
             {(data.kidName.trim()[0] || "?").toUpperCase()}
           </Text>
         </View>
       </View>
-      <View style={{ flexDirection: "row", gap: 12, justifyContent: "center", marginBottom: 24 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 12,
+          justifyContent: "center",
+          marginBottom: 24,
+        }}
+      >
         {KID_TONES.map((t) => (
           <ColorSwatch
             key={t.tone}
@@ -2402,7 +2789,12 @@ function OBKidAvatar({
           />
         ))}
       </View>
-      <OBField label="Your name" value={data.kidName} onChange={(v) => patch({ kidName: v })} placeholder="e.g. Mia" />
+      <OBField
+        label="Your name"
+        value={data.kidName}
+        onChange={(v) => patch({ kidName: v })}
+        placeholder="e.g. Mia"
+      />
     </OBShell>
   );
 }
@@ -2420,17 +2812,43 @@ function OBKidHow({
 }) {
   const { scheme, typography, bucketInk } = useChoreyTheme();
   const rows = [
-    { tone: "spend" as const, Icon: Gift, title: "Spend", body: "Yours to use on your wishlist." },
-    { tone: "savings" as const, Icon: Lock, title: "Save", body: "Grows over time. Stays locked." },
-    { tone: "giving" as const, Icon: Heart, title: "Give", body: "You give it to a cause you care about." },
+    {
+      tone: "spend" as const,
+      Icon: Gift,
+      title: "Spend",
+      body: "Yours to use on your wishlist.",
+    },
+    {
+      tone: "savings" as const,
+      Icon: Lock,
+      title: "Save",
+      body: "Grows over time. Stays locked.",
+    },
+    {
+      tone: "giving" as const,
+      Icon: Heart,
+      title: "Give",
+      body: "You give it to a cause you care about.",
+    },
   ];
   const tintFor = (tone: "spend" | "savings" | "giving") =>
-    tone === "spend" ? scheme.tint.allowance : tone === "savings" ? scheme.tint.savings : scheme.tint.giving;
+    tone === "spend"
+      ? scheme.tint.allowance
+      : tone === "savings"
+        ? scheme.tint.savings
+        : scheme.tint.giving;
 
   return (
-    <OBShell onBack={onBack} footer={<OBPrimary onPress={onFinish}>Start earning</OBPrimary>}>
+    <OBShell
+      onBack={onBack}
+      footer={<OBPrimary onPress={onFinish}>Start earning</OBPrimary>}
+    >
       <OBTitle
-        title={data.kidName.trim() ? `Welcome, ${data.kidName.trim()}!` : "How it works."}
+        title={
+          data.kidName.trim()
+            ? `Welcome, ${data.kidName.trim()}!`
+            : "How it works."
+        }
         subtitle="Every chore you finish pays you. Your money splits three ways."
       />
       <View style={{ gap: 12 }}>
@@ -2461,8 +2879,22 @@ function OBKidHow({
                 <r.Icon size={24} color={ramp[800]} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[typography.text.h3, { color: bucketInk(r.tone), fontSize: 16 }]}>{r.title}</Text>
-                <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 1 }]}>{r.body}</Text>
+                <Text
+                  style={[
+                    typography.text.h3,
+                    { color: bucketInk(r.tone), fontSize: 16 },
+                  ]}
+                >
+                  {r.title}
+                </Text>
+                <Text
+                  style={[
+                    typography.text.caption,
+                    { color: scheme.fgMuted, marginTop: 1 },
+                  ]}
+                >
+                  {r.body}
+                </Text>
               </View>
             </View>
           );

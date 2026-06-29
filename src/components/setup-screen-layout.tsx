@@ -1,13 +1,8 @@
 import type { ReactNode } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { ChevronLeft } from "lucide-react-native";
 
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import { choreyTheme } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
@@ -28,20 +23,19 @@ export function SetupScreenLayout({
   footer,
   onBack,
 }: Props) {
-  const { scheme } = useChoreyTheme();
+  const { scheme, typography, toybox } = useChoreyTheme();
+  const keyboardHeight = useKeyboardHeight();
   return (
-    // Lift the pinned footer (and scrollable fields) above the keyboard so the
-    // submit button and lower inputs never end up hidden underneath it.
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: scheme.bgPage }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           padding: choreyTheme.spacing.xl,
-          paddingBottom: choreyTheme.spacing.lg,
-          gap: choreyTheme.spacing.xxl,
+          paddingBottom:
+            keyboardHeight > 0
+              ? keyboardHeight + choreyTheme.spacing.xxl
+              : choreyTheme.spacing.lg,
+          gap: choreyTheme.spacing.lg,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -55,67 +49,46 @@ export function SetupScreenLayout({
             style={({ pressed }) => ({
               alignItems: "center",
               alignSelf: "flex-start",
-              backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
-              borderColor: scheme.borderHover,
+              backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
+              borderColor: scheme.toy.border,
               borderRadius: choreyTheme.radii.pill,
-              borderWidth: 1,
-              height: 44,
+              borderWidth: toybox.borderWidth,
+              height: 30,
               justifyContent: "center",
-              width: 44,
+              width: 30,
+              ...(pressed ? null : scheme.toy.shadowSm),
             })}
           >
-            <Text
-              style={{
-                color: scheme.fg,
-                fontSize: 24,
-                fontWeight: "700",
-                lineHeight: 26,
-              }}
-            >
-              {"<"}
-            </Text>
+            <ChevronLeft size={16} color={scheme.fg} strokeWidth={2.4} />
           </Pressable>
         ) : null}
 
         <View
           style={{
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderRadius: choreyTheme.radii.lg,
-            borderWidth: 1,
+            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderRadius: 18,
+            borderWidth: toybox.borderWidth,
             gap: choreyTheme.spacing.sm,
             padding: choreyTheme.spacing.lg,
-            ...choreyTheme.shadows.card,
+            ...scheme.toy.shadow,
           }}
         >
           <Text
             selectable
-            style={{
-              color: scheme.fgFaint,
-              fontSize: 13,
-              fontWeight: "800",
-            }}
+            style={[typography.text.overline, { color: scheme.fgFaint }]}
           >
             {eyebrow}
           </Text>
           <Text
             selectable
-            style={{
-              color: scheme.fg,
-              fontSize: 34,
-              fontWeight: "800",
-              letterSpacing: 0,
-            }}
+            style={[typography.text.h1, { color: scheme.fg, fontSize: 32 }]}
           >
             {title}
           </Text>
           <Text
             selectable
-            style={{
-              color: scheme.fgMuted,
-              fontSize: 16,
-              lineHeight: 24,
-            }}
+            style={[typography.text.body, { color: scheme.fgMuted }]}
           >
             {description}
           </Text>
@@ -126,16 +99,18 @@ export function SetupScreenLayout({
 
       <View
         style={{
-          backgroundColor: scheme.bgSunken,
-          borderColor: scheme.border,
-          borderTopWidth: 1,
+          backgroundColor: scheme.bgPage,
           paddingHorizontal: choreyTheme.spacing.xl,
-          paddingTop: choreyTheme.spacing.md,
-          paddingBottom: choreyTheme.spacing.xl,
+          paddingTop: choreyTheme.spacing.lg,
+          paddingBottom:
+            keyboardHeight > 0
+              ? keyboardHeight + choreyTheme.spacing.md
+              : choreyTheme.spacing.xxl,
+          overflow: "visible",
         }}
       >
         {footer}
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
