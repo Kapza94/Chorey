@@ -176,16 +176,24 @@ export function OBPrimary({
 export function OBSecondary({
   children,
   onPress,
+  disabled,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
+  disabled?: boolean;
 }) {
   const { scheme, typography } = useChoreyTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
-      style={{ width: "100%", paddingVertical: 13, alignItems: "center" }}
+      accessibilityState={{ disabled: !!disabled }}
+      onPress={disabled ? undefined : onPress}
+      style={{
+        width: "100%",
+        paddingVertical: 13,
+        alignItems: "center",
+        opacity: disabled ? 0.5 : 1,
+      }}
     >
       <Text style={[typography.text.label, { color: scheme.fgMuted }]}>
         {children}

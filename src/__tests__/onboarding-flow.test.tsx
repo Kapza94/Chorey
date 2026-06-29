@@ -303,6 +303,26 @@ describe("OnboardingFlow", () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
+  it("persists the family only once if you go back from the promise and continue again", async () => {
+    const persist = jest.fn().mockResolvedValue({ householdId: "h1", kids: [] });
+    render(<OnboardingFlow initialStep="p_causes" persist={persist} />);
+
+    fireEvent.press(screen.getByLabelText("Animals"));
+    fireEvent.press(screen.getByText("Continue"));
+    expect(await screen.findByText("Family promise.")).toBeOnTheScreen();
+
+    // Step back to the causes screen and continue a second time.
+    fireEvent.press(screen.getByLabelText("Back"));
+    expect(
+      await screen.findByText("What matters to your family?"),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Continue"));
+    expect(await screen.findByText("Family promise.")).toBeOnTheScreen();
+
+    // The household must not be created twice.
+    expect(persist).toHaveBeenCalledTimes(1);
+  });
+
   it("gates the kid branch on the join code and reports it", () => {
     const onComplete = jest.fn();
     render(<OnboardingFlow initialStep="k_code" onComplete={onComplete} />);

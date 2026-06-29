@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
 
 import { useKeyboardHeight } from "@/components/use-keyboard-height";
@@ -25,6 +25,10 @@ export function SetupScreenLayout({
 }: Props) {
   const { scheme, typography, toybox } = useChoreyTheme();
   const keyboardHeight = useKeyboardHeight();
+  // Android resizes the window above the keyboard on its own (default
+  // softwareKeyboardLayoutMode: "resize"), so only iOS needs manual lift —
+  // padding by keyboardHeight on both would double-count and float the footer.
+  const keyboardLift = Platform.OS === "ios" ? keyboardHeight : 0;
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
       <ScrollView
@@ -32,8 +36,8 @@ export function SetupScreenLayout({
         contentContainerStyle={{
           padding: choreyTheme.spacing.xl,
           paddingBottom:
-            keyboardHeight > 0
-              ? keyboardHeight + choreyTheme.spacing.xxl
+            keyboardLift > 0
+              ? keyboardLift + choreyTheme.spacing.xxl
               : choreyTheme.spacing.lg,
           gap: choreyTheme.spacing.lg,
         }}
@@ -103,8 +107,8 @@ export function SetupScreenLayout({
           paddingHorizontal: choreyTheme.spacing.xl,
           paddingTop: choreyTheme.spacing.lg,
           paddingBottom:
-            keyboardHeight > 0
-              ? keyboardHeight + choreyTheme.spacing.md
+            keyboardLift > 0
+              ? keyboardLift + choreyTheme.spacing.md
               : choreyTheme.spacing.xxl,
           overflow: "visible",
         }}

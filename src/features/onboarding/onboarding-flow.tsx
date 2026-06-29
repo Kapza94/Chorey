@@ -150,7 +150,6 @@ type Step =
   | "p_split"
   | "p_chores"
   | "p_causes"
-  | "p_account"
   | "p_plan"
   | "p_pledge"
   | "p_done"
@@ -262,6 +261,11 @@ export function OnboardingFlow({
   const finishParent = () => onComplete?.(buildParentResult(), persisted);
 
   const persistParent = async () => {
+    // Idempotent: once the family is written, stepping back to the causes
+    // screen and continuing again must not create a second household.
+    if (persisted) {
+      return persisted;
+    }
     const result = await persist?.(buildParentResult());
     if (result) {
       setPersisted(result);
@@ -1593,12 +1597,37 @@ function OBCauses({
 }: {
   data: OnboardingData;
   patch: (p: Partial<OnboardingData>) => void;
-  onNext: () => void;
+  // Finishing this step persists the family to Supabase, so it's async.
+  onNext: () => void | Promise<void>;
   onBack: () => void;
 }) {
-  const { scheme, typography } = useChoreyTheme();
+  const { scheme, typography, palette } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
   const [customCause, setCustomCause] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Guard the save: ignore double-taps while persisting, and on failure keep
+  // the parent here with an error rather than silently dropping their setup.
+  const handleNext = async () => {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await onNext();
+      // Success advances to the next step (this screen unmounts) — leave busy
+      // set so the buttons can't fire again during the transition.
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message
+          ? e.message
+          : "Couldn't save your family. Check your connection and try again.",
+      );
+      setBusy(false);
+    }
+  };
 
   const toggle = (name: string) => {
     if (data.causes.includes(name)) {
@@ -1627,10 +1656,19 @@ function OBCauses({
       onBack={onBack}
       footer={
         <>
-          <OBPrimary onPress={onNext} disabled={data.causes.length === 0}>
-            {data.causes.length ? "Continue" : "Pick at least one"}
+          <OBPrimary
+            onPress={handleNext}
+            disabled={data.causes.length === 0 || busy}
+          >
+            {busy
+              ? "Saving…"
+              : data.causes.length
+                ? "Continue"
+                : "Pick at least one"}
           </OBPrimary>
-          <OBSecondary onPress={onNext}>Skip for now</OBSecondary>
+          <OBSecondary onPress={handleNext} disabled={busy}>
+            Skip for now
+          </OBSecondary>
         </>
       }
     >
@@ -1800,6 +1838,16 @@ function OBCauses({
             </Pressable>
           ))}
         </View>
+      ) : null}
+      {error ? (
+        <Text
+          style={[
+            typography.text.bodySm,
+            { color: palette.semantic.danger[600], marginTop: 14 },
+          ]}
+        >
+          {error}
+        </Text>
       ) : null}
     </OBShell>
   );
