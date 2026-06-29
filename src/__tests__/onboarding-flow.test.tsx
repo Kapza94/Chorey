@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
+import { Share } from "react-native";
 
 import { OnboardingFlow } from "@/features/onboarding/onboarding-flow";
 
@@ -17,27 +23,46 @@ jest.mock("@/features/onboarding/signature-pad", () => ({
 }));
 
 describe("OnboardingFlow", () => {
-  it("walks welcome → big idea → role", () => {
-    render(<OnboardingFlow />);
+  it("opens on the auth screen and enters onboarding after sign-in", async () => {
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+    render(
+      <OnboardingFlow
+        auth={auth}
+        resolveSignedInHousehold={jest.fn().mockResolvedValue(null)}
+      />,
+    );
 
+    // Auth is the first screen — no "Get started" / "I already have an account".
     expect(screen.getByText("chorey")).toBeOnTheScreen();
-    fireEvent.press(screen.getByText("Get started"));
+    expect(screen.queryByText("Get started")).toBeNull();
+    expect(screen.queryByText("I already have an account")).toBeNull();
 
-    expect(screen.getByText("Every dollar splits three ways.")).toBeOnTheScreen();
-    fireEvent.press(screen.getByText("I'm in"));
+    fireEvent.press(screen.getByText("Continue with email"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Email"),
+      "alex@example.com",
+    );
+    fireEvent.press(screen.getByText("Email me a code"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Verification code"),
+      "ABCD1234",
+    );
+    fireEvent.press(screen.getByText("Continue"));
 
-    expect(screen.getByText("Who's setting up?")).toBeOnTheScreen();
+    expect(
+      await screen.findByText("Every dollar splits three ways."),
+    ).toBeOnTheScreen();
   });
 
-  it("sends returning parents to sign-in instead of the setup wizard", () => {
-    const onSignIn = jest.fn();
-    render(<OnboardingFlow onSignIn={onSignIn} />);
+  it("routes a kid from the auth screen to the join-code step", () => {
+    render(<OnboardingFlow />);
 
-    fireEvent.press(screen.getByText("I already have an account"));
+    fireEvent.press(screen.getByText("I'm a kid — enter a code"));
 
-    expect(onSignIn).toHaveBeenCalledTimes(1);
-    // Must NOT advance into onboarding setup.
-    expect(screen.queryByText("Every dollar splits three ways.")).toBeNull();
+    expect(screen.getByText("Use a sample code")).toBeOnTheScreen();
   });
 
   it("completes the parent branch, creates an account, persists and reports the setup", async () => {
@@ -51,6 +76,9 @@ describe("OnboardingFlow", () => {
       verifyEmailCode: jest.fn().mockResolvedValue(undefined),
     };
     const choosePlan = jest.fn().mockResolvedValue(undefined);
+    const shareSpy = jest
+      .spyOn(Share, "share")
+      .mockResolvedValue({ action: Share.sharedAction });
     render(
       <OnboardingFlow
         initialStep="p_family"
@@ -84,18 +112,15 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Make the bed"));
     fireEvent.press(screen.getByText("Add 1 chore"));
 
-    // Causes — pick a broad cause idea, not a real charity
+    // Causes — "What Matters Most"; finishing it persists the family.
     expect(screen.getByText("What matters to your family?")).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Animals"));
     fireEvent.press(screen.getByText("Continue"));
 
-    // Create account — email, then the emailed verification code
-    fireEvent.changeText(await screen.findByLabelText("Email"), "alex@example.com");
-    fireEvent.press(screen.getByText("Email me a code"));
-    expect(auth.sendEmailCode).toHaveBeenCalledWith("alex@example.com");
-
-    fireEvent.changeText(await screen.findByLabelText("Verification code"), "ABCD1234");
-    fireEvent.press(screen.getByText("Create account & finish"));
+    // The family-promise screen: sign it, then continue to the trial choice.
+    expect(await screen.findByText("Family promise.")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Sign"));
+    fireEvent.press(screen.getByText("We promise"));
 
     // Plan choice before the trial — monthly or yearly, no prices invented.
     expect(await screen.findByText("Try Chorey Family.")).toBeOnTheScreen();
@@ -110,15 +135,8 @@ describe("OnboardingFlow", () => {
       expect(choosePlan).toHaveBeenCalledWith("h1", "monthly");
     });
 
-    // The family-promise screen: sign it, then seal the deal.
-    expect(await screen.findByText("Pinky promise.")).toBeOnTheScreen();
-    fireEvent.press(screen.getByLabelText("Sign"));
-    fireEvent.press(screen.getByText("We pinky promise"));
-
-    // Verified + persisted → the success screen appears
+    // Persisted → the success screen appears
     expect(await screen.findByText("You're all set.")).toBeOnTheScreen();
-    // The alphanumeric code must reach verification intact — letters not stripped.
-    expect(auth.verifyEmailCode).toHaveBeenCalledWith("alex@example.com", "ABCD1234");
     expect(persist).toHaveBeenCalledTimes(1);
     expect(persist.mock.calls[0][0]).toMatchObject({
       role: "parent",
@@ -130,6 +148,11 @@ describe("OnboardingFlow", () => {
     // not a name-derived placeholder.
     expect(screen.getByText("482913")).toBeOnTheScreen();
     expect(screen.queryByText("CHRIVE")).not.toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Share child join code"));
+    expect(shareSpy).toHaveBeenCalledWith({
+      message:
+        'Mia\'s Chorey join code: 482913\n\nOpen Chorey, tap "Join as a child", and enter this code.',
+    });
 
     fireEvent.press(screen.getByText("Go to dashboard"));
 
@@ -203,6 +226,103 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByText("5%")).toBeNull();
   });
 
+  it("keeps a typed budget amount when the parent taps Continue", async () => {
+    const onComplete = jest.fn();
+    const persist = jest.fn().mockResolvedValue({
+      householdId: "h1",
+      kids: [{ childProfileId: "c1", name: "Mia", accessCode: "482913" }],
+    });
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+
+    render(
+      <OnboardingFlow
+        initialStep="p_split"
+        onComplete={onComplete}
+        auth={auth}
+        persist={persist}
+      />,
+    );
+
+    fireEvent(screen.getByLabelText("Budget amount"), "focus");
+    fireEvent.changeText(screen.getByLabelText("Budget amount"), "500");
+    fireEvent.press(screen.getByText("Continue"));
+
+    fireEvent.press(screen.getByLabelText("Make the bed"));
+    fireEvent.press(screen.getByText("Add 1 chore"));
+    fireEvent.press(screen.getByLabelText("Animals"));
+    fireEvent.press(screen.getByText("Continue"));
+    fireEvent.press(await screen.findByLabelText("Sign"));
+    fireEvent.press(screen.getByText("We promise"));
+    fireEvent.press(await screen.findByLabelText("Choose monthly billing"));
+    fireEvent.press(screen.getByText("Start my free trial"));
+    fireEvent.press(await screen.findByText("Go to dashboard"));
+
+    expect(onComplete.mock.calls[0][0]).toMatchObject({
+      role: "parent",
+      budgetCents: 50000,
+    });
+  });
+
+  it("sends existing accounts to their household instead of overwriting onboarding data", async () => {
+    const persist = jest.fn();
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+    const resolveSignedInHousehold = jest.fn().mockResolvedValue("household-1");
+    const onExistingAccount = jest.fn();
+
+    render(
+      <OnboardingFlow
+        auth={auth}
+        persist={persist}
+        resolveSignedInHousehold={resolveSignedInHousehold}
+        onExistingAccount={onExistingAccount}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("Continue with email"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Email"),
+      "alex@example.com",
+    );
+    fireEvent.press(screen.getByText("Email me a code"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Verification code"),
+      "ABCD1234",
+    );
+    fireEvent.press(screen.getByText("Continue"));
+
+    await waitFor(() => {
+      expect(onExistingAccount).toHaveBeenCalledWith("household-1");
+    });
+    expect(resolveSignedInHousehold).toHaveBeenCalledTimes(1);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it("persists the family only once if you go back from the promise and continue again", async () => {
+    const persist = jest.fn().mockResolvedValue({ householdId: "h1", kids: [] });
+    render(<OnboardingFlow initialStep="p_causes" persist={persist} />);
+
+    fireEvent.press(screen.getByLabelText("Animals"));
+    fireEvent.press(screen.getByText("Continue"));
+    expect(await screen.findByText("Family promise.")).toBeOnTheScreen();
+
+    // Step back to the causes screen and continue a second time.
+    fireEvent.press(screen.getByLabelText("Back"));
+    expect(
+      await screen.findByText("What matters to your family?"),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Continue"));
+    expect(await screen.findByText("Family promise.")).toBeOnTheScreen();
+
+    // The household must not be created twice.
+    expect(persist).toHaveBeenCalledTimes(1);
+  });
+
   it("gates the kid branch on the join code and reports it", () => {
     const onComplete = jest.fn();
     render(<OnboardingFlow initialStep="k_code" onComplete={onComplete} />);
@@ -219,7 +339,11 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByText("Start earning"));
 
     expect(onComplete).toHaveBeenCalledWith(
-      expect.objectContaining({ role: "kid", code: "CHOREY-DEMO0001", kidName: "Mia" }),
+      expect.objectContaining({
+        role: "kid",
+        code: "CHOREY-DEMO0001",
+        kidName: "Mia",
+      }),
     );
   });
 
@@ -240,7 +364,7 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByLabelText("Suggest a chore")).toBeNull();
   });
 
-  it("lets a family add several kids with no gate before the account step", () => {
+  it("lets a family add several kids with no gate before the paywall", async () => {
     render(<OnboardingFlow initialStep="p_addkid" />);
 
     // Add two kids — Chorey Family covers every kid in the household.
@@ -253,9 +377,9 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Make the bed"));
     fireEvent.press(screen.getByText("Add 1 chore")); // → causes
     fireEvent.press(screen.getByLabelText("Animals"));
-    fireEvent.press(screen.getByText("Continue")); // straight to the account step
+    fireEvent.press(screen.getByText("Continue")); // persists, then the promise
 
+    expect(await screen.findByText("Family promise.")).toBeOnTheScreen();
     expect(screen.queryByText(/Premium/)).toBeNull();
-    expect(screen.getByText("Save your family.")).toBeOnTheScreen();
   });
 });

@@ -77,22 +77,49 @@ describe("ParentApp · Kids", () => {
         initialTab="kids"
         kids={[mia]}
         pendingApprovals={[
-          { id: "ci1", childName: "Mia", title: "Dishes", rewardCents: 250, tone: "allowance" },
-          { id: "ci2", childName: "Mia", title: "Trash", rewardCents: 100, tone: "allowance" },
+          {
+            id: "ci1",
+            childName: "Mia",
+            title: "Dishes",
+            rewardCents: 250,
+            tone: "allowance",
+          },
+          {
+            id: "ci2",
+            childName: "Mia",
+            title: "Trash",
+            rewardCents: 100,
+            tone: "allowance",
+          },
         ]}
         purchaseRequests={[
-          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500, wishlistItemId: "w1" },
+          {
+            id: "pr1",
+            childName: "Mia",
+            itemName: "Skateboard",
+            targetCents: 6500,
+            wishlistItemId: "w1",
+          },
         ]}
       />,
     );
 
     // Chore approvals badge the Chores tab; the purchase request badges Children.
-    expect(screen.getByLabelText("Chores tab, 2 waiting for review")).toBeOnTheScreen();
-    expect(screen.getByLabelText("Children tab, 1 waiting for review")).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText("Chores tab, 2 waiting for review"),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText("Children tab, 1 waiting for review"),
+    ).toBeOnTheScreen();
   });
 
   it("shows no review badge when nothing is waiting", () => {
-    render(<ParentApp initialTab="chores" kids={[{ ...mia, pendingApprovals: 0 }]} />);
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[{ ...mia, pendingApprovals: 0 }]}
+      />,
+    );
 
     expect(screen.getByLabelText("Children tab")).toBeOnTheScreen();
     expect(screen.getByLabelText("Chores tab")).toBeOnTheScreen();
@@ -171,7 +198,13 @@ describe("ParentApp · Kids", () => {
       <ParentApp
         kids={[mia]}
         pendingApprovals={[
-          { id: "ci1", childName: "Mia", title: "Dishes", rewardCents: 250, tone: "allowance" },
+          {
+            id: "ci1",
+            childName: "Mia",
+            title: "Dishes",
+            rewardCents: 250,
+            tone: "allowance",
+          },
         ]}
         onSendBackChore={onSendBackChore}
       />,
@@ -191,7 +224,13 @@ describe("ParentApp · Kids", () => {
       <ParentApp
         kids={[mia]}
         purchaseRequests={[
-          { id: "pr1", childName: "Mia", itemName: "Skateboard", targetCents: 6500, wishlistItemId: "w1" },
+          {
+            id: "pr1",
+            childName: "Mia",
+            itemName: "Skateboard",
+            targetCents: 6500,
+            wishlistItemId: "w1",
+          },
         ]}
         onApprovePurchase={onApprovePurchase}
       />,
@@ -208,7 +247,9 @@ describe("ParentApp · Kids", () => {
     render(
       <ParentApp
         kids={[mia]}
-        givingSuggestions={[{ id: "gs1", childName: "Mia", name: "Animal shelter" }]}
+        givingSuggestions={[
+          { id: "gs1", childName: "Mia", name: "Animal shelter" },
+        ]}
         onApproveGivingSuggestion={onApproveGivingSuggestion}
       />,
     );
@@ -300,7 +341,10 @@ describe("ParentApp · Payments", () => {
     fireEvent.press(screen.getByLabelText("Mark Mia as paid"));
     fireEvent.press(screen.getByLabelText("Other"));
     fireEvent.press(screen.getByLabelText("Something else"));
-    fireEvent.changeText(screen.getByLabelText("What did you give?"), "Lego set");
+    fireEvent.changeText(
+      screen.getByLabelText("What did you give?"),
+      "Lego set",
+    );
     fireEvent.press(screen.getByLabelText("Confirm payout"));
 
     expect(onMarkPaid).toHaveBeenCalledWith("k1", 740, "other", "Lego set");
@@ -325,9 +369,7 @@ describe("ParentApp · Payments", () => {
   });
 
   it("drops a kid with no Spend balance to all-paid-up", () => {
-    render(
-      <ParentApp initialTab="pay" due={[{ ...due[0], spendCents: 0 }]} />,
-    );
+    render(<ParentApp initialTab="pay" due={[{ ...due[0], spendCents: 0 }]} />);
 
     expect(screen.getByText("All paid up.")).toBeOnTheScreen();
   });
@@ -357,7 +399,11 @@ describe("ParentApp · Payments", () => {
           frequency: "weekly",
           startsOn: "2026-05-30",
           endsOn: "2026-06-05",
-          bucketStatuses: { spend: "pending", savings: "pending", giving: "pending" },
+          bucketStatuses: {
+            spend: "pending",
+            savings: "pending",
+            giving: "pending",
+          },
         }}
         onMarkAllSettled={onMarkAllSettled}
       />,
@@ -377,7 +423,11 @@ describe("ParentApp · Payments", () => {
           frequency: "weekly",
           startsOn: "2026-05-30",
           endsOn: "2026-06-05",
-          bucketStatuses: { spend: "settled", savings: "settled", giving: "settled" },
+          bucketStatuses: {
+            spend: "settled",
+            savings: "settled",
+            giving: "settled",
+          },
         }}
       />,
     );
@@ -389,7 +439,13 @@ describe("ParentApp · Payments", () => {
 
 describe("ParentApp · Chores", () => {
   const chores = [
-    { id: "c1", name: "Walk Buddy", valueCents: 300, freq: "Daily", assignedTo: "Mia" },
+    {
+      id: "c1",
+      name: "Walk Buddy",
+      valueCents: 300,
+      freq: "Daily",
+      assignedTo: "Mia",
+    },
   ];
 
   it("lists the chore library and per-kid assigned-vs-cap", () => {
@@ -404,9 +460,33 @@ describe("ParentApp · Chores", () => {
 
   it("filters the board by repeat-cadence tabs", () => {
     const board: ChoreBoardItem[] = [
-      { id: "b1", title: "Make bed", childName: "Mia", rewardCents: 100, tone: "allowance", status: "assigned", recurrence: "daily" },
-      { id: "b2", title: "Mow lawn", childName: "Mia", rewardCents: 500, tone: "allowance", status: "assigned", recurrence: "weekly" },
-      { id: "b3", title: "Wash car", childName: "Mia", rewardCents: 300, tone: "allowance", status: "assigned", recurrence: null },
+      {
+        id: "b1",
+        title: "Make bed",
+        childName: "Mia",
+        rewardCents: 100,
+        tone: "allowance",
+        status: "assigned",
+        recurrence: "daily",
+      },
+      {
+        id: "b2",
+        title: "Mow lawn",
+        childName: "Mia",
+        rewardCents: 500,
+        tone: "allowance",
+        status: "assigned",
+        recurrence: "weekly",
+      },
+      {
+        id: "b3",
+        title: "Wash car",
+        childName: "Mia",
+        rewardCents: 300,
+        tone: "allowance",
+        status: "assigned",
+        recurrence: null,
+      },
     ];
     render(<ParentApp initialTab="chores" kids={[mia]} choreBoard={board} />);
 
@@ -450,7 +530,6 @@ describe("ParentApp · Chores", () => {
       rewardCents: 250,
       assigneeId: "k1",
       recurrence: undefined,
-      dueTime: "16:00",
     });
   });
 
@@ -480,7 +559,6 @@ describe("ParentApp · Chores", () => {
       rewardCents: 0,
       assigneeId: "k1",
       recurrence: "daily",
-      dueTime: "16:00",
     });
   });
 
@@ -503,18 +581,18 @@ describe("ParentApp · Chores", () => {
     // Tapping a locked recurrence explains the pause inline, doesn't select it.
     fireEvent.press(screen.getByLabelText("Repeat Daily"));
     expect(
-      screen.getByText("Chorey is paused — resume your subscription to use repeats."),
+      screen.getByText(
+        "Chorey is paused — resume your subscription to use repeats.",
+      ),
     ).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Add chore"));
 
-    // The chore is still created — as a one-off, with no recurrence, carrying
-    // the default "due by" time.
+    // The chore is still created — as a one-off, with no recurrence.
     expect(onAddChore).toHaveBeenCalledWith({
       name: "Feed cat",
       rewardCents: 200,
       assigneeId: "k1",
       recurrence: undefined,
-      dueTime: "16:00",
     });
   });
 
@@ -555,7 +633,9 @@ describe("ParentApp · Chores", () => {
       { id: "k3", name: "Sam" },
       { id: "k4", name: "Zoe" },
     ];
-    render(<ParentApp initialTab="chores" kids={[mia, eli]} assignees={four} />);
+    render(
+      <ParentApp initialTab="chores" kids={[mia, eli]} assignees={four} />,
+    );
 
     fireEvent.press(screen.getByLabelText("New chore"));
     expect(screen.getByLabelText("Assign to Mia")).toBeOnTheScreen();
@@ -573,13 +653,29 @@ describe("ParentApp · Settings", () => {
     expect(screen.getByText("Settings.")).toBeOnTheScreen();
     expect(screen.getByText("40 / 40 / 20")).toBeOnTheScreen();
     expect(screen.getByText("Budget cap")).toBeOnTheScreen();
-    expect(screen.getByText("chorey · v0.1")).toBeOnTheScreen();
+    expect(screen.getByText(/chorey · v/)).toBeOnTheScreen();
+  });
+
+  it("shows the native app version and build number under logout", () => {
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        appVersionLabel="chorey · v1.2.3 (45)"
+      />,
+    );
+
+    expect(screen.getByText("chorey · v1.2.3 (45)")).toBeOnTheScreen();
   });
 
   it("steps a kid's budget by $5", () => {
     const onChangeBudget = jest.fn();
     render(
-      <ParentApp initialTab="settings" kids={[mia]} onChangeBudget={onChangeBudget} />,
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        onChangeBudget={onChangeBudget}
+      />,
     );
 
     // Mia starts at $25.00 (2500c) → increase to 3000
@@ -590,12 +686,20 @@ describe("ParentApp · Settings", () => {
   it("nudges the split and clamps Giving at the floor", () => {
     const onChangeSplit = jest.fn();
     const view = render(
-      <ParentApp initialTab="settings" kids={[mia]} onChangeSplit={onChangeSplit} />,
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        onChangeSplit={onChangeSplit}
+      />,
     );
 
     // Increase Spend 40 → 45; Savings absorbs the change (40 → 35), Give holds.
     fireEvent.press(screen.getByLabelText("Increase Spend"));
-    expect(onChangeSplit).toHaveBeenCalledWith({ spend: 45, save: 35, give: 20 });
+    expect(onChangeSplit).toHaveBeenCalledWith({
+      spend: 45,
+      save: 35,
+      give: 20,
+    });
 
     // With Giving already at the 10% floor, decreasing keeps it at 10.
     view.rerender(
@@ -608,13 +712,21 @@ describe("ParentApp · Settings", () => {
     );
     onChangeSplit.mockClear();
     fireEvent.press(screen.getByLabelText("Decrease Give"));
-    expect(onChangeSplit).toHaveBeenCalledWith({ spend: 40, save: 50, give: 10 });
+    expect(onChangeSplit).toHaveBeenCalledWith({
+      spend: 40,
+      save: 50,
+      give: 10,
+    });
   });
 
   it("switches a kid's cadence", () => {
     const onChangeCadence = jest.fn();
     render(
-      <ParentApp initialTab="settings" kids={[mia]} onChangeCadence={onChangeCadence} />,
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        onChangeCadence={onChangeCadence}
+      />,
     );
 
     fireEvent.press(screen.getByLabelText("Mia monthly"));
@@ -623,7 +735,9 @@ describe("ParentApp · Settings", () => {
 
   it("logs out from the settings tab", () => {
     const onLogOut = jest.fn();
-    render(<ParentApp initialTab="settings" kids={[mia]} onLogOut={onLogOut} />);
+    render(
+      <ParentApp initialTab="settings" kids={[mia]} onLogOut={onLogOut} />,
+    );
 
     fireEvent.press(screen.getByLabelText("Log out"));
     expect(onLogOut).toHaveBeenCalledTimes(1);
@@ -761,7 +875,10 @@ describe("ParentApp · Chores board", () => {
     );
 
     fireEvent.press(screen.getByLabelText("Send back Wash dishes"));
-    fireEvent.changeText(screen.getByLabelText("Send-back reason"), "Do it again");
+    fireEvent.changeText(
+      screen.getByLabelText("Send-back reason"),
+      "Do it again",
+    );
     fireEvent.press(screen.getByLabelText("Confirm send back"));
     expect(onSendBackChore).toHaveBeenCalledWith("b1", "Do it again");
   });
@@ -772,9 +889,7 @@ describe("ParentApp · Chores board", () => {
       <ParentApp
         initialTab="chores"
         kids={[mia]}
-        choreBoard={[
-          { ...board[2], parentNote: "Looked great" },
-        ]}
+        choreBoard={[{ ...board[2], parentNote: "Looked great" }]}
         onSaveChoreNote={onSaveNote}
       />,
     );

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import * as Application from "expo-application";
 import {
   ChevronRight,
   CreditCard,
@@ -50,7 +51,14 @@ type Props = {
   onChangeSplit?: (split: Split) => void;
   onLogOut?: () => void;
   headerRight?: ReactNode;
+  appVersionLabel?: string;
 };
+
+function defaultAppVersionLabel() {
+  const version = Application.nativeApplicationVersion ?? "0.1";
+  const build = Application.nativeBuildVersion;
+  return `chorey · v${version}${build ? ` (${build})` : ""}`;
+}
 
 export function ParentSettingsScreen({
   currency = DEFAULT_CURRENCY,
@@ -64,6 +72,7 @@ export function ParentSettingsScreen({
   onChangeSplit,
   onLogOut,
   headerRight,
+  appVersionLabel = defaultAppVersionLabel(),
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
 
@@ -320,7 +329,7 @@ export function ParentSettingsScreen({
               color: scheme.fgFaint,
             }}
           >
-            chorey · v0.1
+            {appVersionLabel}
           </Text>
         </View>
       </ScrollView>

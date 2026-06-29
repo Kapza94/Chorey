@@ -27,3 +27,7 @@ expo-env.d.ts
 
 # ShipStudio metadata
 .shipstudio/
+
+# Local agent tooling (skills, codex state)
+.agents/
+.codex/

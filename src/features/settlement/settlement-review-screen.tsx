@@ -1,9 +1,10 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { CheckCircleIcon } from "@/components/status-icons";
+import { ToyButton, ToyCard } from "@/components/toybox";
 import { BucketBalances, formatReward } from "@/features/chores/money";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
-import { choreyTheme } from "@/theme/chorey-theme";
+import { buckets as bucketTokens, choreyTheme } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 
 type Props = {
@@ -34,7 +35,7 @@ export function SettlementReviewScreen({
   onMarkAllSettled,
   settlementPeriod,
 }: Props) {
-  const { scheme, palette } = useChoreyTheme();
+  const { scheme, typography, toybox, isDark, bucketInk } = useChoreyTheme();
   const total =
     bucketBalances.spendCents +
     bucketBalances.savingsCents +
@@ -49,67 +50,29 @@ export function SettlementReviewScreen({
       contentContainerStyle={{
         padding: choreyTheme.spacing.xl,
         paddingBottom: choreyTheme.spacing.xxl,
-        gap: choreyTheme.spacing.xl,
+        gap: choreyTheme.spacing.lg,
       }}
       style={{ flex: 1, backgroundColor: scheme.bgPage }}
     >
       <View style={{ gap: choreyTheme.spacing.sm }}>
-        <Text
-          style={{
-            color: scheme.fgFaint,
-            fontSize: 13,
-            fontWeight: "800",
-          }}
-        >
+        <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
           Settlement
         </Text>
-        <Text
-          style={{
-            color: scheme.fg,
-            fontSize: 34,
-            fontWeight: "800",
-            letterSpacing: 0,
-          }}
-        >
-          Review settlement
+        <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 32 }]}>
+          Review settlement.
         </Text>
-        <Text
-          style={{
-            color: scheme.fgFaint,
-            fontSize: 14,
-            fontWeight: "800",
-          }}
-        >
-          {settlementPeriod.frequency === "weekly" ? "Weekly" : "Monthly"} period
+        <Text style={[typography.text.label, { color: scheme.fgMuted }]}>
+          {settlementPeriod.frequency === "weekly" ? "Weekly" : "Monthly"}{" "}
+          period
         </Text>
-        <Text
-          style={{
-            color: scheme.fgFaint,
-            fontSize: 15,
-          }}
-        >
+        <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
           {settlementPeriod.startsOn} to {settlementPeriod.endsOn}
         </Text>
       </View>
 
-      <View
-        style={{
-          backgroundColor: scheme.bgModal,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.lg,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
+      <ToyCard style={{ gap: choreyTheme.spacing.lg }}>
         <Text
-          style={{
-            color: scheme.fg,
-            fontSize: 26,
-            fontVariant: ["tabular-nums"],
-            fontWeight: "900",
-          }}
+          style={[typography.text.money, { color: scheme.fg, fontSize: 26 }]}
         >
           {formatReward(total)} total
         </Text>
@@ -121,48 +84,50 @@ export function SettlementReviewScreen({
               : row.bucket === "savings"
                 ? bucketBalances.savingsCents
                 : bucketBalances.givingCents;
-          const bucketTheme = choreyTheme.buckets[row.bucket];
+          const ramp = bucketTokens[row.bucket].ramp;
 
           return (
             <View
               key={row.bucket}
               style={{
-                backgroundColor: bucketTheme.softColor,
-                borderColor: scheme.borderHover,
-                borderRadius: choreyTheme.radii.md,
-                borderWidth: 1,
+                backgroundColor: isDark ? ramp.tintDark : ramp[200],
+                borderColor: scheme.toy.border,
+                borderRadius: 14,
+                borderWidth: toybox.borderWidth,
                 flexDirection: "row",
+                gap: 10,
                 justifyContent: "space-between",
                 padding: choreyTheme.spacing.md,
+                ...scheme.toy.shadowSm,
               }}
             >
               <Text
-                style={{
-                  color: scheme.fg,
-                  flex: 1,
-                  fontSize: 15,
-                  fontWeight: "800",
-                }}
+                style={[
+                  typography.text.label,
+                  {
+                    color: scheme.fg,
+                    flex: 1,
+                    fontSize: 14,
+                  },
+                ]}
               >
                 {row.label}
               </Text>
               <Text
-                style={{
-                  color: scheme.fg,
-                  fontSize: 16,
-                  fontVariant: ["tabular-nums"],
-                  fontWeight: "900",
-                }}
+                style={[
+                  typography.text.money,
+                  { color: bucketInk(row.bucket), fontSize: 15 },
+                ]}
               >
                 {formatReward(amount)}
               </Text>
             </View>
           );
         })}
-      </View>
+      </ToyCard>
 
       {allSettled ? (
-        <View
+        <ToyCard
           style={{
             alignItems: "center",
             flexDirection: "row",
@@ -171,42 +136,21 @@ export function SettlementReviewScreen({
         >
           <CheckCircleIcon />
           <Text
-            style={{
-              color: scheme.fgMuted,
-              fontSize: 16,
-              fontWeight: "900",
-            }}
+            style={[
+              typography.text.label,
+              { color: scheme.fgMuted, fontSize: 16 },
+            ]}
           >
             All settled
           </Text>
-        </View>
+        </ToyCard>
       ) : (
-        <Pressable
+        <ToyButton
           accessibilityLabel="Mark all settled"
-          accessibilityRole="button"
           onPress={() => onMarkAllSettled?.(settlementPeriod.id)}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            backgroundColor: pressed
-              ? palette.accent[800]
-              : palette.accent[600],
-            borderColor: palette.accent[800],
-            borderRadius: choreyTheme.radii.pill,
-            borderWidth: 1,
-            paddingVertical: 16,
-            ...choreyTheme.shadows.button,
-          })}
         >
-          <Text
-            style={{
-              color: palette.cream[4],
-              fontSize: 16,
-              fontWeight: "900",
-            }}
-          >
-            Mark all settled
-          </Text>
-        </Pressable>
+          Mark all settled
+        </ToyButton>
       )}
 
       {onBack ? (
@@ -216,21 +160,18 @@ export function SettlementReviewScreen({
           onPress={onBack}
           style={({ pressed }) => ({
             alignItems: "center",
-            backgroundColor: pressed
-              ? scheme.tint.allowance
-              : scheme.bgModal,
-            borderColor: scheme.borderHover,
+            backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+            borderColor: scheme.toy.border,
             borderRadius: choreyTheme.radii.pill,
-            borderWidth: 1,
+            borderWidth: toybox.borderWidth,
             paddingVertical: 14,
+            ...(pressed
+              ? { transform: [{ translateY: toybox.offset }] }
+              : scheme.toy.shadow),
           })}
         >
           <Text
-            style={{
-              color: scheme.fg,
-              fontSize: 15,
-              fontWeight: "800",
-            }}
+            style={[typography.text.label, { color: scheme.fg, fontSize: 15 }]}
           >
             Back
           </Text>

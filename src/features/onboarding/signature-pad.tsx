@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { PanResponder, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
@@ -21,42 +21,33 @@ export function SignaturePad({
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const [strokes, setStrokes] = useState<string[]>([]);
-  const liveRef = useRef("");
-  const hasInkRef = useRef(false);
 
-  const markInked = () => {
-    if (!hasInkRef.current) {
-      hasInkRef.current = true;
-      onChange?.(true);
-    }
-  };
-
-  const responder = useRef(
+  const responder = useMemo(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (event) => {
         const { locationX: x, locationY: y } = event.nativeEvent;
-        liveRef.current = `M${x.toFixed(1)},${y.toFixed(1)}`;
-        setStrokes((prev) => [...prev, liveRef.current]);
+        setStrokes((prev) => [...prev, `M${x.toFixed(1)},${y.toFixed(1)}`]);
+        onChange?.(true);
       },
       onPanResponderMove: (event) => {
         const { locationX: x, locationY: y } = event.nativeEvent;
-        liveRef.current += ` L${x.toFixed(1)},${y.toFixed(1)}`;
         setStrokes((prev) => {
           const next = prev.slice();
-          next[next.length - 1] = liveRef.current;
+          const last = next[next.length - 1];
+          if (last) {
+            next[next.length - 1] = `${last} L${x.toFixed(1)},${y.toFixed(1)}`;
+          }
           return next;
         });
-        markInked();
       },
     }),
-  ).current;
+    [onChange],
+  );
 
   const clear = () => {
     setStrokes([]);
-    liveRef.current = "";
-    hasInkRef.current = false;
     onChange?.(false);
   };
 

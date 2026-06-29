@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { SetupScreenLayout } from "@/components/setup-screen-layout";
+import { ToyButton, ToyCard } from "@/components/toybox";
 import type {
   CreatedHousehold,
   CreateHouseholdInput,
@@ -45,7 +46,7 @@ export function HouseholdSetupScreen({
   onHouseholdCreated,
   onBack,
 }: Props) {
-  const { scheme, palette } = useChoreyTheme();
+  const { scheme, palette, typography, toybox } = useChoreyTheme();
   const [name, setName] = useState("");
   const [settlementFrequency, setSettlementFrequency] =
     useState<SettlementFrequency>("weekly");
@@ -71,56 +72,21 @@ export function HouseholdSetupScreen({
       description="Start with your family name and choose how often you settle outside the app."
       eyebrow="Parent setup"
       footer={
-        <Pressable
+        <ToyButton
           accessibilityLabel="Submit household setup"
-          accessibilityRole="button"
           disabled={isSubmitting}
           onPress={handleCreateHousehold}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            backgroundColor: pressed
-              ? palette.accent[800]
-              : palette.accent[600],
-            borderColor: palette.accent[800],
-            borderRadius: choreyTheme.radii.pill,
-            borderWidth: 1,
-            opacity: isSubmitting ? 0.65 : 1,
-            paddingVertical: 16,
-            ...choreyTheme.shadows.button,
-          })}
         >
-          <Text
-            style={{
-              color: palette.cream[4],
-              fontSize: 16,
-              fontWeight: "800",
-            }}
-          >
-            {isSubmitting ? "Creating household..." : "Create household"}
-          </Text>
-        </Pressable>
+          {isSubmitting ? "Creating household..." : "Create household"}
+        </ToyButton>
       }
       onBack={onBack}
       title="Create household"
     >
-      <View
-        style={{
-          backgroundColor: scheme.bgModal,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.md,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
+      <ToyCard style={{ gap: choreyTheme.spacing.md }}>
         <Text
           selectable
-          style={{
-            color: scheme.fg,
-            fontSize: 14,
-            fontWeight: "800",
-          }}
+          style={[typography.text.overline, { color: scheme.fgFaint }]}
         >
           Household name
         </Text>
@@ -131,35 +97,21 @@ export function HouseholdSetupScreen({
           placeholderTextColor={scheme.fgFaint}
           style={{
             borderRadius: choreyTheme.radii.md,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            backgroundColor: scheme.bgModal,
+            borderColor: scheme.toy.border,
+            borderWidth: toybox.borderWidth,
+            backgroundColor: scheme.bgRaised,
             color: scheme.fg,
             fontSize: 16,
             paddingHorizontal: choreyTheme.spacing.lg,
             paddingVertical: 15,
           }}
         />
-      </View>
+      </ToyCard>
 
-      <View
-        style={{
-          backgroundColor: scheme.bgModal,
-          borderColor: scheme.border,
-          borderRadius: choreyTheme.radii.lg,
-          borderWidth: 1,
-          gap: choreyTheme.spacing.md,
-          padding: choreyTheme.spacing.lg,
-          ...choreyTheme.shadows.card,
-        }}
-      >
+      <ToyCard style={{ gap: choreyTheme.spacing.md }}>
         <Text
           selectable
-          style={{
-            color: scheme.fg,
-            fontSize: 14,
-            fontWeight: "800",
-          }}
+          style={[typography.text.overline, { color: scheme.fgFaint }]}
         >
           Settlement rhythm
         </Text>
@@ -182,18 +134,15 @@ export function HouseholdSetupScreen({
                     : pressed
                       ? scheme.tint.allowance
                       : scheme.bgRaised,
-                  borderColor: selected
-                    ? palette.accent[800]
-                    : scheme.borderHover,
-                  borderWidth: 1,
+                  borderColor: scheme.toy.border,
+                  borderWidth: toybox.borderWidth,
                   paddingVertical: 14,
+                  ...(selected ? scheme.toy.shadowSm : null),
                 })}
               >
                 <Text
                   style={{
-                    color: selected
-                      ? palette.cream[4]
-                      : scheme.fg,
+                    color: selected ? palette.cream[4] : scheme.fg,
                     fontSize: 15,
                     fontWeight: "800",
                   }}
@@ -204,7 +153,7 @@ export function HouseholdSetupScreen({
             );
           })}
         </View>
-      </View>
+      </ToyCard>
 
       {errorMessage ? (
         <Text

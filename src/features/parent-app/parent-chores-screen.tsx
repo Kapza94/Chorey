@@ -1,8 +1,25 @@
 import { useState, type ReactNode } from "react";
-import { Alert, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { useKeyboardHeight } from "@/components/use-keyboard-height";
-import { Check, ChevronRight, Clock, Lock, Plus, Trash2, Undo2 } from "lucide-react-native";
+import {
+  Check,
+  ChevronRight,
+  Clock,
+  Lock,
+  Plus,
+  Trash2,
+  Undo2,
+} from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -14,15 +31,11 @@ import {
 import { clampRewardInput, parseRewardCents } from "@/features/chores/money";
 import type { Recurrence } from "@/features/chores/recurrence";
 import type { ChoreStatus } from "@/features/chores/chore-actions";
-import {
-  DEFAULT_DUE_TIME,
-  DUE_TIME_PRESETS,
-  describeOneOffDue,
-  formatDueAtTime,
-  type DueTime,
-} from "@/features/chores/due-time";
 import { DEFAULT_SPLIT, splitCents, type Split } from "@/features/money/split";
-import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
+import {
+  ParentHeader,
+  type ParentKid,
+} from "@/features/parent-app/parent-primitives";
 import { fieldStyle } from "@/components/field-style";
 
 export type ChoreLibraryItem = {
@@ -82,7 +95,6 @@ type Props = {
     rewardCents: number;
     assigneeId: string;
     recurrence?: Recurrence;
-    dueTime?: DueTime;
   }) => void;
   onApproveChore?: (choreId: string) => void;
   onSendBackChore?: (choreId: string, reason: string) => void;
@@ -148,7 +160,9 @@ export function ParentChoresScreen({
           subtitle="This week"
           title="Chores."
           action={
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="New chore"
@@ -160,11 +174,18 @@ export function ParentChoresScreen({
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: radius.pill,
-                  backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+                  backgroundColor: pressed
+                    ? palette.accent[800]
+                    : palette.accent[600],
                 })}
               >
                 <Plus size={14} color={palette.cream[4]} strokeWidth={2.6} />
-                <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 13 }]}>
+                <Text
+                  style={[
+                    typography.text.label,
+                    { color: palette.cream[4], fontSize: 13 },
+                  ]}
+                >
                   New
                 </Text>
               </Pressable>
@@ -175,7 +196,11 @@ export function ParentChoresScreen({
 
         {/* Repeat-cadence tabs — big, clear, tappable. */}
         {board.length > 0 ? (
-          <RecurrenceTabs board={board} value={recurFilter} onChange={setRecurFilter} />
+          <RecurrenceTabs
+            board={board}
+            value={recurFilter}
+            onChange={setRecurFilter}
+          />
         ) : null}
 
         {/* Assigned-vs-cap per kid */}
@@ -183,7 +208,11 @@ export function ParentChoresScreen({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 10, paddingHorizontal: 18, paddingBottom: 14 }}
+            contentContainerStyle={{
+              gap: 10,
+              paddingHorizontal: 18,
+              paddingBottom: 14,
+            }}
           >
             {kids.map((kid) => (
               <AssignedVsCap key={kid.id} kid={kid} currency={currency} />
@@ -195,7 +224,10 @@ export function ParentChoresScreen({
         {visible.length > 0 ? (
           <View style={{ paddingHorizontal: 18, gap: 10, marginBottom: 18 }}>
             {needsApproval.length > 0 ? (
-              <BoardSection title="Needs your approval" count={needsApproval.length}>
+              <BoardSection
+                title="Needs your approval"
+                count={needsApproval.length}
+              >
                 {needsApproval.map((item) => (
                   <ChoreBoardRow
                     key={item.id}
@@ -221,7 +253,9 @@ export function ParentChoresScreen({
                     item={item}
                     currency={currency}
                     onOpen={() => setDetailId(item.id)}
-                    onDelete={onDeleteChore ? () => onDeleteChore(item.id) : undefined}
+                    onDelete={
+                      onDeleteChore ? () => onDeleteChore(item.id) : undefined
+                    }
                   />
                 ))}
               </BoardSection>
@@ -244,9 +278,12 @@ export function ParentChoresScreen({
 
         {/* Filter matched nothing, but other chores exist — explain the empty tab. */}
         {board.length > 0 && visible.length === 0 ? (
-          <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: 16 }}>
+          <View
+            style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: 16 }}
+          >
             <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
-              No {recurFilter === "one-off" ? "one-off" : recurFilter} chores right now.
+              No {recurFilter === "one-off" ? "one-off" : recurFilter} chores
+              right now.
             </Text>
           </View>
         ) : null}
@@ -277,7 +314,11 @@ export function ParentChoresScreen({
             <Text
               style={[
                 typography.text.overline,
-                { color: scheme.fgFaint, paddingHorizontal: 22, paddingBottom: 8 },
+                {
+                  color: scheme.fgFaint,
+                  paddingHorizontal: 22,
+                  paddingBottom: 8,
+                },
               ]}
             >
               Library
@@ -307,17 +348,36 @@ export function ParentChoresScreen({
                   }}
                 >
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
+                    <Text
+                      style={[
+                        typography.text.h3,
+                        { color: scheme.fg, fontSize: 15 },
+                      ]}
+                    >
                       {chore.name}
                     </Text>
-                    <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 2 }]}>
+                    <Text
+                      style={[
+                        typography.text.caption,
+                        { color: scheme.fgFaint, marginTop: 2 },
+                      ]}
+                    >
                       {chore.freq} · {chore.assignedTo}
                     </Text>
                   </View>
-                  <Text style={[typography.text.money, { fontSize: 15, color: scheme.fg }]}>
+                  <Text
+                    style={[
+                      typography.text.money,
+                      { fontSize: 15, color: scheme.fg },
+                    ]}
+                  >
                     {formatMoney(chore.valueCents, currency)}
                   </Text>
-                  <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
+                  <ChevronRight
+                    size={16}
+                    color={scheme.fgFaint}
+                    strokeWidth={2}
+                  />
                 </View>
               ))}
             </View>
@@ -371,7 +431,6 @@ function ChoreDetailSheet({
   // chore changes (key remounts the sheet, see below).
   const [note, setNote] = useState(chore?.parentNote ?? "");
 
-  const dueLabel = chore ? formatDueAtTime(chore.dueAt) : "";
   const statusLabel = chore
     ? chore.status === "approved"
       ? "Done"
@@ -425,17 +484,32 @@ function ChoreDetailSheet({
         />
 
         {chore ? (
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24 }]}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text
+              style={[typography.text.h1, { color: scheme.fg, fontSize: 24 }]}
+            >
               {chore.title}
             </Text>
-            <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 4 }]}>
-              {chore.childName} · {formatMoney(chore.rewardCents, currency)} · {statusLabel}
-              {dueLabel ? ` · by ${dueLabel}` : ""}
+            <Text
+              style={[
+                typography.text.caption,
+                { color: scheme.fgFaint, marginTop: 4 },
+              ]}
+            >
+              {chore.childName} · {formatMoney(chore.rewardCents, currency)} ·{" "}
+              {statusLabel}
             </Text>
 
             {chore.sentBackReason ? (
-              <Text style={[typography.text.bodySm, { color: scheme.fgMuted, marginTop: 10 }]}>
+              <Text
+                style={[
+                  typography.text.bodySm,
+                  { color: scheme.fgMuted, marginTop: 10 },
+                ]}
+              >
                 Sent back: {chore.sentBackReason}
               </Text>
             ) : null}
@@ -464,7 +538,9 @@ function ChoreDetailSheet({
                   alignItems: "center",
                 }}
               >
-                <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+                <Text
+                  style={[typography.text.caption, { color: scheme.fgFaint }]}
+                >
                   No photo for this chore.
                 </Text>
               </View>
@@ -503,10 +579,17 @@ function ChoreDetailSheet({
                 marginTop: 14,
                 paddingVertical: 14,
                 borderRadius: radius.pill,
-                backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+                backgroundColor: pressed
+                  ? palette.accent[800]
+                  : palette.accent[600],
               })}
             >
-              <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 15 }]}>
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: palette.cream[4], fontSize: 15 },
+                ]}
+              >
                 Save note
               </Text>
             </Pressable>
@@ -539,7 +622,11 @@ function RecurrenceTabs({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8, paddingHorizontal: 18, paddingBottom: 14 }}
+      contentContainerStyle={{
+        gap: 8,
+        paddingHorizontal: 18,
+        paddingBottom: 14,
+      }}
     >
       {RECUR_TABS.map((tab) => {
         const selected = tab.id === value;
@@ -567,7 +654,10 @@ function RecurrenceTabs({
             <Text
               style={[
                 typography.text.label,
-                { fontSize: 13, color: selected ? palette.cream[4] : scheme.fg },
+                {
+                  fontSize: 13,
+                  color: selected ? palette.cream[4] : scheme.fg,
+                },
               ]}
             >
               {tab.label}
@@ -580,7 +670,9 @@ function RecurrenceTabs({
                   paddingVertical: 1,
                   borderRadius: radius.pill,
                   alignItems: "center",
-                  backgroundColor: selected ? "rgba(255, 252, 245, 0.28)" : scheme.bgSunken,
+                  backgroundColor: selected
+                    ? "rgba(255, 252, 245, 0.28)"
+                    : scheme.bgSunken,
                 }}
               >
                 <Text
@@ -645,7 +737,11 @@ function BoardSection({
             <Text
               style={[
                 typography.text.caption,
-                { color: palette.semantic.warning[600], fontWeight: "700", fontSize: 11 },
+                {
+                  color: palette.semantic.warning[600],
+                  fontWeight: "700",
+                  fontSize: 11,
+                },
               ]}
             >
               {badge}
@@ -675,7 +771,8 @@ function ChoreBoardRow({
   onDelete?: () => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
-  const ramp = bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp;
+  const ramp =
+    bucketTokens[item.tone === "allowance" ? "spend" : item.tone].ramp;
   const [back, setBack] = useState(false);
   const [reason, setReason] = useState("");
   const canSend = reason.trim().length > 0;
@@ -727,11 +824,19 @@ function ChoreBoardRow({
                   backgroundColor: scheme.tint.warning,
                 }}
               >
-                <Clock size={10} color={palette.semantic.warning[600]} strokeWidth={2.6} />
+                <Clock
+                  size={10}
+                  color={palette.semantic.warning[600]}
+                  strokeWidth={2.6}
+                />
                 <Text
                   style={[
                     typography.text.caption,
-                    { color: palette.semantic.warning[600], fontWeight: "700", fontSize: 10 },
+                    {
+                      color: palette.semantic.warning[600],
+                      fontWeight: "700",
+                      fontSize: 10,
+                    },
                   ]}
                 >
                   Late
@@ -739,12 +844,21 @@ function ChoreBoardRow({
               </View>
             ) : null}
           </View>
-          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, marginTop: 1 },
+            ]}
+          >
             {item.childName} · {formatMoney(item.rewardCents, currency)}
-            {formatDueAtTime(item.dueAt) ? ` · by ${formatDueAtTime(item.dueAt)}` : ""}
           </Text>
           {item.status === "sent_back" && item.sentBackReason ? (
-            <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 3 }]}>
+            <Text
+              style={[
+                typography.text.caption,
+                { color: scheme.fgMuted, marginTop: 3 },
+              ]}
+            >
               Sent back: {item.sentBackReason}
             </Text>
           ) : null}
@@ -782,7 +896,14 @@ function ChoreBoardRow({
               })}
             >
               <Check size={14} color={ramp[800]} strokeWidth={3} />
-              <Text style={[typography.text.label, { color: ramp[800], fontSize: 13 }]}>Approve</Text>
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: ramp[800], fontSize: 13 },
+                ]}
+              >
+                Approve
+              </Text>
             </Pressable>
           </View>
         ) : approved ? (
@@ -826,7 +947,14 @@ function ChoreBoardRow({
             autoFocus
             style={fieldStyle(scheme, typography.family.body.regular)}
           />
-          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              gap: 8,
+              marginTop: 8,
+            }}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Cancel send back"
@@ -841,7 +969,14 @@ function ChoreBoardRow({
                 backgroundColor: scheme.bgSunken,
               }}
             >
-              <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 13 }]}>Cancel</Text>
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: scheme.fgMuted, fontSize: 13 },
+                ]}
+              >
+                Cancel
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -868,7 +1003,12 @@ function ChoreBoardRow({
               <Text
                 style={[
                   typography.text.label,
-                  { color: canSend ? palette.semantic.warning[600] : scheme.fgFaint, fontSize: 13 },
+                  {
+                    color: canSend
+                      ? palette.semantic.warning[600]
+                      : scheme.fgFaint,
+                    fontSize: 13,
+                  },
                 ]}
               >
                 Send back
@@ -881,7 +1021,13 @@ function ChoreBoardRow({
   );
 }
 
-function AssignedVsCap({ kid, currency }: { kid: ParentKid; currency: CurrencyCode }) {
+function AssignedVsCap({
+  kid,
+  currency,
+}: {
+  kid: ParentKid;
+  currency: CurrencyCode;
+}) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const tone = bucketTokens[kid.tone === "allowance" ? "spend" : kid.tone].ramp;
   const over = kid.assignedCents > kid.budgetCents;
@@ -926,11 +1072,17 @@ function AssignedVsCap({ kid, currency }: { kid: ParentKid; currency: CurrencyCo
           {over ? "over cap" : `${formatMoney(leftCents, currency)} left`}
         </Text>
       </View>
-      <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: 4, marginBottom: 7 }]}>
+      <Text
+        style={[
+          typography.text.caption,
+          { color: scheme.fgMuted, marginTop: 4, marginBottom: 7 },
+        ]}
+      >
         <Text style={{ color: scheme.fg, fontWeight: "700" }}>
           {formatMoney(kid.assignedCents, currency)}
         </Text>{" "}
-        of {formatMoney(kid.budgetCents, currency)}/{kid.cadence === "monthly" ? "mo" : "wk"}
+        of {formatMoney(kid.budgetCents, currency)}/
+        {kid.cadence === "monthly" ? "mo" : "wk"}
       </Text>
       <View
         style={{
@@ -973,7 +1125,6 @@ function AddChoreSheet({
     rewardCents: number;
     assigneeId: string;
     recurrence?: Recurrence;
-    dueTime?: DueTime;
   }) => void;
 }) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
@@ -983,7 +1134,6 @@ function AddChoreSheet({
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [assigneeId, setAssigneeId] = useState(assignees[0]?.id ?? "all");
   const [repeat, setRepeat] = useState<"one-off" | Recurrence>("one-off");
-  const [dueTime, setDueTime] = useState<DueTime>(DEFAULT_DUE_TIME);
   const [showRecurUpsell, setShowRecurUpsell] = useState(false);
 
   // "Everyone" only makes sense with more than one kid. Names are capped at
@@ -1021,7 +1171,6 @@ function AddChoreSheet({
     setAssigneeId(assignees[0]?.id ?? "all");
     setShowAllAssignees(false);
     setRepeat("one-off");
-    setDueTime(DEFAULT_DUE_TIME);
     setShowRecurUpsell(false);
   };
 
@@ -1045,15 +1194,22 @@ function AddChoreSheet({
           paddingHorizontal: 14,
           paddingVertical: 9,
           borderRadius: radius.sm,
-          backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
+          backgroundColor: selected
+            ? bucketTokens.spend.ramp[200]
+            : scheme.bgPage,
           borderWidth: 1.5,
-          borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+          borderColor: selected
+            ? bucketTokens.spend.ramp[400]
+            : palette.border.mid,
         }}
       >
         <Text
           style={[
             typography.text.label,
-            { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
+            {
+              color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted,
+              fontSize: 13,
+            },
           ]}
         >
           {option.name}
@@ -1063,7 +1219,12 @@ function AddChoreSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       <Pressable
         accessibilityLabel="Dismiss"
         onPress={() => {
@@ -1114,7 +1275,9 @@ function AddChoreSheet({
             marginBottom: 16,
           }}
         >
-          <Text style={[typography.text.h1, { color: scheme.fg, fontSize: 24 }]}>
+          <Text
+            style={[typography.text.h1, { color: scheme.fg, fontSize: 24 }]}
+          >
             New chore.
           </Text>
           <Pressable
@@ -1126,13 +1289,23 @@ function AddChoreSheet({
             }}
             hitSlop={8}
           >
-            <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 15 }]}>
+            <Text
+              style={[
+                typography.text.label,
+                { color: scheme.fgMuted, fontSize: 15 },
+              ]}
+            >
               Cancel
             </Text>
           </Pressable>
         </View>
 
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginBottom: 6 },
+          ]}
+        >
           Name
         </Text>
         <TextInput
@@ -1141,12 +1314,20 @@ function AddChoreSheet({
           onChangeText={setName}
           placeholder="e.g. Make the bed"
           placeholderTextColor={scheme.fgFaint}
-          style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
+          style={[
+            fieldStyle(scheme, typography.family.body.regular),
+            { marginBottom: 14 },
+          ]}
         />
 
         {isRecurring ? null : (
           <>
-            <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
+            <Text
+              style={[
+                typography.text.overline,
+                { color: scheme.fgFaint, marginBottom: 6 },
+              ]}
+            >
               Reward
             </Text>
             <TextInput
@@ -1156,15 +1337,30 @@ function AddChoreSheet({
               onChangeText={(raw) => setValue(clampRewardInput(raw))}
               placeholder="2.00"
               placeholderTextColor={scheme.fgFaint}
-              style={[fieldStyle(scheme, typography.family.body.regular), { marginBottom: 14 }]}
+              style={[
+                fieldStyle(scheme, typography.family.body.regular),
+                { marginBottom: 14 },
+              ]}
             />
           </>
         )}
 
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginBottom: 6 },
+          ]}
+        >
           Assign to
         </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+            marginBottom: 16,
+          }}
+        >
           {visibleKids.map(renderChip)}
           {hasMoreKids ? (
             <Pressable
@@ -1180,7 +1376,12 @@ function AddChoreSheet({
                 borderColor: palette.border.mid,
               }}
             >
-              <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 13 }]}>
+              <Text
+                style={[
+                  typography.text.label,
+                  { color: scheme.fgMuted, fontSize: 13 },
+                ]}
+              >
                 More…
               </Text>
             </Pressable>
@@ -1188,10 +1389,22 @@ function AddChoreSheet({
           {showEveryone ? renderChip({ id: "all", name: "Everyone" }) : null}
         </View>
 
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
+        <Text
+          style={[
+            typography.text.overline,
+            { color: scheme.fgFaint, marginBottom: 6 },
+          ]}
+        >
           Repeat
         </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: showRecurUpsell ? 8 : 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+            marginBottom: showRecurUpsell ? 8 : 16,
+          }}
+        >
           {REPEAT_OPTIONS.map((option) => {
             const selected = option.id === repeat;
             // Recurring chores pause with the subscription (lapsed household).
@@ -1217,17 +1430,28 @@ function AddChoreSheet({
                   paddingHorizontal: 14,
                   paddingVertical: 9,
                   borderRadius: radius.sm,
-                  backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
+                  backgroundColor: selected
+                    ? bucketTokens.spend.ramp[200]
+                    : scheme.bgPage,
                   borderWidth: 1.5,
-                  borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
+                  borderColor: selected
+                    ? bucketTokens.spend.ramp[400]
+                    : palette.border.mid,
                   opacity: locked ? 0.6 : 1,
                 }}
               >
-                {locked ? <Lock size={11} color={scheme.fgFaint} strokeWidth={2.4} /> : null}
+                {locked ? (
+                  <Lock size={11} color={scheme.fgFaint} strokeWidth={2.4} />
+                ) : null}
                 <Text
                   style={[
                     typography.text.label,
-                    { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
+                    {
+                      color: selected
+                        ? bucketTokens.spend.ramp[800]
+                        : scheme.fgMuted,
+                      fontSize: 13,
+                    },
                   ]}
                 >
                   {option.label}
@@ -1238,52 +1462,13 @@ function AddChoreSheet({
         </View>
 
         {showRecurUpsell ? (
-          <Text style={[typography.text.caption, { color: scheme.fgMuted, marginBottom: 16 }]}>
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgMuted, marginBottom: 16 },
+            ]}
+          >
             Chorey is paused — resume your subscription to use repeats.
-          </Text>
-        ) : null}
-
-        {/* Due-by time — when the chore should be done by. */}
-        <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 6 }]}>
-          Due by
-        </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          {DUE_TIME_PRESETS.map((option) => {
-            const selected = option.value === dueTime;
-            return (
-              <Pressable
-                key={option.label}
-                accessibilityRole="button"
-                accessibilityLabel={`Due by ${option.label}`}
-                accessibilityState={{ selected }}
-                onPress={() => setDueTime(option.value)}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 9,
-                  borderRadius: radius.sm,
-                  backgroundColor: selected ? bucketTokens.spend.ramp[200] : scheme.bgPage,
-                  borderWidth: 1.5,
-                  borderColor: selected ? bucketTokens.spend.ramp[400] : palette.border.mid,
-                }}
-              >
-                <Text
-                  style={[
-                    typography.text.label,
-                    { color: selected ? bucketTokens.spend.ramp[800] : scheme.fgMuted, fontSize: 13 },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* For a one-off, spell out the resolved date so a past time rolling to
-            tomorrow doesn't look like a bug. */}
-        {repeat === "one-off" && describeOneOffDue(dueTime) ? (
-          <Text style={[typography.text.caption, { color: scheme.fgMuted, marginTop: -8, marginBottom: 16 }]}>
-            {describeOneOffDue(dueTime)}
           </Text>
         ) : null}
 
@@ -1300,50 +1485,92 @@ function AddChoreSheet({
             }}
           >
             <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-              The reward comes from this child&apos;s allowance, shared across their
-              repeating chores — nothing to enter. It still splits{" "}
+              The reward comes from this child&apos;s allowance, shared across
+              their repeating chores — nothing to enter. It still splits{" "}
               {split.spend}/{split.save}/{split.give} like every reward.
             </Text>
           </View>
         ) : (
-        <View
-          style={{
-            backgroundColor: scheme.bgSunken,
-            borderRadius: radius.sm,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
-            marginBottom: 16,
-          }}
-        >
-          <Text style={[typography.text.overline, { color: scheme.fgFaint, marginBottom: 8 }]}>
-            How {formatMoney(rewardCents, currency)} splits
-          </Text>
-          <View style={{ flexDirection: "row", height: 8, borderRadius: radius.pill, overflow: "hidden", gap: 2 }}>
-            <View style={{ flex: split.spend, backgroundColor: bucketTokens.spend.ramp[400] }} />
-            <View style={{ flex: split.save, backgroundColor: bucketTokens.savings.ramp[400] }} />
-            <View style={{ flex: split.give, backgroundColor: bucketTokens.giving.ramp[400] }} />
+          <View
+            style={{
+              backgroundColor: scheme.bgSunken,
+              borderRadius: radius.sm,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              marginBottom: 16,
+            }}
+          >
+            <Text
+              style={[
+                typography.text.overline,
+                { color: scheme.fgFaint, marginBottom: 8 },
+              ]}
+            >
+              How {formatMoney(rewardCents, currency)} splits
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                height: 8,
+                borderRadius: radius.pill,
+                overflow: "hidden",
+                gap: 2,
+              }}
+            >
+              <View
+                style={{
+                  flex: split.spend,
+                  backgroundColor: bucketTokens.spend.ramp[400],
+                }}
+              />
+              <View
+                style={{
+                  flex: split.save,
+                  backgroundColor: bucketTokens.savings.ramp[400],
+                }}
+              />
+              <View
+                style={{
+                  flex: split.give,
+                  backgroundColor: bucketTokens.giving.ramp[400],
+                }}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 8,
+              }}
+            >
+              <Text
+                style={[typography.text.caption, { color: scheme.fgMuted }]}
+              >
+                <Text style={{ color: bucketInk("spend"), fontWeight: "700" }}>
+                  {formatMoney(preview.spendCents, currency)}
+                </Text>{" "}
+                spend
+              </Text>
+              <Text
+                style={[typography.text.caption, { color: scheme.fgMuted }]}
+              >
+                <Text
+                  style={{ color: bucketInk("savings"), fontWeight: "700" }}
+                >
+                  {formatMoney(preview.savingsCents, currency)}
+                </Text>{" "}
+                save
+              </Text>
+              <Text
+                style={[typography.text.caption, { color: scheme.fgMuted }]}
+              >
+                <Text style={{ color: bucketInk("giving"), fontWeight: "700" }}>
+                  {formatMoney(preview.givingCents, currency)}
+                </Text>{" "}
+                give
+              </Text>
+            </View>
           </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
-            <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-              <Text style={{ color: bucketInk("spend"), fontWeight: "700" }}>
-                {formatMoney(preview.spendCents, currency)}
-              </Text>{" "}
-              spend
-            </Text>
-            <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-              <Text style={{ color: bucketInk("savings"), fontWeight: "700" }}>
-                {formatMoney(preview.savingsCents, currency)}
-              </Text>{" "}
-              save
-            </Text>
-            <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
-              <Text style={{ color: bucketInk("giving"), fontWeight: "700" }}>
-                {formatMoney(preview.givingCents, currency)}
-              </Text>{" "}
-              give
-            </Text>
-          </View>
-        </View>
         )}
 
         <Pressable
@@ -1362,7 +1589,6 @@ function AddChoreSheet({
               rewardCents: isRecurring ? 0 : rewardCents,
               assigneeId,
               recurrence: repeat === "one-off" ? undefined : repeat,
-              dueTime,
             });
             reset();
           }}
@@ -1370,11 +1596,18 @@ function AddChoreSheet({
             alignItems: "center",
             paddingVertical: 14,
             borderRadius: radius.pill,
-            backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+            backgroundColor: pressed
+              ? palette.accent[800]
+              : palette.accent[600],
             opacity: canAdd ? 1 : 0.45,
           })}
         >
-          <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 15 }]}>
+          <Text
+            style={[
+              typography.text.label,
+              { color: palette.cream[4], fontSize: 15 },
+            ]}
+          >
             Add chore
           </Text>
         </Pressable>

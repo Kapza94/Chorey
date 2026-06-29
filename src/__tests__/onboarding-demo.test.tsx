@@ -3,10 +3,10 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { OnboardingFlow } from "@/features/onboarding/onboarding-flow";
 
 describe("onboarding demo tour", () => {
-  it("shows the approve demo after choosing the parent role", () => {
-    render(<OnboardingFlow initialStep="role" />);
+  it("shows the approve demo after the big-idea screen", () => {
+    render(<OnboardingFlow initialStep="idea" />);
 
-    fireEvent.press(screen.getByLabelText("I'm a parent"));
+    fireEvent.press(screen.getByText("I'm in"));
 
     expect(screen.getByText("Try it — approve Mia's chore.")).toBeOnTheScreen();
     expect(screen.getByText("Feed the dog")).toBeOnTheScreen();

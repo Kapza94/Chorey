@@ -86,8 +86,7 @@ function makeClient() {
               };
             },
           };
-          chain.then = (resolve: any) =>
-            resolve({ data: null, error: null });
+          chain.then = (resolve: any) => resolve({ data: null, error: null });
           return chain;
         },
       };
@@ -111,7 +110,6 @@ const RESULT: ParentOnboardingResult = {
     { name: "Dishes", valueCents: 250 },
     { name: "Walk the dog", valueCents: 300 },
   ],
-  choreDueTime: "16:00",
   causes: ["Animals", "Hunger"],
   joinCode: "CHKAP",
 };
@@ -177,7 +175,7 @@ describe("onboarding persistence", () => {
         title: "Dishes",
         reward_cents: 250,
         status: "assigned",
-        due_at: expect.any(String),
+        due_at: null,
       },
       {
         household_id: "household-1",
@@ -185,7 +183,7 @@ describe("onboarding persistence", () => {
         title: "Walk the dog",
         reward_cents: 300,
         status: "assigned",
-        due_at: expect.any(String),
+        due_at: null,
       },
     ]);
     expect(persisted.kids[0]).toEqual({

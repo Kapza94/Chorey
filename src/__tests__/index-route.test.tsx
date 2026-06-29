@@ -83,7 +83,7 @@ describe("IndexRoute", () => {
     });
   });
 
-  it("routes a signed-in parent without a household to household setup", async () => {
+  it("resumes onboarding for a signed-in parent without a household", async () => {
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: "parent-1" } } },
       error: null,
@@ -93,8 +93,9 @@ describe("IndexRoute", () => {
     render(<IndexRoute />);
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/parent/household/new");
+      expect(screen.getByText("Onboarding flow")).toBeOnTheScreen();
     });
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it("restores a remembered kid to the kid app", async () => {
