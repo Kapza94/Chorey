@@ -101,8 +101,8 @@ select is(
 
 select is(
   (select assigned_cents::integer from public.list_household_kids('00000000-0000-0000-0000-000000000a02') where child_profile_id = '00000000-0000-0000-0000-000000000a03'),
-  1800,
-  'assigned_cents sums every chore reward'
+  800,
+  'assigned_cents sums committed, not-yet-earned chores (excludes approved): 500 + 300'
 );
 
 -- A kid with no activity still appears, with zeroed aggregates.
