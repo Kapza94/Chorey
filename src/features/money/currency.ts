@@ -68,8 +68,9 @@ export const CURRENCIES: Record<TunedCurrencyCode, CurrencyFormat> = {
   },
   RSD: {
     code: "RSD",
-    symbol: "din",
-    symbolPosition: "after",
+    // ISO code, not the ambiguous "din" glyph (per product: RSD, ZAR, … as codes).
+    symbol: "RSD",
+    symbolPosition: "before",
     spaceBetweenSymbol: true,
     decimals: 0,
     decimalSeparator: ",",
@@ -111,11 +112,13 @@ export function resolveCurrencyFormat(code: CurrencyCode): CurrencyFormat {
     return CURRENCIES[code];
   }
 
+  // Untuned currencies render as their ISO code ("ZAR 100.00"), never a local
+  // glyph — "R", "din", etc. are ambiguous; the three-letter code is not.
   return {
     code,
-    symbol: CURRENCY_SYMBOLS[code] ?? code,
+    symbol: code,
     symbolPosition: "before",
-    spaceBetweenSymbol: false,
+    spaceBetweenSymbol: true,
     decimals: ZERO_DECIMAL_CURRENCIES.has(code) ? 0 : 2,
     decimalSeparator: ".",
     groupSeparator: ",",
@@ -125,6 +128,15 @@ export function resolveCurrencyFormat(code: CurrencyCode): CurrencyFormat {
 /** True for any currency we can format — a tuned locale or a known ISO code. */
 export function isKnownCurrency(code: string): boolean {
   return isTuned(code) || code in CURRENCY_SYMBOLS;
+}
+
+/**
+ * A picker-friendly label: "USD ($)" when the glyph differs from the code, or
+ * just "RSD" when it doesn't (codes are their own symbol now).
+ */
+export function currencyLabel(code: CurrencyCode): string {
+  const { symbol } = resolveCurrencyFormat(code);
+  return symbol === code ? code : `${code} (${symbol})`;
 }
 
 /** Resolve a currency from a country code, defaulting to USD for unknowns. */

@@ -16,14 +16,19 @@ describe("currency formatting", () => {
     expect(formatMoney(123456, "EUR")).toBe("€1.234,56");
   });
 
-  it("formats RSD with 0 decimals and the symbol after", () => {
+  it("formats RSD with 0 decimals and the ISO code, not 'din'", () => {
     // 1500 dinars stored as 150000 cents
-    expect(formatMoney(150000, "RSD")).toBe("1.500 din");
-    expect(formatMoney(2500, "RSD")).toBe("25 din");
+    expect(formatMoney(150000, "RSD")).toBe("RSD 1.500");
+    expect(formatMoney(2500, "RSD")).toBe("RSD 25");
   });
 
   it("rounds sub-major remainders for 0-decimal currencies", () => {
-    expect(formatMoney(150050, "RSD")).toBe("1.501 din"); // 1500.50 → 1501
+    expect(formatMoney(150050, "RSD")).toBe("RSD 1.501"); // 1500.50 → 1501
+  });
+
+  it("renders untuned currencies with their ISO code, not a local glyph", () => {
+    expect(formatMoney(10000, "ZAR")).toBe("ZAR 100.00");
+    expect(formatMoney(150000, "JPY")).toBe("JPY 1,500"); // 0-decimal
   });
 
   it("renders negatives with a leading minus", () => {

@@ -10,6 +10,7 @@ import {
  */
 function makeClient() {
   const inserts: Record<string, any[]> = {
+    profiles: [],
     households: [],
     household_members: [],
     child_profiles: [],
@@ -89,6 +90,12 @@ function makeClient() {
           chain.then = (resolve: any) => resolve({ data: null, error: null });
           return chain;
         },
+        upsert(payload: any) {
+          if (inserts[table]) {
+            inserts[table].push(payload);
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
       };
     },
   };
@@ -99,6 +106,7 @@ function makeClient() {
 const RESULT: ParentOnboardingResult = {
   role: "parent",
   parentName: "Luka",
+  parentLabel: "Dad",
   familyName: "Kapza",
   country: "RS",
   currency: "RSD",
@@ -115,6 +123,20 @@ const RESULT: ParentOnboardingResult = {
 };
 
 describe("onboarding persistence", () => {
+  it("saves what the child should call the parent", async () => {
+    const { client, inserts } = makeClient();
+
+    await createOnboardingPersistence(client, "parent-1").persist(RESULT);
+
+    expect(inserts.profiles).toEqual([
+      {
+        id: "parent-1",
+        display_name: "Luka",
+        parent_label: "Dad",
+      },
+    ]);
+  });
+
   it("creates the household with locale, split and cadence", async () => {
     const { client, inserts } = makeClient();
 

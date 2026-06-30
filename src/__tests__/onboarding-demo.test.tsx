@@ -2,13 +2,19 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { OnboardingFlow } from "@/features/onboarding/onboarding-flow";
 
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 describe("onboarding demo tour", () => {
   it("shows the approve demo after the big-idea screen", () => {
     render(<OnboardingFlow initialStep="idea" />);
 
     fireEvent.press(screen.getByText("I'm in"));
 
-    expect(screen.getByText("Try it — approve Mia's chore.")).toBeOnTheScreen();
+    expect(
+      screen.getByText("Approve Mia's chore to continue."),
+    ).toBeOnTheScreen();
     expect(screen.getByText("Feed the dog")).toBeOnTheScreen();
   });
 
@@ -25,15 +31,16 @@ describe("onboarding demo tour", () => {
     expect(screen.getByText("+$0.40")).toBeOnTheScreen();
   });
 
-  it("gates Continue until the chore is approved", () => {
+  it("gates advancing until the chore is approved", () => {
     render(<OnboardingFlow initialStep="p_demo" />);
 
-    const next = screen.getByText("Continue");
-    fireEvent.press(next);
-    expect(screen.getByText("Try it — approve Mia's chore.")).toBeOnTheScreen();
+    // There is no way to continue to the kid demo until the chore is approved:
+    // the footer button reads "Approve" (disabled), not "Continue".
+    expect(screen.queryByRole("button", { name: "Continue" })).toBeNull();
+    expect(screen.queryByText("Here's what Mia sees.")).toBeNull();
 
     fireEvent.press(screen.getByLabelText("Approve Feed the dog"));
-    fireEvent.press(screen.getByText("Continue"));
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByText("Here's what Mia sees.")).toBeOnTheScreen();
   });
 
@@ -41,7 +48,7 @@ describe("onboarding demo tour", () => {
     render(<OnboardingFlow initialStep="p_demo" />);
 
     fireEvent.press(screen.getByLabelText("Approve Feed the dog"));
-    fireEvent.press(screen.getByText("Continue"));
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
 
     // The kid demo embeds the real kid home screen with Mia's demo data.
     expect(screen.getByText("Here's what Mia sees.")).toBeOnTheScreen();

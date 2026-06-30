@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Image, Pressable, Share, Text, TextInput, View } from "react-native";
 import {
-  Apple,
   Check,
   ChevronRight,
   Gift,
@@ -21,11 +20,13 @@ import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
   resolveCurrencyFormat,
   currencyForCountry,
+  currencyLabel,
   formatMoney,
   type CurrencyCode,
 } from "@/features/money/currency";
 import { COUNTRIES } from "@/features/money/countries";
 import { CountryPicker } from "@/components/country-picker";
+import { CurrencyPicker } from "@/components/currency-picker";
 import {
   balanceSplit,
   MIN_GIVE_PCT,
@@ -63,33 +64,45 @@ const KID_TONES: { tone: KidTone; label: string }[] = [
 // A couple of ready-made suggestions to tap; parents add their own below.
 // A small library of preset chores. The first three show by default; the rest
 // are surfaced one at a time via "Suggest a chore".
-const CHORE_LIBRARY = [
-  { name: "Make the bed", valueCents: 100 },
-  { name: "Dishes", valueCents: 250 },
-  { name: "Walk the dog", valueCents: 300 },
-  { name: "Take out the trash", valueCents: 150 },
-  { name: "Tidy your room", valueCents: 200 },
-  { name: "Set the table", valueCents: 100 },
-  { name: "Vacuum the floor", valueCents: 250 },
-  { name: "Water the plants", valueCents: 100 },
-  { name: "Feed the pet", valueCents: 100 },
-  { name: "Fold the laundry", valueCents: 200 },
-  { name: "Wipe the counters", valueCents: 150 },
-  { name: "Help with groceries", valueCents: 300 },
+// The four starter chores offered in onboarding. No per-chore amount: each
+// chore is worth the budget cap split evenly across all chores (see
+// `splitChoreValues`), so doing every chore once earns the cap.
+const STARTER_CHORES = [
+  "Make the bed",
+  "Dishes",
+  "Tidy your room",
+  "Take out the trash",
 ];
 
-const CHORE_DEFAULT_COUNT = 3;
-const CHORE_MAX_SUGGESTIONS = 5;
+/**
+ * Spread a budget cap evenly across chores, distributing the rounding remainder
+ * across the first chores so the parts sum back to exactly `budgetCents`.
+ */
+function splitChoreValues(
+  chores: { name: string; valueCents: number }[],
+  budgetCents: number,
+): { name: string; valueCents: number }[] {
+  const count = chores.length;
+  if (count === 0) return [];
+  const base = Math.floor(budgetCents / count);
+  let remainder = budgetCents - base * count;
+  return chores.map((c) => {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder -= extra;
+    return { name: c.name, valueCents: base + extra };
+  });
+}
 
 // Broad causes a kid can care about — ideas the family gives toward in real
 // life, NOT real charities wired to any payment. Parents hand over the giving
 // pile themselves; Chorey just remembers where the kid wanted it to go.
 const CAUSE_PICKS = [
-  { name: "Animals", desc: "Shelters & rescue pets", Icon: PawPrint },
-  { name: "Hunger", desc: "Food for families nearby", Icon: Apple },
-  { name: "The planet", desc: "Oceans, parks & wildlife", Icon: Globe },
-  { name: "Helping children", desc: "Health & a fair start", Icon: HandHeart },
+  { name: "Animals", desc: "Shelters, pets & wildlife", Icon: PawPrint },
+  { name: "The planet", desc: "Oceans, parks & clean air", Icon: Globe },
+  { name: "People in need", desc: "Food, homes & a fair start", Icon: HandHeart },
 ];
+
+const PARENT_LABELS = ["Mom", "Dad", "Parent", "Guardian"];
 
 /** Resolve a kid tone to concrete colors (sky maps onto the info palette). */
 function useToneStyle(tone: KidTone) {
@@ -111,8 +124,10 @@ type Kid = { name: string; age: string; tone: KidTone };
 
 type OnboardingData = {
   parentName: string;
+  parentLabel: string;
   familyName: string;
   country: string;
+  currency: CurrencyCode;
   kids: Kid[];
   split: { spend: number; give: number };
   cadence: "weekly" | "monthly";
@@ -127,6 +142,7 @@ export type OnboardingResult =
   | {
       role: "parent";
       parentName: string;
+      parentLabel: string;
       familyName: string;
       country: string;
       currency: CurrencyCode;
@@ -159,8 +175,10 @@ type Step =
 
 const INITIAL: OnboardingData = {
   parentName: "",
+  parentLabel: "",
   familyName: "",
   country: "",
+  currency: "",
   kids: [],
   split: { spend: 40, give: 20 },
   cadence: "weekly",
@@ -175,6 +193,12 @@ function joinCodeFor(familyName: string) {
   return (
     "CH" +
     (familyName.replace(/[^A-Za-z]/g, "").toUpperCase() + "KID").slice(0, 4)
+  );
+}
+
+function capitalizeNameInput(value: string) {
+  return value.replace(/(^|[\s'-])([a-z])/g, (_, prefix: string, letter: string) =>
+    `${prefix}${letter.toUpperCase()}`,
   );
 }
 
@@ -245,15 +269,18 @@ export function OnboardingFlow({
   const buildParentResult = (): ParentResult => ({
     role: "parent",
     parentName: data.parentName.trim(),
+    parentLabel: data.parentLabel.trim(),
     familyName: data.familyName.trim(),
     country: data.country,
-    currency: currencyForCountry(data.country),
+    currency: data.currency || currencyForCountry(data.country),
     kids: data.kids,
     // 40 / 40 / 20 by default; the family may have nudged Spend/Giving.
     split: balanceSplit(data.split.spend, data.split.give),
     cadence: data.cadence,
     budgetCents: data.budgetDollars * 100,
-    chores: data.chores,
+    // Each chore is worth the cap split evenly across all chores — no tiny
+    // hand-set amounts that look silly next to a monthly cap.
+    chores: splitChoreValues(data.chores, data.budgetDollars * 100),
     causes: data.causes,
     joinCode: joinCodeFor(data.familyName),
   });
@@ -555,9 +582,14 @@ function OBFamily({
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
   const country = COUNTRIES.find((c) => c.code === data.country);
   const ready =
-    data.parentName.trim() && data.familyName.trim() && !!data.country;
+    data.parentLabel.trim() &&
+    data.parentName.trim() &&
+    data.familyName.trim() &&
+    !!data.country &&
+    !!data.currency;
 
   return (
     <OBShell
@@ -574,17 +606,76 @@ function OBFamily({
         subtitle="Just the basics — you can change anything later."
       />
       <View style={{ gap: 18 }}>
+        <View>
+          <Text
+            style={[
+              typography.text.overline,
+              { color: scheme.fgFaint, marginBottom: 8 },
+            ]}
+          >
+            What should your child call you?
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {PARENT_LABELS.map((label) => {
+              const selected = data.parentLabel === label;
+              return (
+                <Pressable
+                  key={label}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  onPress={() => patch({ parentLabel: label })}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: radius.pill,
+                    borderWidth: 1.5,
+                    borderColor: selected ? palette.accent[600] : palette.border.mid,
+                    backgroundColor: selected
+                      ? palette.accent[100]
+                      : pressed
+                        ? scheme.bgSunken
+                        : scheme.bgRaised,
+                  })}
+                >
+                  <Text
+                    style={[
+                      typography.text.label,
+                      {
+                        color: selected ? palette.accent[800] : scheme.fgMuted,
+                        fontSize: 14,
+                      },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={{ marginTop: 10 }}>
+            <OBField
+              label="Or type your own"
+              value={PARENT_LABELS.includes(data.parentLabel) ? "" : data.parentLabel}
+              onChange={(v) => patch({ parentLabel: v })}
+              placeholder="e.g. Papa, Mama, Baba"
+              autoCapitalize="words"
+              maxLength={20}
+            />
+          </View>
+        </View>
         <OBField
           label="Your name"
           value={data.parentName}
-          onChange={(v) => patch({ parentName: v })}
+          onChange={(v) => patch({ parentName: capitalizeNameInput(v) })}
           placeholder="e.g. Alex"
+          autoCapitalize="words"
         />
         <OBField
           label="Family name"
           value={data.familyName}
-          onChange={(v) => patch({ familyName: v })}
+          onChange={(v) => patch({ familyName: capitalizeNameInput(v) })}
           placeholder="e.g. The Rivera Family"
+          autoCapitalize="words"
         />
 
         <View>
@@ -594,7 +685,7 @@ function OBFamily({
               { color: scheme.fgFaint, marginBottom: 7 },
             ]}
           >
-            Country
+            Where are you from?
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -622,23 +713,53 @@ function OBFamily({
             </Text>
             <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
           </Pressable>
+        </View>
+
+        <View>
+          <Text
+            style={[
+              typography.text.overline,
+              { color: scheme.fgFaint, marginBottom: 7 },
+            ]}
+          >
+            Currency
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose your currency"
+            onPress={() => setCurrencyPickerOpen(true)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              backgroundColor: scheme.bgRaised,
+              borderColor: palette.border.mid,
+              borderWidth: 1.5,
+              borderRadius: radius.sm,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+            }}
+          >
+            <Text
+              style={[
+                typography.text.body,
+                { color: data.currency ? scheme.fg : scheme.fgDisabled },
+              ]}
+            >
+              {data.currency
+                ? currencyLabel(data.currency)
+                : "Choose your currency"}
+            </Text>
+            <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
+          </Pressable>
           <Text
             style={[
               typography.text.caption,
               { color: scheme.fgFaint, marginTop: 8 },
             ]}
           >
-            {country ? (
-              <>
-                Amounts will show in{" "}
-                <Text style={{ color: scheme.fgMuted, fontWeight: "700" }}>
-                  {country.cur} ({resolveCurrencyFormat(country.cur).symbol})
-                </Text>{" "}
-                — your local currency.
-              </>
-            ) : (
-              "We'll show all amounts in your local currency."
-            )}
+            Amounts show in this currency. It defaults to your country&rsquo;s —
+            change it if you pay your child in another.
           </Text>
         </View>
       </View>
@@ -646,8 +767,18 @@ function OBFamily({
       <CountryPicker
         visible={pickerOpen}
         selectedCode={data.country || null}
-        onSelect={(c) => patch({ country: c.code })}
+        onSelect={(c) =>
+          // Country defaults the currency; the currency field below overrides it
+          // (e.g. living in China but paying the child out in USD).
+          patch({ country: c.code, currency: c.cur })
+        }
         onClose={() => setPickerOpen(false)}
+      />
+      <CurrencyPicker
+        visible={currencyPickerOpen}
+        selectedCode={data.currency || null}
+        onSelect={(c) => patch({ currency: c.code })}
+        onClose={() => setCurrencyPickerOpen(false)}
       />
     </OBShell>
   );
@@ -744,8 +875,9 @@ function OBAddKid({
             <OBField
               label="Name"
               value={name}
-              onChange={setName}
+              onChange={(v) => setName(capitalizeNameInput(v))}
               placeholder="Child's name"
+              autoCapitalize="words"
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -995,11 +1127,9 @@ function OBBudgetSplit({
   onBack: () => void;
 }) {
   const { scheme, typography } = useChoreyTheme();
-  const country = COUNTRIES.find((c) => c.code === data.country);
-  const symbol = country?.symbol ?? "$";
-  const groupSeparator = resolveCurrencyFormat(
-    currencyForCountry(data.country),
-  ).groupSeparator;
+  const currency = data.currency || currencyForCountry(data.country);
+  const symbol = resolveCurrencyFormat(currency).symbol;
+  const groupSeparator = resolveCurrencyFormat(currency).groupSeparator;
   // 40 / 40 / 20 is the recommended default; parents may nudge Spend and Giving.
   // Savings is the remainder; Giving never drops below the floor.
   const spend = data.split.spend;
@@ -1275,57 +1405,37 @@ function OBChores({
   onBack: () => void;
 }) {
   const { scheme, typography } = useChoreyTheme();
-  const currency = currencyForCountry(data.country);
-  const symbol = resolveCurrencyFormat(currency).symbol;
   const allowance = bucketTokens.spend.ramp;
 
   const [customName, setCustomName] = useState("");
-  const [customReward, setCustomReward] = useState("");
-  // How many extra presets (beyond the default 3) have been suggested so far.
-  const [suggestCount, setSuggestCount] = useState(0);
-
-  const visiblePicks = CHORE_LIBRARY.slice(
-    0,
-    CHORE_DEFAULT_COUNT + suggestCount,
-  );
-  const canSuggest =
-    suggestCount < CHORE_MAX_SUGGESTIONS &&
-    CHORE_DEFAULT_COUNT + suggestCount < CHORE_LIBRARY.length;
 
   const toggle = (name: string) => {
     const has = data.chores.find((c) => c.name === name);
     if (has) {
       patch({ chores: data.chores.filter((c) => c.name !== name) });
     } else {
-      const pick = CHORE_LIBRARY.find((c) => c.name === name);
-      if (pick) patch({ chores: [...data.chores, pick] });
+      patch({ chores: [...data.chores, { name, valueCents: 0 }] });
     }
   };
 
   const removeChore = (name: string) =>
     patch({ chores: data.chores.filter((c) => c.name !== name) });
 
-  const rewardUnits = parseInt(customReward, 10);
-  const canAddCustom =
-    customName.trim().length > 0 &&
-    Number.isFinite(rewardUnits) &&
-    rewardUnits > 0;
+  const trimmedCustom = customName.trim();
+  const canAddCustom = trimmedCustom.length > 0;
 
   const addCustom = () => {
-    const name = customName.trim();
-    if (!canAddCustom || data.chores.some((c) => c.name === name)) return;
-    patch({
-      chores: [...data.chores, { name, valueCents: rewardUnits * 100 }],
-    });
+    if (!canAddCustom || data.chores.some((c) => c.name === trimmedCustom)) {
+      return;
+    }
+    patch({ chores: [...data.chores, { name: trimmedCustom, valueCents: 0 }] });
     setCustomName("");
-    setCustomReward("");
   };
 
-  // Chores the parent wrote themselves (not one of the preset picks).
+  // Chores the parent typed themselves (not one of the four starters).
   const customChores = data.chores.filter(
-    (c) => !CHORE_LIBRARY.some((p) => p.name === c.name),
+    (c) => !STARTER_CHORES.includes(c.name),
   );
-  const totalCents = data.chores.reduce((s, c) => s + c.valueCents, 0);
 
   return (
     <OBShell
@@ -1340,18 +1450,18 @@ function OBChores({
     >
       <OBTitle
         title="First chores."
-        subtitle="Tap a chore, or get a suggestion. Daily, weekly, and monthly repeats happen on their own schedule."
+        subtitle="Pick a few to start, or add your own. Each chore is worth an equal slice of the budget you set."
       />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9 }}>
-        {visiblePicks.map((c) => {
-          const on = !!data.chores.find((x) => x.name === c.name);
+        {STARTER_CHORES.map((name) => {
+          const on = !!data.chores.find((x) => x.name === name);
           return (
             <Pressable
-              key={c.name}
+              key={name}
               accessibilityRole="button"
-              accessibilityLabel={c.name}
+              accessibilityLabel={name}
               accessibilityState={{ selected: on }}
-              onPress={() => toggle(c.name)}
+              onPress={() => toggle(name)}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -1375,48 +1485,14 @@ function OBChores({
                   { color: on ? allowance[800] : scheme.fg },
                 ]}
               >
-                {c.name}
-              </Text>
-              <Text
-                style={[
-                  typography.text.caption,
-                  { color: on ? allowance[800] : scheme.fgFaint },
-                ]}
-              >
-                {formatMoney(c.valueCents, currency)}
+                {name}
               </Text>
             </Pressable>
           );
         })}
       </View>
 
-      {canSuggest ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Suggest a chore"
-          onPress={() => setSuggestCount((n) => n + 1)}
-          style={({ pressed }) => ({
-            marginTop: 14,
-            paddingVertical: 13,
-            borderRadius: 999,
-            borderWidth: 1.5,
-            borderStyle: "dashed",
-            borderColor: allowance[400],
-            backgroundColor: pressed ? allowance[200] : "transparent",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          })}
-        >
-          <Sparkles size={16} color={allowance[800]} strokeWidth={2.2} />
-          <Text style={[typography.text.label, { color: allowance[800] }]}>
-            Suggest a chore
-          </Text>
-        </Pressable>
-      ) : null}
-
-      {/* Write your own chore + reward — always available. */}
+      {/* Write your own chore — always available. */}
       <View
         style={{
           marginTop: 18,
@@ -1440,9 +1516,10 @@ function OBChores({
             accessibilityLabel="Chore name"
             value={customName}
             onChangeText={setCustomName}
+            onSubmitEditing={addCustom}
             placeholder="e.g. Vacuum the hall"
             placeholderTextColor={scheme.fgFaint}
-            returnKeyType="next"
+            returnKeyType="done"
             style={{
               flex: 1,
               fontFamily: typography.family.body.regular,
@@ -1456,40 +1533,6 @@ function OBChores({
               paddingVertical: 11,
             }}
           />
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: scheme.bgSunken,
-              borderColor: scheme.border,
-              borderWidth: 1,
-              borderRadius: 12,
-              paddingHorizontal: 10,
-            }}
-          >
-            <Text style={[typography.text.bodySm, { color: scheme.fgFaint }]}>
-              {symbol}
-            </Text>
-            <TextInput
-              accessibilityLabel="Chore reward"
-              value={customReward}
-              onChangeText={(t) => setCustomReward(t.replace(/[^0-9]/g, ""))}
-              onSubmitEditing={addCustom}
-              placeholder="0"
-              placeholderTextColor={scheme.fgFaint}
-              keyboardType="number-pad"
-              returnKeyType="done"
-              style={{
-                fontFamily: typography.family.body.regular,
-                fontSize: 15,
-                color: scheme.fg,
-                paddingVertical: 11,
-                paddingHorizontal: 4,
-                minWidth: 44,
-                textAlign: "center",
-              }}
-            />
-          </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add chore"
@@ -1537,11 +1580,6 @@ function OBChores({
                 >
                   {c.name}
                 </Text>
-                <Text
-                  style={[typography.text.caption, { color: allowance[800] }]}
-                >
-                  {formatMoney(c.valueCents, currency)}
-                </Text>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remove ${c.name}`}
@@ -1555,34 +1593,6 @@ function OBChores({
           </View>
         ) : null}
       </View>
-
-      {data.chores.length > 0 ? (
-        <View
-          style={{
-            marginTop: 18,
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-            borderRadius: 14,
-            backgroundColor: scheme.bgRaised,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Text style={[typography.text.bodySm, { color: scheme.fgMuted }]}>
-            Up to{" "}
-            <Text style={{ color: scheme.fg, fontWeight: "700" }}>
-              {formatMoney(totalCents, currency)}
-            </Text>{" "}
-            a day, if all done
-          </Text>
-          <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
-            {data.chores.length} picked
-          </Text>
-        </View>
-      ) : null}
     </OBShell>
   );
 }
@@ -1603,7 +1613,6 @@ function OBCauses({
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
-  const [customCause, setCustomCause] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1637,20 +1646,6 @@ function OBCauses({
     }
   };
 
-  const addCustom = () => {
-    const name = customCause.trim();
-    if (!name || data.causes.includes(name)) {
-      return;
-    }
-    patch({ causes: [...data.causes, name] });
-    setCustomCause("");
-  };
-
-  // Causes the parent typed themselves (not one of the suggested picks).
-  const customCauses = data.causes.filter(
-    (c) => !CAUSE_PICKS.some((p) => p.name === c),
-  );
-
   return (
     <OBShell
       onBack={onBack}
@@ -1673,8 +1668,8 @@ function OBCauses({
       }
     >
       <OBTitle
-        title="What matters to your family?"
-        subtitle="Pick a cause your children care about. You'll give the giving pile in real life — Chorey just remembers where they wanted it to go."
+        title="What does your family care about?"
+        subtitle="Pick a category to give toward — you can explore it together with your child later. You give the pile in real life; Chorey just remembers where it goes."
       />
       <View style={{ gap: 10 }}>
         {CAUSE_PICKS.map((c) => {
@@ -1753,92 +1748,6 @@ function OBCauses({
         })}
       </View>
 
-      {/* Add your own cause. */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 8,
-          marginTop: 14,
-        }}
-      >
-        <TextInput
-          accessibilityLabel="Add your own idea"
-          value={customCause}
-          onChangeText={setCustomCause}
-          onSubmitEditing={addCustom}
-          placeholder="Add your own idea"
-          placeholderTextColor={scheme.fgFaint}
-          returnKeyType="done"
-          style={{
-            ...typography.text.body,
-            flex: 1,
-            color: scheme.fg,
-            backgroundColor: scheme.bgSunken,
-            borderColor: scheme.border,
-            borderWidth: 1,
-            borderRadius: 12,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-          }}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add cause"
-          accessibilityState={{ disabled: !customCause.trim() }}
-          onPress={addCustom}
-          disabled={!customCause.trim()}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: customCause.trim() ? giving[400] : scheme.bgSunken,
-            opacity: customCause.trim() ? 1 : 0.6,
-          }}
-        >
-          <Plus
-            size={20}
-            color={customCause.trim() ? giving[800] : scheme.fgFaint}
-            strokeWidth={2.6}
-          />
-        </Pressable>
-      </View>
-
-      {customCauses.length > 0 ? (
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 8,
-            marginTop: 12,
-          }}
-        >
-          {customCauses.map((name) => (
-            <Pressable
-              key={name}
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${name}`}
-              onPress={() => toggle(name)}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 14,
-                paddingVertical: 9,
-                borderRadius: 999,
-                backgroundColor: giving[200],
-              }}
-            >
-              <Text style={[typography.text.label, { color: giving[800] }]}>
-                {name}
-              </Text>
-              <X size={14} color={giving[800]} strokeWidth={2.6} />
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
       {error ? (
         <Text
           style={[
@@ -2840,8 +2749,9 @@ function OBKidAvatar({
       <OBField
         label="Your name"
         value={data.kidName}
-        onChange={(v) => patch({ kidName: v })}
+        onChange={(v) => patch({ kidName: capitalizeNameInput(v) })}
         placeholder="e.g. Mia"
+        autoCapitalize="words"
       />
     </OBShell>
   );

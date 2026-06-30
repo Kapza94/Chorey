@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Animated, Image, Pressable, Text, View } from "react-native";
+import { Animated, Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Check } from "lucide-react-native";
 
 import { splitRewardCents } from "@/features/chores/money";
@@ -78,15 +79,15 @@ export function OBDemoApprove({
             }}
             disabled={!approved}
           >
-            Continue
+            {approved ? "Continue" : "Approve"}
           </OBPrimary>
           <OBSecondary onPress={onSkip}>Skip the tour</OBSecondary>
         </>
       }
     >
       <OBTitle
-        title="Try it — approve Mia's chore."
-        subtitle="Mia just finished a chore. Approving it is the whole parent job — one tap."
+        title="Approve Mia's chore to continue."
+        subtitle="Tap Approve on Mia's chore, then Continue."
       />
 
       <View
@@ -106,12 +107,14 @@ export function OBDemoApprove({
           style={{
             width: "100%",
             aspectRatio: 1.45,
+            backgroundColor: "#000",
             borderRadius: 14,
             borderColor: scheme.toy.border,
             borderWidth: toybox.borderWidth,
             marginBottom: 2,
           }}
-          resizeMode="cover"
+          contentFit="contain"
+          contentPosition="center"
         />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <ToyAvatar name={DEMO_KID_NAME} tone="savings" size={44} />

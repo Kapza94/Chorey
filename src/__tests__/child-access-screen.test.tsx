@@ -8,6 +8,10 @@ import {
 
 import { ChildAccessScreen } from "@/features/auth/child-access-screen";
 
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 describe("ChildAccessScreen", () => {
   it("collects a child access code", () => {
     render(<ChildAccessScreen />);

@@ -22,6 +22,10 @@ jest.mock("@/features/onboarding/signature-pad", () => ({
   },
 }));
 
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 describe("OnboardingFlow", () => {
   it("opens on the auth screen and enters onboarding after sign-in", async () => {
     const auth = {
@@ -90,14 +94,15 @@ describe("OnboardingFlow", () => {
     );
 
     // Family + country
+    fireEvent.press(screen.getByLabelText("Dad"));
     fireEvent.changeText(screen.getByLabelText("Your name"), "Alex");
     fireEvent.changeText(screen.getByLabelText("Family name"), "Rivera");
     fireEvent.press(screen.getByLabelText("Choose your country"));
     // The picker spans every country, so filter down before tapping.
     fireEvent.changeText(screen.getByLabelText("Search countries"), "Serbia");
     fireEvent.press(screen.getByLabelText("Serbia"));
-    // caption reflects the chosen currency
-    expect(screen.getByText(/RSD \(din\)/)).toBeOnTheScreen();
+    // the currency field defaults to the country's currency, shown as its code
+    expect(screen.getByText("RSD")).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue"));
 
     // Add a kid — the bottom Continue commits the filled-in kid and proceeds
@@ -113,7 +118,7 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByText("Add 1 chore"));
 
     // Causes — "What Matters Most"; finishing it persists the family.
-    expect(screen.getByText("What matters to your family?")).toBeOnTheScreen();
+    expect(screen.getByText("What does your family care about?")).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Animals"));
     fireEvent.press(screen.getByText("Continue"));
 
@@ -141,6 +146,7 @@ describe("OnboardingFlow", () => {
     expect(persist.mock.calls[0][0]).toMatchObject({
       role: "parent",
       parentName: "Alex",
+      parentLabel: "Dad",
       kids: [expect.objectContaining({ name: "Mia" })],
     });
 
@@ -161,6 +167,7 @@ describe("OnboardingFlow", () => {
     expect(result).toMatchObject({
       role: "parent",
       parentName: "Alex",
+      parentLabel: "Dad",
       familyName: "Rivera",
       country: "RS",
       currency: "RSD",
@@ -314,7 +321,7 @@ describe("OnboardingFlow", () => {
     // Step back to the causes screen and continue a second time.
     fireEvent.press(screen.getByLabelText("Back"));
     expect(
-      await screen.findByText("What matters to your family?"),
+      await screen.findByText("What does your family care about?"),
     ).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue"));
     expect(await screen.findByText("Family promise.")).toBeOnTheScreen();
@@ -347,21 +354,23 @@ describe("OnboardingFlow", () => {
     );
   });
 
-  it("suggests more preset chores; custom field is always available", () => {
+  it("offers four starter chores plus a name-only custom field", () => {
     render(<OnboardingFlow initialStep="p_chores" />);
 
-    // The write-your-own field shows from the start, alongside suggestions.
-    expect(screen.getByLabelText("Chore name")).toBeOnTheScreen();
-    // A 4th preset is hidden until suggested.
-    expect(screen.queryByLabelText("Take out the trash")).toBeNull();
-
-    for (let i = 0; i < 5; i += 1) {
-      fireEvent.press(screen.getByLabelText("Suggest a chore"));
-    }
-
-    // A suggested preset now shows and the suggest button is exhausted.
+    // Four starter chores are shown up front — no suggest button, no amounts.
+    expect(screen.getByLabelText("Make the bed")).toBeOnTheScreen();
     expect(screen.getByLabelText("Take out the trash")).toBeOnTheScreen();
     expect(screen.queryByLabelText("Suggest a chore")).toBeNull();
+    expect(screen.queryByLabelText("Chore reward")).toBeNull();
+
+    // The write-your-own field takes a name only.
+    fireEvent.changeText(
+      screen.getByLabelText("Chore name"),
+      "Vacuum the hall",
+    );
+    fireEvent.press(screen.getByLabelText("Add chore"));
+    expect(screen.getByText("Vacuum the hall")).toBeOnTheScreen();
+    expect(screen.getByText("Add 1 chore")).toBeOnTheScreen();
   });
 
   it("lets a family add several kids with no gate before the paywall", async () => {

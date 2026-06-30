@@ -73,6 +73,14 @@ export function createOnboardingPersistence(
       const familyName =
         result.familyName.trim() ||
         `${result.parentName.trim() || "My"} family`;
+      const profile = await client.from("profiles").upsert({
+        id: parentUserId,
+        display_name: result.parentName.trim(),
+        parent_label: result.parentLabel.trim(),
+      });
+      if (profile?.error) {
+        throw profile.error;
+      }
 
       const household = await households.createHousehold({
         name: familyName,

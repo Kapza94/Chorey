@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -11,6 +12,7 @@ import {
   type TextInputProps,
 } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
@@ -28,11 +30,32 @@ export function OBShell({
   children: React.ReactNode;
 }) {
   const { scheme } = useChoreyTheme();
+  const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const footerBottomPadding =
+    keyboardHeight > 0 ? keyboardHeight + 12 : Math.max(insets.bottom + 16, 30);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillChangeFrame" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={{ flex: 1, backgroundColor: scheme.bgPage, paddingTop: 52 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View
         style={{
@@ -64,16 +87,17 @@ export function OBShell({
       {footer ? (
         <View
           style={{
+            backgroundColor: scheme.bgPage,
             paddingHorizontal: 26,
             paddingTop: 14,
-            paddingBottom: 30,
+            paddingBottom: footerBottomPadding,
             gap: 10,
           }}
         >
           {footer}
         </View>
       ) : null}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
