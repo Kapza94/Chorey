@@ -26,6 +26,7 @@ describe("spend wishlist actions", () => {
         status: "active",
         targetCents: 2500,
         hasUnread: false,
+        unreadNoteCount: 0,
         latestNote: {
           authorKind: "parent",
           body: "Finish your chores first",
@@ -63,6 +64,7 @@ describe("spend wishlist actions", () => {
       status: "active",
       targetCents: 2500,
       hasUnread: false,
+      unreadNoteCount: 0,
     });
     expect(client.rpc).toHaveBeenCalledWith("create_child_wishlist_item", {
       input_access_code: "123456",
@@ -129,6 +131,48 @@ describe("spend wishlist actions", () => {
         hasUnread: false,
       },
     ]);
+  });
+
+  it("loads household wishlist items for the parent dashboard", async () => {
+    const client = {
+      rpc: jest.fn().mockResolvedValue({
+        data: [
+          {
+            id: "wish-1",
+            child_name: "Mina",
+            item_name: "Football",
+            status: "active",
+            target_cents: 2500,
+            has_unread: true,
+            unread_note_count: 2,
+            latest_note_author_kind: "child",
+            latest_note_body: "Can I get this?",
+          },
+        ],
+        error: null,
+      }),
+    };
+    const actions = createSpendWishlistActions(client);
+
+    await expect(actions.listHouseholdWishlist("household-1")).resolves.toEqual([
+      {
+        id: "wish-1",
+        childName: "Mina",
+        itemName: "Football",
+        status: "active",
+        targetCents: 2500,
+        hasUnread: true,
+        unreadNoteCount: 2,
+        latestNote: {
+          authorKind: "child",
+          body: "Can I get this?",
+        },
+      },
+    ]);
+
+    expect(client.rpc).toHaveBeenCalledWith("list_household_wishlist_items", {
+      input_household_id: "household-1",
+    });
   });
 
   it("approves a purchase request", async () => {

@@ -37,7 +37,7 @@ type Props = {
   wishNotes?: WishNote[];
   wishNotesLoading?: boolean;
   onOpenWishNotes?: (wishId: string) => void;
-  onAddWishNote?: (wishId: string, body: string) => void;
+  onAddWishNote?: (wishId: string, body: string) => Promise<void> | void;
   /** lifetime game points (drives the level sticker + XP bar) */
   totalPoints?: number;
   /** when set, the full-screen level-up celebration shows for this level */

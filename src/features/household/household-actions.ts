@@ -15,6 +15,8 @@ type HouseholdClient = {
 export type HouseholdSettings = {
   name: string;
   currency: CurrencyCode;
+  /** what this parent's child calls them (Dad/Mom/…), or "Parent" if unset. */
+  parentLabel: string;
   split: Split;
 };
 
@@ -159,9 +161,19 @@ export function createHouseholdReadActions(client: HouseholdClient) {
 
       const row = result.data;
 
+      // The caller's own profile — RLS scopes profiles select to id = auth.uid(),
+      // so this returns just their row. Used to label their wish notes.
+      const profile = await client
+        .from("profiles")
+        .select("parent_label")
+        .maybeSingle();
+      const parentLabel =
+        (profile?.data?.parent_label ?? "").trim() || "Parent";
+
       return {
         name: row?.name ?? "",
         currency: (row?.currency ?? "USD") as CurrencyCode,
+        parentLabel,
         split: {
           spend: row?.split_spend ?? DEFAULT_SPLIT.spend,
           save: row?.split_save ?? DEFAULT_SPLIT.save,

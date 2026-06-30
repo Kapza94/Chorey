@@ -18,17 +18,27 @@ import {
   updateHouseholdSplit,
 } from "@/features/household/default-household-actions";
 import {
+  cancelParentInvite,
+  createParentInvite,
+  listParentInvites,
+} from "@/features/household/default-household-invite-actions";
+import type { HouseholdInvite } from "@/features/household/household-invite-actions";
+import {
   formatPayoutDate,
   toPayoutHistoryRows,
 } from "@/features/parent-app/payout-history";
 import {
   addWishNoteForParent,
   approvePurchaseRequestForHousehold,
+  listWishlistForHousehold,
   listPurchaseRequestsForHousehold,
   listWishNotesForParent,
   markWishNotesSeenForParent,
 } from "@/features/spend-wishlist/default-spend-wishlist-actions";
-import type { HouseholdPurchaseRequest } from "@/features/spend-wishlist/spend-wishlist-actions";
+import type {
+  HouseholdPurchaseRequest,
+  HouseholdWishlistItem,
+} from "@/features/spend-wishlist/spend-wishlist-actions";
 import {
   approveGivingSuggestionForHousehold,
   listGivingSuggestionsForHousehold,
@@ -109,10 +119,12 @@ export default function ParentHomeRoute() {
 
   const [kids, setKids] = useState<ParentKid[]>([]);
   const [currency, setCurrency] = useState<CurrencyCode>(DEFAULT_CURRENCY);
+  const [parentLabel, setParentLabel] = useState("Parent");
   const [split, setSplit] = useState<Split>(DEFAULT_SPLIT);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [chores, setChores] = useState<CreatedChore[]>([]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [wishlist, setWishlist] = useState<HouseholdWishlistItem[]>([]);
   const [purchases, setPurchases] = useState<HouseholdPurchaseRequest[]>([]);
   const [suggestions, setSuggestions] = useState<GivingSuggestion[]>([]);
   const [settlementPeriod, setSettlementPeriod] =
@@ -120,6 +132,7 @@ export default function ParentHomeRoute() {
   const [accessCodes, setAccessCodes] = useState<
     { kidId: string; accessCode: string }[]
   >([]);
+  const [parentInvites, setParentInvites] = useState<HouseholdInvite[]>([]);
   const [subscription, setSubscription] = useState<HouseholdSubscription>({
     status: "trialing",
     plan: null,
@@ -191,6 +204,7 @@ export default function ParentHomeRoute() {
         getHouseholdSettings(householdId),
         (settings) => {
           setCurrency(settings.currency);
+          setParentLabel(settings.parentLabel);
           setSplit(settings.split);
           setHouseholdName(settings.name);
         },
@@ -209,6 +223,11 @@ export default function ParentHomeRoute() {
           setPhotoUrls(await signChorePhotoUrls(photoPaths));
         },
         "chores",
+      ),
+      settle(
+        listWishlistForHousehold(householdId),
+        setWishlist,
+        "wishlist",
       ),
       settle(
         listPurchaseRequestsForHousehold(householdId),
@@ -241,6 +260,7 @@ export default function ParentHomeRoute() {
           ),
         "accessCodes",
       ),
+      settle(listParentInvites(householdId), setParentInvites, "parentInvites"),
     ]);
   }, [householdId]);
 
@@ -386,9 +406,11 @@ export default function ParentHomeRoute() {
       <ParentApp
         subtitle="This week"
         currency={currency}
+        parentLabel={parentLabel}
         split={split}
         kids={leveledKids}
         pendingApprovals={pendingApprovals}
+        wishlistItems={wishlist}
         purchaseRequests={purchaseRequests}
         givingSuggestions={givingSuggestions}
         payments={kidPayments}
@@ -471,6 +493,7 @@ export default function ParentHomeRoute() {
         }}
         shareStats={shareStatsActions}
         accessCodes={accessCodes}
+        parentInvites={parentInvites}
         subscriptionLabel={describeSubscription(subscription)}
         onManageSubscription={() =>
           router.push({
@@ -478,6 +501,23 @@ export default function ParentHomeRoute() {
             params: { householdId },
           })
         }
+        onCreateParentInvite={async (email) => {
+          if (!householdId) {
+            throw new Error("Household is missing.");
+          }
+
+          const invite = await createParentInvite({ householdId, email });
+          await reload();
+          return invite;
+        }}
+        onCancelParentInvite={async (inviteId) => {
+          if (!householdId) {
+            return;
+          }
+
+          await cancelParentInvite({ householdId, inviteId });
+          await reload();
+        }}
         onChangeBudget={async (kidId, budgetCents) => {
           if (!householdId) {
             return;

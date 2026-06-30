@@ -285,6 +285,7 @@ export default function ChildHomeRoute() {
         targetCents: item.targetCents,
         status: item.status,
         hasUnread: item.hasUnread,
+        unreadNoteCount: item.unreadNoteCount,
         latestNote: item.latestNote,
       })),
     [wishlistItems],
@@ -530,10 +531,10 @@ export default function ChildHomeRoute() {
 
         setWishNotes(undefined);
         setWishNotesLoading(true);
-        // Reading the thread marks it seen server-side; clear the dot locally too.
+        // Reading the thread marks it seen server-side; clear the badge locally too.
         setWishlistItems((current) =>
           current.map((item) =>
-            item.id === wishId ? { ...item, hasUnread: false } : item,
+            item.id === wishId ? { ...item, hasUnread: false, unreadNoteCount: 0 } : item,
           ),
         );
         try {
@@ -549,8 +550,35 @@ export default function ChildHomeRoute() {
           return;
         }
 
-        const note = await addWishNoteForChild({ accessCode, wishlistItemId: wishId, body });
-        setWishNotes((current) => [...(current ?? []), note]);
+        const optimisticNote: WishNote = {
+          id: `local-${Date.now()}`,
+          authorKind: "child",
+          authorName: session.childName ?? "",
+          body,
+          createdAt: new Date().toISOString(),
+        };
+        setWishNotes((current) => [...(current ?? []), optimisticNote]);
+        setWishlistItems((current) =>
+          current.map((item) =>
+            item.id === wishId
+              ? {
+                  ...item,
+                  hasUnread: false,
+                  unreadNoteCount: 0,
+                  latestNote: {
+                    authorKind: "child",
+                    body,
+                  },
+                }
+              : item,
+          ),
+        );
+        const saved = await addWishNoteForChild({ accessCode, wishlistItemId: wishId, body });
+        setWishNotes((current) =>
+          (current ?? []).map((note) =>
+            note.id === optimisticNote.id ? saved : note,
+          ),
+        );
       }}
       savingsCents={bucketBalances.savingsCents}
       givingCents={bucketBalances.givingCents}

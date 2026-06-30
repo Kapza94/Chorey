@@ -1,9 +1,12 @@
 begin;
 
-select plan(8);
+select plan(11);
 
 insert into auth.users (id, email)
 values ('00000000-0000-0000-0000-0000000e0001', 'wish-parent@example.com');
+
+insert into public.profiles (id, display_name, parent_label)
+values ('00000000-0000-0000-0000-0000000e0001', 'Alex', 'Dad');
 
 insert into public.households (id, owner_user_id, name)
 values (
@@ -86,13 +89,22 @@ select lives_ok(
   'parent can reply on a wish in their household'
 );
 
+select is(
+  (select author_name from public.wish_notes
+   where wishlist_item_id = '00000000-0000-0000-0000-0000000e0010'
+     and author_kind = 'parent'),
+  'Dad',
+  'parent wish notes use the saved parent label'
+);
+
 reset role;
 
 -- now() is frozen within a transaction, so the child-seen mark and the parent
 -- note's created_at would tie. Push the seen mark into the past so the parent
 -- note genuinely reads as newer (mirrors real life: the parent replied later).
 update public.wishlist_items
-set child_notes_seen_at = '2000-01-01T00:00:00Z'
+set child_notes_seen_at = '2000-01-01T00:00:00Z',
+    parent_notes_seen_at = '2000-01-01T00:00:00Z'
 where id = '00000000-0000-0000-0000-0000000e0010';
 
 -- The parent reply is unseen by the child, so the wish flags has_unread.
@@ -102,6 +114,25 @@ select is(
   true,
   'an unseen parent note flags the wish as unread for the child'
 );
+
+select is(
+  (select unread_note_count from public.list_child_wishlist_items('CHOREY-WISH0001')
+     where id = '00000000-0000-0000-0000-0000000e0010'),
+  1::bigint,
+  'child wishlist reports the number of unseen parent notes'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000e0001', true);
+
+select is(
+  (select unread_note_count from public.list_household_wishlist_items('00000000-0000-0000-0000-0000000e0002')
+     where id = '00000000-0000-0000-0000-0000000e0010'),
+  1::bigint,
+  'parent dashboard wishlist reports unseen child notes'
+);
+
+reset role;
 
 -- Reading the thread returns both notes and clears the child's unread mark.
 select is(

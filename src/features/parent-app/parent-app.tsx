@@ -32,20 +32,26 @@ import {
   type ParentAccount,
 } from "@/features/parent-app/parent-account";
 import type { ShareStatsActions } from "@/features/parent-app/share-actions";
-import type { WishNote } from "@/features/spend-wishlist/spend-wishlist-actions";
+import type {
+  HouseholdWishlistItem,
+  WishNote,
+} from "@/features/spend-wishlist/spend-wishlist-actions";
 import type { CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import type { Split } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
+import type { HouseholdInvite } from "@/features/household/household-invite-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import type { Recurrence } from "@/features/chores/recurrence";
 
 type Props = {
   subtitle?: string;
   currency?: CurrencyCode;
+  parentLabel?: string;
   split?: Split;
   kids?: ParentKid[];
   pendingApprovals?: PendingApproval[];
+  wishlistItems?: HouseholdWishlistItem[];
   purchaseRequests?: PendingPurchase[];
   givingSuggestions?: PendingGivingSuggestion[];
   payments?: KidPaymentSummary[];
@@ -87,8 +93,11 @@ type Props = {
   }) => void;
   // Settings
   accessCodes?: { kidId: string; accessCode: string }[];
+  parentInvites?: HouseholdInvite[];
   subscriptionLabel?: string;
   onManageSubscription?: () => void;
+  onCreateParentInvite?: (email: string) => Promise<HouseholdInvite>;
+  onCancelParentInvite?: (inviteId: string) => Promise<void> | void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onChangeSplit?: (split: Split) => void;
@@ -112,9 +121,11 @@ type Props = {
 export function ParentApp({
   subtitle,
   currency,
+  parentLabel,
   split,
   kids,
   pendingApprovals,
+  wishlistItems,
   purchaseRequests,
   givingSuggestions,
   payments,
@@ -142,8 +153,11 @@ export function ParentApp({
   recurringLocked,
   onAddChore,
   accessCodes,
+  parentInvites,
   subscriptionLabel,
   onManageSubscription,
+  onCreateParentInvite,
+  onCancelParentInvite,
   onChangePhoto,
   onChangeBudget,
   onChangeCadence,
@@ -183,8 +197,10 @@ export function ParentApp({
         <ParentKidsScreen
           subtitle={subtitle}
           currency={currency}
+          parentLabel={parentLabel}
           kids={kids}
           pendingApprovals={pendingApprovals}
+          wishlistItems={wishlistItems}
           purchaseRequests={purchaseRequests}
           givingSuggestions={givingSuggestions}
           payments={payments}
@@ -233,8 +249,11 @@ export function ParentApp({
           split={split}
           kids={kids}
           accessCodes={accessCodes}
+          parentInvites={parentInvites}
           subscriptionLabel={subscriptionLabel}
           onManageSubscription={onManageSubscription}
+          onCreateParentInvite={onCreateParentInvite}
+          onCancelParentInvite={onCancelParentInvite}
           onChangeBudget={onChangeBudget}
           onChangeCadence={onChangeCadence}
           onChangeSplit={onChangeSplit}

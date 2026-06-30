@@ -1,5 +1,6 @@
 import {
   createSpendWishlistActions,
+  type HouseholdWishlistItem,
   type HouseholdPurchaseRequest,
   type SpendWishlistItem,
   type WishNote,
@@ -33,6 +34,12 @@ export async function listPurchaseRequestsForHousehold(
   return createSpendWishlistActions(supabase).listHouseholdPurchaseRequests(
     householdId,
   );
+}
+
+export async function listWishlistForHousehold(
+  householdId: string,
+): Promise<HouseholdWishlistItem[]> {
+  return createSpendWishlistActions(supabase).listHouseholdWishlist(householdId);
 }
 
 export async function approvePurchaseRequestForHousehold(input: {

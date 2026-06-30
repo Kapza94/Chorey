@@ -14,7 +14,23 @@ export type SpendWishlistItem = {
   targetCents: number;
   /** a new note from the other side the viewer hasn't seen yet. */
   hasUnread: boolean;
+  /** count of new notes from the other side the viewer hasn't seen yet. */
+  unreadNoteCount: number;
   /** latest note on the wish, shown as a lightweight preview on the row. */
+  latestNote?: {
+    authorKind: "parent" | "child";
+    body: string;
+  } | null;
+};
+
+export type HouseholdWishlistItem = {
+  id: string;
+  childName: string;
+  itemName: string;
+  status: WishlistItemStatus;
+  targetCents: number;
+  hasUnread: boolean;
+  unreadNoteCount: number;
   latestNote?: {
     authorKind: "parent" | "child";
     body: string;
@@ -50,6 +66,28 @@ function mapWishlistItem(row: any): SpendWishlistItem {
     status: row.status,
     targetCents: row.target_cents,
     hasUnread: row.has_unread ?? false,
+    unreadNoteCount: row.unread_note_count ?? (row.has_unread ? 1 : 0),
+  };
+
+  if (row.latest_note_body && row.latest_note_author_kind) {
+    item.latestNote = {
+      authorKind: row.latest_note_author_kind,
+      body: row.latest_note_body,
+    };
+  }
+
+  return item;
+}
+
+function mapHouseholdWishlistItem(row: any): HouseholdWishlistItem {
+  const item: HouseholdWishlistItem = {
+    id: row.id,
+    childName: row.child_name,
+    itemName: row.item_name,
+    status: row.status,
+    targetCents: row.target_cents,
+    hasUnread: row.has_unread ?? false,
+    unreadNoteCount: row.unread_note_count ?? (row.has_unread ? 1 : 0),
   };
 
   if (row.latest_note_body && row.latest_note_author_kind) {
@@ -234,6 +272,20 @@ export function createSpendWishlistActions(client: RpcClient) {
       }
 
       return (result.data ?? []).map(mapHouseholdPurchaseRequest);
+    },
+
+    async listHouseholdWishlist(
+      householdId: string,
+    ): Promise<HouseholdWishlistItem[]> {
+      const result = await client.rpc("list_household_wishlist_items", {
+        input_household_id: householdId,
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return (result.data ?? []).map(mapHouseholdWishlistItem);
     },
 
     async approvePurchaseRequest(input: {

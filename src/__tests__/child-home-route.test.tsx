@@ -17,6 +17,8 @@ const mockSubmitChoreForChild = jest.fn();
 const mockUndoChoreSubmissionForChild = jest.fn();
 const mockGetBucketBalancesForChild = jest.fn();
 const mockListWishlistForChild = jest.fn();
+const mockListWishNotesForChild = jest.fn();
+const mockAddWishNoteForChild = jest.fn();
 const mockListGivingOptionsForChild = jest.fn();
 const mockResolveChildAccessCode = jest.fn();
 const mockSaveChildSession = jest.fn();
@@ -59,10 +61,13 @@ jest.mock("@/features/kid-home/kid-app", () => ({
     chores: { id: string; state: string }[];
     onSubmitChore: (id: string) => Promise<void>;
     onUndoChore: (id: string) => Promise<void>;
+    wishes?: { id: string; latestNote?: { body: string } | null }[];
+    onAddWishNote?: (wishId: string, body: string) => Promise<void>;
   }) => {
     return (
       <>
         <MockText>{props.chores[0]?.state ?? "empty"}</MockText>
+        <MockText>{props.wishes?.[0]?.latestNote?.body ?? "no wish note"}</MockText>
         <MockPressable
           accessibilityLabel="Route submit"
           onPress={() => void props.onSubmitChore("c1")}
@@ -71,6 +76,12 @@ jest.mock("@/features/kid-home/kid-app", () => ({
           accessibilityLabel="Route undo"
           onPress={() => {
             void props.onUndoChore("c1").catch(() => undefined);
+          }}
+        />
+        <MockPressable
+          accessibilityLabel="Route add wish note"
+          onPress={() => {
+            void props.onAddWishNote?.("w1", "Please?");
           }}
         />
       </>
@@ -98,6 +109,8 @@ jest.mock("@/features/ledger/default-ledger-actions", () => ({
 jest.mock("@/features/spend-wishlist/default-spend-wishlist-actions", () => ({
   createWishlistItemForChild: jest.fn(),
   listWishlistForChild: (...args: unknown[]) => mockListWishlistForChild(...args),
+  listWishNotesForChild: (...args: unknown[]) => mockListWishNotesForChild(...args),
+  addWishNoteForChild: (...args: unknown[]) => mockAddWishNoteForChild(...args),
   requestWishlistPurchase: jest.fn(),
 }));
 
@@ -142,6 +155,14 @@ beforeEach(() => {
     givingCents: 0,
   });
   mockListWishlistForChild.mockResolvedValue([]);
+  mockListWishNotesForChild.mockResolvedValue([]);
+  mockAddWishNoteForChild.mockResolvedValue({
+    id: "n1",
+    authorKind: "child",
+    authorName: "Mia",
+    body: "Please?",
+    createdAt: "2026-06-30T12:00:00Z",
+  });
   mockListGivingOptionsForChild.mockResolvedValue([]);
   mockResolveChildAccessCode.mockResolvedValue({
     accessCode: "123456",
@@ -152,6 +173,32 @@ beforeEach(() => {
     paused: false,
   });
   mockLoadChildSession.mockReturnValue(null);
+});
+
+it("shows a child wish note on the wishlist row after posting it", async () => {
+  mockListWishlistForChild.mockResolvedValue([
+    {
+      id: "w1",
+      name: "Skateboard",
+      targetCents: 6500,
+      status: "active",
+      hasUnread: false,
+      unreadNoteCount: 0,
+      latestNote: null,
+    },
+  ]);
+
+  render(<ChildHomeRoute />);
+
+  expect(await screen.findByText("no wish note")).toBeOnTheScreen();
+  fireEvent.press(screen.getByLabelText("Route add wish note"));
+
+  expect(await screen.findByText("Please?")).toBeOnTheScreen();
+  expect(mockAddWishNoteForChild).toHaveBeenCalledWith({
+    accessCode: "123456",
+    wishlistItemId: "w1",
+    body: "Please?",
+  });
 });
 
 it("shows the neutral paused screen when the household subscription lapsed", async () => {

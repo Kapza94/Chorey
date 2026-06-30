@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
 import {
@@ -261,6 +261,85 @@ describe("ParentApp · Kids", () => {
     expect(screen.getByText("Animal shelter")).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Approve cause Animal shelter"));
     expect(onApproveGivingSuggestion).toHaveBeenCalledWith("gs1");
+  });
+
+  it("shows child wishlist items on the parent dashboard", () => {
+    render(
+      <ParentApp
+        kids={[mia]}
+        wishlistItems={[
+          {
+            id: "w1",
+            childName: "Mia",
+            itemName: "Skateboard",
+            targetCents: 6500,
+            status: "active",
+            hasUnread: true,
+            unreadNoteCount: 2,
+            latestNote: {
+              authorKind: "child",
+              body: "Can I get this?",
+            },
+          },
+        ]}
+        onLoadWishNotes={jest.fn().mockResolvedValue([])}
+      />,
+    );
+
+    expect(screen.getByText("Wishlist")).toBeOnTheScreen();
+    expect(screen.getByText("Skateboard")).toBeOnTheScreen();
+    expect(screen.getByText("Mia · $65.00")).toBeOnTheScreen();
+    expect(screen.getByText("Mia: Can I get this?")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Notes for Skateboard, 2 new messages")).toBeOnTheScreen();
+    expect(screen.getByText("2")).toBeOnTheScreen();
+  });
+
+  it("opens a wishlist note thread from the parent dashboard and replies", async () => {
+    const onLoadWishNotes = jest.fn().mockResolvedValue([
+      {
+        id: "n1",
+        authorKind: "child",
+        authorName: "Mia",
+        body: "Can I get this?",
+        createdAt: "2026-06-25T10:00:00Z",
+      },
+    ]);
+    const onAddWishNote = jest.fn().mockResolvedValue({
+      id: "n2",
+      authorKind: "parent",
+      authorName: "Dad",
+      body: "After chores.",
+      createdAt: "2026-06-25T11:00:00Z",
+    });
+
+    render(
+      <ParentApp
+        kids={[mia]}
+        wishlistItems={[
+          {
+            id: "w1",
+            childName: "Mia",
+            itemName: "Skateboard",
+            targetCents: 6500,
+            status: "active",
+            hasUnread: true,
+            unreadNoteCount: 1,
+          },
+        ]}
+        onLoadWishNotes={onLoadWishNotes}
+        onAddWishNote={onAddWishNote}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Notes for Skateboard, 1 new message"));
+    expect(await screen.findByText("Can I get this?")).toBeOnTheScreen();
+    expect(onLoadWishNotes).toHaveBeenCalledWith("w1");
+
+    fireEvent.changeText(screen.getByLabelText("Reply to Skateboard"), " After chores. ");
+    fireEvent.press(screen.getByLabelText("Send reply"));
+    await waitFor(() =>
+      expect(onAddWishNote).toHaveBeenCalledWith("w1", "After chores."),
+    );
   });
 });
 
@@ -787,6 +866,47 @@ describe("ParentApp · Settings", () => {
 
     expect(screen.getByText("Child sign-in codes")).toBeOnTheScreen();
     expect(screen.getByText("482913")).toBeOnTheScreen();
+  });
+
+  it("creates and cancels co-parent invites from settings", async () => {
+    const onCreateInvite = jest.fn().mockResolvedValue({
+      id: "invite-2",
+      email: "step@example.com",
+      role: "parent_admin",
+      status: "pending",
+      expiresAt: "2026-07-07T12:00:00Z",
+      createdAt: "2026-06-30T12:00:00Z",
+      inviteUrl: "chorey://parent/invite?token=raw-token",
+    });
+    const onCancelInvite = jest.fn();
+
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        parentInvites={[
+          {
+            id: "invite-1",
+            email: "dad@example.com",
+            role: "parent_admin",
+            status: "pending",
+            expiresAt: "2026-07-07T12:00:00Z",
+            createdAt: "2026-06-30T12:00:00Z",
+          },
+        ]}
+        onCreateParentInvite={onCreateInvite}
+        onCancelParentInvite={onCancelInvite}
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText("Co-parent email"), " step@example.com ");
+    fireEvent.press(screen.getByLabelText("Create co-parent invite"));
+
+    expect(onCreateInvite).toHaveBeenCalledWith("step@example.com");
+    expect(await screen.findByText("chorey://parent/invite?token=raw-token")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Cancel invite for dad@example.com"));
+    expect(onCancelInvite).toHaveBeenCalledWith("invite-1");
   });
 
   it("ships no placeholder settings rows", () => {

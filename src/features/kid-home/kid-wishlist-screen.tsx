@@ -23,6 +23,8 @@ export type KidWish = {
   status: "active" | "requested" | "purchased";
   /** a new note from a parent the kid hasn't opened yet. */
   hasUnread?: boolean;
+  /** number of parent notes the kid hasn't opened yet. */
+  unreadNoteCount?: number;
   /** latest note on this wish, visible without opening the thread. */
   latestNote?: {
     authorKind: "parent" | "child";
@@ -40,7 +42,7 @@ type Props = {
   /** open a wish's note thread — the route fetches and feeds `notes`. */
   onOpenNotes?: (wishId: string) => void;
   /** post a note from the child onto the open wish. */
-  onAddNote?: (wishId: string, body: string) => void;
+  onAddNote?: (wishId: string, body: string) => Promise<void> | void;
   /** notes for the currently-open wish, in order. */
   notes?: WishNote[];
   notesLoading?: boolean;
@@ -139,6 +141,13 @@ export function KidWishlistScreen({
                 ? Math.min(100, Math.round((spendableCents / wish.targetCents) * 100))
                 : 0;
             const affordable = spendableCents >= wish.targetCents;
+            const unreadCount = wish.unreadNoteCount ?? (wish.hasUnread ? 1 : 0);
+            const notesLabel =
+              unreadCount > 0
+                ? `Notes for ${wish.name}, ${unreadCount} new ${
+                    unreadCount === 1 ? "message" : "messages"
+                  }`
+                : `Notes for ${wish.name}`;
 
             return (
               <View
@@ -154,6 +163,32 @@ export function KidWishlistScreen({
                   ...scheme.toy.shadowSm,
                 }}
               >
+                {unreadCount > 0 ? (
+                  <View
+                    style={{
+                      position: "absolute",
+                      right: 10,
+                      top: 10,
+                      minWidth: 20,
+                      height: 20,
+                      borderRadius: 999,
+                      backgroundColor: palette.accent[600],
+                      alignItems: "center",
+                      justifyContent: "center",
+                      paddingHorizontal: 6,
+                      zIndex: 1,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        typography.text.label,
+                        { color: palette.cream[4], fontSize: 11 },
+                      ]}
+                    >
+                      {unreadCount}
+                    </Text>
+                  </View>
+                ) : null}
                 <View
                   style={{
                     flexDirection: "row",
@@ -258,9 +293,7 @@ export function KidWishlistScreen({
                 {/* Notes thread — talk to a parent about this wish. */}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={
-                    wish.hasUnread ? `Notes for ${wish.name}, new message` : `Notes for ${wish.name}`
-                  }
+                  accessibilityLabel={notesLabel}
                   onPress={() => openNotes(wish.id)}
                   style={{ flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start" }}
                 >
@@ -268,15 +301,27 @@ export function KidWishlistScreen({
                   <Text style={[typography.text.label, { color: scheme.fgMuted, fontSize: 13 }]}>
                     Notes
                   </Text>
-                  {wish.hasUnread ? (
+                  {unreadCount > 0 ? (
                     <View
                       style={{
-                        width: 8,
-                        height: 8,
+                        minWidth: 18,
+                        height: 18,
                         borderRadius: 999,
                         backgroundColor: palette.accent[600],
+                        alignItems: "center",
+                        justifyContent: "center",
+                        paddingHorizontal: 5,
                       }}
-                    />
+                    >
+                      <Text
+                        style={[
+                          typography.text.label,
+                          { color: palette.cream[4], fontSize: 11 },
+                        ]}
+                      >
+                        {unreadCount}
+                      </Text>
+                    </View>
                   ) : null}
                 </Pressable>
               </View>
@@ -323,9 +368,9 @@ export function KidWishlistScreen({
         wish={notesWish}
         notes={notes}
         loading={notesLoading}
-        onSend={(body) => {
+        onSend={async (body) => {
           if (notesWish) {
-            onAddNote?.(notesWish.id, body);
+            await onAddNote?.(notesWish.id, body);
           }
         }}
         onClose={() => setNotesWishId(null)}
@@ -346,13 +391,15 @@ function WishNotesModal({
   wish: KidWish | null;
   notes?: WishNote[];
   loading: boolean;
-  onSend: (body: string) => void;
+  onSend: (body: string) => Promise<void> | void;
   onClose: () => void;
 }) {
   const { scheme, typography, palette, radius } = useChoreyTheme();
   const keyboardHeight = useKeyboardHeight();
   const [draft, setDraft] = useState("");
-  const canSend = draft.trim().length > 0;
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canSend = draft.trim().length > 0 && !sending;
 
   return (
     <Modal visible={wish !== null} transparent animationType="slide" onRequestClose={onClose}>
@@ -460,8 +507,17 @@ function WishNotesModal({
             accessibilityState={{ disabled: !canSend }}
             disabled={!canSend}
             onPress={() => {
-              onSend(draft.trim());
+              const body = draft.trim();
               setDraft("");
+              setSending(true);
+              setError(null);
+              onClose();
+              void Promise.resolve(onSend(body))
+                .catch(() => {
+                  setError("Note did not save. Try again.");
+                  setDraft(body);
+                })
+                .finally(() => setSending(false));
             }}
             style={({ pressed }) => ({
               width: 46,
@@ -480,6 +536,11 @@ function WishNotesModal({
             <Send size={18} color={canSend ? palette.cream[4] : scheme.fgFaint} strokeWidth={2.2} />
           </Pressable>
         </View>
+        {error ? (
+          <Text style={[typography.text.caption, { color: palette.semantic.danger[600], marginTop: 8 }]}>
+            {error}
+          </Text>
+        ) : null}
       </View>
     </Modal>
   );

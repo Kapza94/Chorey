@@ -6,10 +6,12 @@ import {
   CreditCard,
   KeyRound,
   LogOut,
+  MailPlus,
   Monitor,
   Moon,
   Share2,
   Sun,
+  X,
 } from "lucide-react-native";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -30,6 +32,7 @@ import {
   type Split,
 } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
+import type { HouseholdInvite } from "@/features/household/household-invite-actions";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
 
 const BUDGET_STEP_CENTS = 500;
@@ -43,9 +46,12 @@ type Props = {
   split?: Split;
   kids?: ParentKid[];
   accessCodes?: KidAccessCode[];
+  parentInvites?: HouseholdInvite[];
   /** one-line status, e.g. "Free trial · ends Jun 25, 2026" */
   subscriptionLabel?: string;
   onManageSubscription?: () => void;
+  onCreateParentInvite?: (email: string) => Promise<HouseholdInvite>;
+  onCancelParentInvite?: (inviteId: string) => Promise<void> | void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
   onChangeSplit?: (split: Split) => void;
@@ -65,8 +71,11 @@ export function ParentSettingsScreen({
   split = DEFAULT_SPLIT,
   kids = [],
   accessCodes = [],
+  parentInvites = [],
   subscriptionLabel,
   onManageSubscription,
+  onCreateParentInvite,
+  onCancelParentInvite,
   onChangeBudget,
   onChangeCadence,
   onChangeSplit,
@@ -184,11 +193,26 @@ export function ParentSettingsScreen({
             </>
           ) : null}
 
-          {/* Kid sign-in codes — parents will lose these; keep them findable. */}
+          {/* Co-parent invites — Premium family sharing, capped in the DB. */}
           <Text
             style={[
               typography.text.overline,
               { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+            ]}
+          >
+            Parent accounts
+          </Text>
+          <ParentInviteCard
+            invites={parentInvites}
+            onCreateInvite={onCreateParentInvite}
+            onCancelInvite={onCancelParentInvite}
+          />
+
+          {/* Kid sign-in codes — parents will lose these; keep them findable. */}
+          <Text
+            style={[
+              typography.text.overline,
+              { color: scheme.fgFaint, paddingHorizontal: 4, paddingTop: 20, paddingBottom: 8 },
             ]}
           >
             Child sign-in codes
@@ -333,6 +357,174 @@ export function ParentSettingsScreen({
           </Text>
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function ParentInviteCard({
+  invites,
+  onCreateInvite,
+  onCancelInvite,
+}: {
+  invites: HouseholdInvite[];
+  onCreateInvite?: (email: string) => Promise<HouseholdInvite>;
+  onCancelInvite?: (inviteId: string) => Promise<void> | void;
+}) {
+  const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
+  const [email, setEmail] = useState("");
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const activeInvites = invites.filter((invite) => invite.status === "pending");
+
+  const createInvite = async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !onCreateInvite) {
+      return;
+    }
+
+    setSending(true);
+    setMessage(null);
+    setCreatedUrl(null);
+    try {
+      const invite = await onCreateInvite(trimmed);
+      setCreatedUrl(invite.inviteUrl ?? null);
+      setEmail("");
+      setMessage("Invite link ready.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Invite could not be created.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <View
+      style={{
+        backgroundColor: scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        ...scheme.toy.shadowSm,
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        gap: 10,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <MailPlus size={17} color={scheme.fgMuted} strokeWidth={2} />
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.text.label, { color: scheme.fg }]}>
+            Invite another parent
+          </Text>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 1 }]}>
+            Family plan supports up to 4 parent accounts.
+          </Text>
+        </View>
+      </View>
+
+      <TextInput
+        accessibilityLabel="Co-parent email"
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        value={email}
+        onChangeText={setEmail}
+        placeholder="parent@example.com"
+        placeholderTextColor={scheme.fgFaint}
+        style={{
+          minHeight: 46,
+          borderRadius: radius.md,
+          borderWidth: toybox.borderWidth,
+          borderColor: scheme.toy.border,
+          backgroundColor: scheme.bgPage,
+          paddingHorizontal: 14,
+          color: scheme.fg,
+          fontFamily: typography.family.body.regular,
+          fontSize: 15,
+        }}
+      />
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Create co-parent invite"
+        accessibilityState={{ disabled: sending || !email.trim() || !onCreateInvite }}
+        disabled={sending || !email.trim() || !onCreateInvite}
+        onPress={createInvite}
+        style={({ pressed }) => ({
+          alignItems: "center",
+          borderRadius: radius.pill,
+          backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
+          opacity: sending || !email.trim() || !onCreateInvite ? 0.45 : 1,
+          paddingVertical: 12,
+        })}
+      >
+        <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 14 }]}>
+          {sending ? "Creating..." : "Create invite link"}
+        </Text>
+      </Pressable>
+
+      {createdUrl ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Share co-parent invite"
+          onPress={() =>
+            Share.share({
+              message: `Join our Chorey family: ${createdUrl}`,
+            })
+          }
+          style={{
+            borderRadius: radius.md,
+            backgroundColor: scheme.bgSunken,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+          }}
+        >
+          <Text selectable style={[typography.text.caption, { color: scheme.fg }]}>
+            {createdUrl}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {message ? (
+        <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+          {message}
+        </Text>
+      ) : null}
+
+      {activeInvites.length > 0 ? (
+        <View style={{ gap: 8, paddingTop: 2 }}>
+          {activeInvites.map((invite) => (
+            <View
+              key={invite.id}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                borderRadius: radius.md,
+                backgroundColor: scheme.bgSunken,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              }}
+            >
+              <Text
+                numberOfLines={1}
+                style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}
+              >
+                Pending: {invite.email}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Cancel invite for ${invite.email}`}
+                hitSlop={8}
+                onPress={() => onCancelInvite?.(invite.id)}
+              >
+                <X size={16} color={palette.semantic.danger[600]} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
