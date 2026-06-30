@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { ParentApp } from "@/features/parent-app/parent-app";
-import type { ChoreBoardItem } from "@/features/parent-app/parent-chores-screen";
+import {
+  getBottomSheetMaxHeight,
+  type ChoreBoardItem,
+} from "@/features/parent-app/parent-chores-screen";
 import type { ParentKid } from "@/features/parent-app/parent-primitives";
 
 const mia: ParentKid = {
@@ -438,6 +441,16 @@ describe("ParentApp · Payments", () => {
 });
 
 describe("ParentApp · Chores", () => {
+  it("keeps keyboard-lifted sheets below the status area", () => {
+    expect(
+      getBottomSheetMaxHeight({
+        windowHeight: 874,
+        keyboardHeight: 320,
+        topInset: 59,
+      }),
+    ).toBe(483);
+  });
+
   const chores = [
     {
       id: "c1",

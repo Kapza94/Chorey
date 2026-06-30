@@ -14,6 +14,11 @@ export type SpendWishlistItem = {
   targetCents: number;
   /** a new note from the other side the viewer hasn't seen yet. */
   hasUnread: boolean;
+  /** latest note on the wish, shown as a lightweight preview on the row. */
+  latestNote?: {
+    authorKind: "parent" | "child";
+    body: string;
+  } | null;
 };
 
 export type WishNote = {
@@ -39,13 +44,22 @@ export type HouseholdPurchaseRequest = PurchaseRequest & {
 };
 
 function mapWishlistItem(row: any): SpendWishlistItem {
-  return {
+  const item: SpendWishlistItem = {
     id: row.id,
     name: row.name,
     status: row.status,
     targetCents: row.target_cents,
     hasUnread: row.has_unread ?? false,
   };
+
+  if (row.latest_note_body && row.latest_note_author_kind) {
+    item.latestNote = {
+      authorKind: row.latest_note_author_kind,
+      body: row.latest_note_body,
+    };
+  }
+
+  return item;
 }
 
 function mapWishNote(row: any): WishNote {

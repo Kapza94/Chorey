@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useContext, useState, type ReactNode } from "react";
 import {
   Alert,
   Image,
@@ -8,7 +8,9 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
+import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 
 import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import {
@@ -79,6 +81,18 @@ const RECUR_TABS: { id: RecurFilter; label: string }[] = [
   { id: "monthly", label: "Monthly" },
   { id: "one-off", label: "Once" },
 ];
+
+export function getBottomSheetMaxHeight({
+  windowHeight,
+  keyboardHeight,
+  topInset,
+}: {
+  windowHeight: number;
+  keyboardHeight: number;
+  topInset: number;
+}) {
+  return Math.max(320, windowHeight - keyboardHeight - topInset - 12);
+}
 
 type Props = {
   currency?: CurrencyCode;
@@ -1129,6 +1143,13 @@ function AddChoreSheet({
 }) {
   const { scheme, typography, palette, radius, bucketInk } = useChoreyTheme();
   const keyboardHeight = useKeyboardHeight();
+  const insets = useContext(SafeAreaInsetsContext);
+  const { height: windowHeight } = useWindowDimensions();
+  const sheetMaxHeight = getBottomSheetMaxHeight({
+    windowHeight,
+    keyboardHeight,
+    topInset: insets?.top ?? 0,
+  });
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [showAllAssignees, setShowAllAssignees] = useState(false);
@@ -1242,6 +1263,7 @@ function AddChoreSheet({
           backgroundColor: scheme.bgModal,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
+          maxHeight: sheetMaxHeight,
           paddingHorizontal: 22,
           paddingTop: 14,
           paddingBottom: 30,
@@ -1300,6 +1322,11 @@ function AddChoreSheet({
           </Pressable>
         </View>
 
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 2 }}
+        >
         <Text
           style={[
             typography.text.overline,
@@ -1625,6 +1652,7 @@ function AddChoreSheet({
                 : "Add a name and a reward to continue."}
           </Text>
         ) : null}
+        </ScrollView>
       </View>
     </Modal>
   );

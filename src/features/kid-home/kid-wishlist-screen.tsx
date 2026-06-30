@@ -23,6 +23,11 @@ export type KidWish = {
   status: "active" | "requested" | "purchased";
   /** a new note from a parent the kid hasn't opened yet. */
   hasUnread?: boolean;
+  /** latest note on this wish, visible without opening the thread. */
+  latestNote?: {
+    authorKind: "parent" | "child";
+    body: string;
+  } | null;
 };
 
 type Props = {
@@ -166,6 +171,18 @@ export function KidWishlistScreen({
                       {formatMoney(spendableCents, currency)} of{" "}
                       {formatMoney(wish.targetCents, currency)}
                     </Text>
+                    {wish.latestNote ? (
+                      <Text
+                        style={[
+                          typography.text.caption,
+                          { color: scheme.fgMuted, marginTop: 4 },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {wish.latestNote.authorKind === "parent" ? "Parent" : "You"}:{" "}
+                        {wish.latestNote.body}
+                      </Text>
+                    ) : null}
                   </View>
 
                   {wish.status === "requested" ? (

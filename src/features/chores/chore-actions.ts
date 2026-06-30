@@ -4,6 +4,10 @@ export type ChoreStatus = "assigned" | "submitted" | "approved" | "sent_back";
 
 type ChoreClient = {
   from(table: string): any;
+  rpc?(fn: string, args: Record<string, unknown>): PromiseLike<{
+    data: any;
+    error: Error | null;
+  }>;
 };
 
 export type CreateChoreInput = {
@@ -164,11 +168,14 @@ export function createChoreActions(client: ChoreClient, householdId: string) {
     // events (the 40/40/20 split already paid out), so the status guard keeps a
     // delete from ever silently clawing money back out of a kid's buckets.
     async deleteChore(choreId: string): Promise<void> {
-      const result = await client
-        .from("chore_instances")
-        .delete()
-        .eq("id", choreId)
-        .neq("status", "approved");
+      if (!client.rpc) {
+        throw new Error("Chore delete RPC is unavailable.");
+      }
+
+      const result = await client.rpc("delete_parent_chore", {
+        input_household_id: householdId,
+        input_chore_id: choreId,
+      });
 
       if (result.error) {
         throw result.error;

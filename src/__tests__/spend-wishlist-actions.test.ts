@@ -10,6 +10,8 @@ describe("spend wishlist actions", () => {
             name: "Football",
             target_cents: 2500,
             status: "active",
+            latest_note_author_kind: "parent",
+            latest_note_body: "Finish your chores first",
           },
         ],
         error: null,
@@ -24,6 +26,10 @@ describe("spend wishlist actions", () => {
         status: "active",
         targetCents: 2500,
         hasUnread: false,
+        latestNote: {
+          authorKind: "parent",
+          body: "Finish your chores first",
+        },
       },
     ]);
     expect(client.rpc).toHaveBeenCalledWith("list_child_wishlist_items", {

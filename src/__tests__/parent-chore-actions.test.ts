@@ -121,4 +121,19 @@ describe("parent chore actions", () => {
     ).rejects.toThrow(/reason/i);
     expect(client.from).not.toHaveBeenCalled();
   });
+
+  it("deletes a chore through the parent delete RPC", async () => {
+    const client = {
+      from: jest.fn(),
+      rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
+    };
+
+    await createChoreActions(client as any, "household-1").deleteChore("chore-1");
+
+    expect(client.rpc).toHaveBeenCalledWith("delete_parent_chore", {
+      input_household_id: "household-1",
+      input_chore_id: "chore-1",
+    });
+    expect(client.from).not.toHaveBeenCalled();
+  });
 });

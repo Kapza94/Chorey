@@ -17,6 +17,24 @@ describe("KidWishlistScreen · notes", () => {
     expect(screen.getByLabelText("Notes for Skateboard, new message")).toBeOnTheScreen();
   });
 
+  it("shows the latest note on the wishlist row", () => {
+    render(
+      <KidWishlistScreen
+        wishes={[
+          {
+            ...wish,
+            latestNote: {
+              authorKind: "parent",
+              body: "Finish your chores first",
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Parent: Finish your chores first")).toBeOnTheScreen();
+  });
+
   it("opens a wish's thread and posts a note", () => {
     const onOpenNotes = jest.fn();
     const onAddNote = jest.fn();

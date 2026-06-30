@@ -285,6 +285,7 @@ export default function ChildHomeRoute() {
         targetCents: item.targetCents,
         status: item.status,
         hasUnread: item.hasUnread,
+        latestNote: item.latestNote,
       })),
     [wishlistItems],
   );
