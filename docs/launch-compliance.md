@@ -82,13 +82,15 @@ profiles. Lean into that. Steps:
 ## 5. Account & data deletion (hard Apple requirement)
 
 Apple requires any app that supports **account creation** to also support
-**in-app account deletion** (not just deactivation). **Chorey does not have this
-yet** — it's a likely rejection and a real GDPR/CCPA "right to erasure" gap.
+**in-app account deletion** (not just deactivation).
 
-- [ ] Build a **"Delete account"** flow in the parent account sheet that deletes
-      the household, child profiles, ledger, codes, and the auth user.
-- [ ] Surface a contact path for deletion requests (the in-app feedback/contact
-      form partly covers this, but a self-serve button is what Apple wants).
+- [x] "Delete account" flow in the parent account sheet — `delete_my_account()`
+      RPC deletes the household, child profiles, ledger, codes, and the auth
+      user (`supabase/migrations/20260614150000_delete_my_account.sql`), and
+      storage objects (avatars + chore photos) are erased too
+      (`20260702110000_delete_account_storage_cleanup.sql`).
+- [x] Contact path for deletion requests (in-app contact form + self-serve
+      delete button).
 
 ## 6. Privacy Policy must disclose your processors
 

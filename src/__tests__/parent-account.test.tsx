@@ -42,7 +42,7 @@ describe("ParentAccountSheet", () => {
       visible: true,
       account,
       subscriptionLabel: "Free trial",
-      onEditName: jest.fn(),
+      onOpenProfile: jest.fn(),
       onManageSubscription: jest.fn(),
       onSignOut: jest.fn(),
       onClose: jest.fn(),
@@ -72,11 +72,9 @@ describe("ParentAccountSheet", () => {
     expect(props.onManageSubscription).toHaveBeenCalledTimes(1);
   });
 
-  it("edits the display name", () => {
+  it("opens the account & family edit screen", () => {
     const props = setup();
-    fireEvent.press(screen.getByLabelText("Edit profile"));
-    fireEvent.changeText(screen.getByLabelText("Your name"), "Luka K");
-    fireEvent.press(screen.getByLabelText("Save name"));
-    expect(props.onEditName).toHaveBeenCalledWith("Luka K");
+    fireEvent.press(screen.getByLabelText("Account & family"));
+    expect(props.onOpenProfile).toHaveBeenCalledTimes(1);
   });
 });

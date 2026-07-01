@@ -70,7 +70,7 @@ export function OBDemoApprove({
   return (
     <OBShell
       onBack={onBack}
-      progress={{ index: 0, total: 4 }}
+      progress={{ index: 1, total: 8 }}
       footer={
         <>
           <OBPrimary
@@ -96,8 +96,8 @@ export function OBDemoApprove({
           borderColor: scheme.toy.border,
           borderWidth: toybox.borderWidth,
           borderRadius: 18,
-          padding: 16,
-          gap: 14,
+          padding: 14,
+          gap: 12,
           ...scheme.toy.shadow,
         }}
       >
@@ -106,7 +106,7 @@ export function OBDemoApprove({
           accessibilityLabel="Mia feeding a dog"
           style={{
             width: "100%",
-            aspectRatio: 1.45,
+            aspectRatio: 1.7,
             backgroundColor: "#000",
             borderRadius: 14,
             borderColor: scheme.toy.border,
@@ -209,7 +209,7 @@ export function OBDemoApprove({
       </View>
 
       {approved ? (
-        <View style={{ marginTop: 24 }}>
+        <View style={{ marginTop: 14 }}>
           {DEMO_BUCKETS.map((bucket, index) => (
             <DemoBucketBar
               key={bucket.label}
@@ -266,13 +266,13 @@ function DemoBucketBar({
   }, [grow, delay]);
 
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View style={{ marginBottom: 11 }}>
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "baseline",
-          marginBottom: 6,
+          marginBottom: 5,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -333,7 +333,7 @@ export function OBDemoKid({
   return (
     <OBShell
       onBack={onBack}
-      progress={{ index: 0, total: 4 }}
+      progress={{ index: 2, total: 8 }}
       footer={<OBPrimary onPress={onNext}>Continue</OBPrimary>}
     >
       <OBTitle

@@ -748,6 +748,53 @@ describe("ParentApp · Settings", () => {
     expect(screen.getByText(/chorey · v/)).toBeOnTheScreen();
   });
 
+  it("shows the signed-in parent as a profile row that opens the editor", () => {
+    const onOpenProfile = jest.fn();
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        account={{
+          name: "Alex Rivera",
+          email: "alex@example.com",
+          provider: "google",
+        }}
+        onOpenProfile={onOpenProfile}
+      />,
+    );
+
+    expect(screen.getByText("Alex Rivera")).toBeOnTheScreen();
+    expect(screen.getByText("alex@example.com")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Account and family"));
+    expect(onOpenProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces account, legal, and delete actions directly in Settings", () => {
+    const onManageStoreSubscription = jest.fn();
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        account={{ name: "Alex", email: "alex@example.com", provider: "apple" }}
+        onManageStoreSubscription={onManageStoreSubscription}
+        onSubmitContact={jest.fn(async () => {})}
+        onSubmitFeedback={jest.fn(async () => {})}
+        onDeleteAccount={jest.fn(async () => {})}
+      />,
+    );
+
+    // Reachable from Settings without opening the avatar sheet.
+    expect(screen.getByLabelText("Cancel or manage billing")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Contact us")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Send feedback")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Terms of Service")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Privacy Policy")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Delete account")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Cancel or manage billing"));
+    expect(onManageStoreSubscription).toHaveBeenCalledTimes(1);
+  });
+
   it("shows the native app version and build number under logout", () => {
     render(
       <ParentApp

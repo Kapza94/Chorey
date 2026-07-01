@@ -55,11 +55,11 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
 ### Product overview
 
-Chorey is a family chore and allowance app. Every approved paid chore reward is split **40% Spend / 40% Savings / 20% Giving** — this is fixed, non-configurable, and central to the brand. The app tracks a virtual ledger; no real money moves.
+Chorey is a family chore and allowance app. Every approved paid chore reward is split across **Spend / Savings / Giving** — default **40/40/20**, parent-adjustable in Settings with a **10% Giving minimum** (`MIN_GIVE_PCT` in `src/features/money/split.ts`). The app tracks a virtual ledger; no real money moves.
 
 Two user types:
 - **Parents** — sign in with Supabase Auth (Apple, Google, OTP/magic link). Manage the household, create chores, approve or send back completed work.
-- **Children** — access via a parent-generated **6-digit access code** (stored in `child_access_codes`). No email/password. Children never see billing.
+- **Children** — access via a parent-generated **access code** (`CHOREY-XXXXXXXX`, stored in `child_access_codes`). No email/password. Children never see billing.
 
 ### Directory structure
 
@@ -102,7 +102,7 @@ All monetary values are **integer cents** throughout. Never use floats for money
 All tables have RLS enabled. Key tables:
 - `households`, `household_members` — parent membership
 - `child_profiles` — child records belonging to a household
-- `child_access_codes` — 6-digit codes linking children to devices
+- `child_access_codes` — `CHOREY-XXXXXXXX` codes linking children to devices
 - `chore_instances` — one row per assigned chore per child (`assigned → submitted → approved | sent_back`)
 - `ledger_events` — immutable credit events (spend/savings/giving) created by trigger
 

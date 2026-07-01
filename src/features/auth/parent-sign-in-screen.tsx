@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
+import { authErrorMessage } from "@/features/auth/auth-error";
 import { choreyTheme } from "@/theme/chorey-theme";
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
 import { LegalConsent } from "@/features/legal/legal-consent";
@@ -52,9 +53,7 @@ export function ParentSignInScreen({
       }
     } catch (error) {
       setMagicLinkStatus("error");
-      setMagicLinkMessage(
-        error instanceof Error ? error.message : "Could not sign in.",
-      );
+      setMagicLinkMessage(authErrorMessage(error, "Could not sign in."));
     }
   }
 

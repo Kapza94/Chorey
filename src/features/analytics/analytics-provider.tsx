@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import { PostHogProvider } from "posthog-react-native";
+import { useEffect, type ReactNode } from "react";
+import { PostHogProvider, usePostHog } from "posthog-react-native";
+import { usePathname } from "expo-router";
 
 import { getPostHogConfig } from "@/lib/env";
 
@@ -25,7 +26,31 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       options={{ host: config.host }}
       autocapture={{ captureTouches: true, captureScreens: false }}
     >
+      <ChildModeGate />
       {children}
     </PostHogProvider>
   );
+}
+
+/**
+ * Opts PostHog out while the app is in child mode (any /child/* route) and back
+ * in when a parent screen is active. Children are data subjects under
+ * COPPA/GDPR-K/UK AADC — product analytics must not capture their sessions,
+ * even anonymously. The provider stays mounted (unmounting it would remount the
+ * whole navigator); only capture is toggled.
+ */
+function ChildModeGate() {
+  const posthog = usePostHog();
+  const pathname = usePathname();
+  const childMode = pathname?.startsWith("/child") ?? false;
+
+  useEffect(() => {
+    if (childMode) {
+      void posthog.optOut();
+    } else {
+      void posthog.optIn();
+    }
+  }, [childMode, posthog]);
+
+  return null;
 }

@@ -105,7 +105,8 @@ type Props = {
   appVersionLabel?: string;
   // Account
   account?: ParentAccount;
-  onEditName?: (name: string) => void;
+  /** Open the full "Account & family" edit screen from the account sheet. */
+  onOpenProfile?: () => void;
   onChangePhoto?: () => Promise<void> | void;
   onManageStoreSubscription?: () => void;
   onSubmitContact?: (message: string) => Promise<void>;
@@ -165,7 +166,7 @@ export function ParentApp({
   onLogOut,
   appVersionLabel,
   account,
-  onEditName,
+  onOpenProfile,
   onManageStoreSubscription,
   onSubmitContact,
   onSubmitFeedback,
@@ -260,6 +261,12 @@ export function ParentApp({
           onLogOut={onLogOut}
           appVersionLabel={appVersionLabel}
           headerRight={headerRight}
+          account={account}
+          onOpenProfile={onOpenProfile}
+          onManageStoreSubscription={onManageStoreSubscription}
+          onSubmitContact={onSubmitContact}
+          onSubmitFeedback={onSubmitFeedback}
+          onDeleteAccount={onDeleteAccount}
         />
       )}
 
@@ -274,7 +281,14 @@ export function ParentApp({
           visible={accountOpen}
           account={account}
           subscriptionLabel={subscriptionLabel}
-          onEditName={onEditName}
+          onOpenProfile={
+            onOpenProfile
+              ? () => {
+                  setAccountOpen(false);
+                  onOpenProfile();
+                }
+              : undefined
+          }
           onChangePhoto={onChangePhoto}
           onManageSubscription={() => {
             setAccountOpen(false);

@@ -1,4 +1,8 @@
-import { currencyForCountry, type CurrencyCode } from "@/features/money/currency";
+import {
+  currencyForCountry,
+  isKnownCurrency,
+  type CurrencyCode,
+} from "@/features/money/currency";
 import {
   DEFAULT_SPLIT,
   isValidSplit,
@@ -141,6 +145,42 @@ export function createHouseholdReadActions(client: HouseholdClient) {
           split_save: split.save,
           split_give: split.give,
         })
+        .eq("id", householdId);
+
+      if (result.error) {
+        throw result.error;
+      }
+    },
+
+    /** Rename a household. Parent admins only (RLS). Rejects an empty name. */
+    async updateHouseholdName(householdId: string, name: string): Promise<void> {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        throw new Error("Family name is required.");
+      }
+
+      const result = await client
+        .from("households")
+        .update({ name: trimmed })
+        .eq("id", householdId);
+
+      if (result.error) {
+        throw result.error;
+      }
+    },
+
+    /** Change the household's display currency. Parent admins only (RLS). */
+    async updateHouseholdCurrency(
+      householdId: string,
+      currency: CurrencyCode,
+    ): Promise<void> {
+      if (!isKnownCurrency(currency)) {
+        throw new Error("Unknown currency.");
+      }
+
+      const result = await client
+        .from("households")
+        .update({ currency })
         .eq("id", householdId);
 
       if (result.error) {

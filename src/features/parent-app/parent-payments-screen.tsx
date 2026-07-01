@@ -130,7 +130,8 @@ export function ParentPaymentsScreen({
           <Sparkles size={16} color={palette.semantic.info[600]} strokeWidth={2.2} />
           <Text style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}>
             Only Spend leaves the app — Savings stays saved and Giving goes to their
-            cause. Pay it out however you like; Chorey keeps the record.
+            cause. Pay it out however you like; Chorey keeps the record and never
+            holds or moves real money.
           </Text>
         </View>
 

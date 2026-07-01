@@ -12,13 +12,24 @@ export const CHOREY_ENTITLEMENT = "chorey_family";
 /** One purchasable plan, with its localized store price. */
 export type PlanOffer = {
   plan: SubscriptionPlan;
+  /** Localized, ready-to-display price from the store (e.g. "$4.99", "599 RSD"). */
   priceString: string;
+  /** Numeric amount in the store currency — used to derive comparisons (12×
+   *  monthly, savings) that stay correct in every region and currency. */
+  priceAmount: number;
+  /** ISO 4217 code the store priced this in (e.g. "USD", "RSD"). */
+  currencyCode: string;
   packageIdentifier: string;
 };
 
 // Minimal shapes mirrored from the RevenueCat SDK so we can map + test without
 // pulling in the native module.
-export type RcProduct = { priceString: string };
+export type RcProduct = {
+  priceString: string;
+  /** numeric price in `currencyCode` */
+  price: number;
+  currencyCode: string;
+};
 export type RcPackage = {
   identifier: string;
   packageType: string; // 'MONTHLY' | 'ANNUAL' | 'WEEKLY' | 'LIFETIME' | ...
@@ -56,6 +67,8 @@ export function toPlanOffers(offering: RcOffering): PlanOffer[] {
     offers.push({
       plan,
       priceString: pkg.product.priceString,
+      priceAmount: pkg.product.price,
+      currencyCode: pkg.product.currencyCode,
       packageIdentifier: pkg.identifier,
     });
   }
@@ -63,6 +76,79 @@ export function toPlanOffers(offering: RcOffering): PlanOffer[] {
   return offers.sort(
     (a, b) => PLAN_ORDER.indexOf(a.plan) - PLAN_ORDER.indexOf(b.plan),
   );
+}
+
+/**
+ * Format a derived amount (e.g. 12× the monthly price) in the store's currency.
+ * Uses the currency code the store reported so it reads right in every region;
+ * falls back to "CODE 0.00" if the runtime's Intl lacks that currency.
+ */
+export function formatStorePrice(amount: number, currencyCode: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currencyCode,
+    }).format(amount);
+  } catch {
+    return `${currencyCode} ${amount.toFixed(2)}`;
+  }
+}
+
+/**
+ * The annual-vs-monthly deal, computed from the live store prices so the copy
+ * is correct in every region — Apple/Google price tiers are NOT a fixed ratio,
+ * so "months free" and savings must be derived, never hard-coded. Returns null
+ * when either price is missing (offerings not loaded yet).
+ */
+export function annualDeal(
+  monthly: PlanOffer | undefined,
+  annual: PlanOffer | undefined,
+): { comparePrice: string; savings: string | null; monthsFree: number | null } | null {
+  if (!monthly || !annual || monthly.priceAmount <= 0) {
+    return null;
+  }
+  const yearAtMonthly = monthly.priceAmount * 12;
+  const savingsAmount = yearAtMonthly - annual.priceAmount;
+  const monthsFree = Math.round(12 - annual.priceAmount / monthly.priceAmount);
+  return {
+    comparePrice: formatStorePrice(yearAtMonthly, annual.currencyCode),
+    savings:
+      savingsAmount > 0 ? formatStorePrice(savingsAmount, annual.currencyCode) : null,
+    monthsFree: monthsFree > 0 ? monthsFree : null,
+  };
+}
+
+/**
+ * DEV-ONLY screenshot aid: build mock plan offers from
+ * `EXPO_PUBLIC_MOCK_PAYWALL_PRICES="monthly,annual"` (USD amounts, e.g.
+ * "4.99,39.99"). Lets the paywall render real-looking prices in the Simulator,
+ * where StoreKit can't serve products. Returns null when unset/malformed. The
+ * caller also gates on `__DEV__`, so this can never affect a production build.
+ */
+export function mockPaywallOffers(raw: string | undefined): PlanOffer[] | null {
+  if (!raw) {
+    return null;
+  }
+  const [monthly, annual] = raw.split(",").map((part) => parseFloat(part.trim()));
+  if (!Number.isFinite(monthly) || !Number.isFinite(annual)) {
+    return null;
+  }
+  return [
+    {
+      plan: "monthly",
+      priceString: formatStorePrice(monthly, "USD"),
+      priceAmount: monthly,
+      currencyCode: "USD",
+      packageIdentifier: "mock_monthly",
+    },
+    {
+      plan: "annual",
+      priceString: formatStorePrice(annual, "USD"),
+      priceAmount: annual,
+      currencyCode: "USD",
+      packageIdentifier: "mock_annual",
+    },
+  ];
 }
 
 /** Whether the Chorey entitlement is currently active, and when it expires. */

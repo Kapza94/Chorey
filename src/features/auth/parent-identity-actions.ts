@@ -65,3 +65,14 @@ export async function updateParentDisplayName(name: string): Promise<void> {
     .from("profiles")
     .upsert({ id: data.user.id, display_name: name.trim() }, { onConflict: "id" });
 }
+
+/** Persist what this parent's kids call them (Mom/Dad/…) to `profiles`. */
+export async function updateParentLabel(label: string): Promise<void> {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) {
+    return;
+  }
+  await supabase
+    .from("profiles")
+    .upsert({ id: data.user.id, parent_label: label.trim() }, { onConflict: "id" });
+}

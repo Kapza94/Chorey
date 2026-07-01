@@ -17,7 +17,7 @@ import type {
   HouseholdSubscription,
   SubscriptionPlan,
 } from "@/features/entitlements/subscription-actions";
-import type { PlanOffer } from "@/features/entitlements/purchases";
+import { annualDeal, type PlanOffer } from "@/features/entitlements/purchases";
 import { LegalConsent } from "@/features/legal/legal-consent";
 
 type Props = {
@@ -121,7 +121,10 @@ export function SubscriptionScreen({
             </View>
 
             {onChoosePlan
-              ? renderPlans("Resume anytime — you pick up right where you left off.")
+              ? renderPlans(
+                  // Apple 3.1.2 / CA ARL: every purchase path must disclose auto-renewal.
+                  "Renews automatically at the shown price until cancelled in your App Store settings. Resume anytime — you pick up right where you left off.",
+                )
               : (
                 <Text
                   style={[
@@ -203,7 +206,7 @@ export function SubscriptionScreen({
             </View>
 
             {renderPlans(
-              "You won't be charged during the trial. Pricing is confirmed in the App Store before any charge.",
+              "You won't be charged during the trial. Afterwards the plan renews automatically until cancelled in your App Store settings — pricing is confirmed in the App Store before any charge.",
             )}
           </>
         )}
@@ -226,18 +229,9 @@ export function SubscriptionScreen({
     const monthly = offerFor("monthly");
     const yearly = offerFor("annual");
 
-    const monthlyNum = monthly?.priceString
-      ? parseFloat(monthly.priceString.replace(/[^0-9.]/g, ""))
-      : null;
-    const annualNum = yearly?.priceString
-      ? parseFloat(yearly.priceString.replace(/[^0-9.]/g, ""))
-      : null;
-    // ponytail: $95.99 is a fixed marketing claim (12 × $7.99 = $95.88, rounded up for display)
-    const annualCompare = yearly?.priceString ? "$95.99" : undefined;
-    const annualSavings =
-      monthlyNum != null && annualNum != null
-        ? Math.round(monthlyNum * 12 - annualNum)
-        : null;
+    // Compare price, savings and "months free" are derived from the live store
+    // prices (annualDeal) so they're correct in every region — never hard-coded.
+    const deal = annualDeal(monthly, yearly);
 
     return (
       <>
@@ -256,10 +250,10 @@ export function SubscriptionScreen({
         <PlanCard
           plan="annual"
           label="Annual"
-          caption="5 months free"
+          caption={deal?.monthsFree ? `${deal.monthsFree} months free` : "Best value"}
           priceString={yearly?.priceString}
-          comparePrice={annualCompare}
-          savingsLabel={annualSavings != null ? `You save $${annualSavings}` : undefined}
+          comparePrice={deal?.comparePrice}
+          savingsLabel={deal?.savings ? `You save ${deal.savings}` : undefined}
           selected={selectedPlan === "annual"}
           onPress={() => setSelectedPlan("annual")}
         />

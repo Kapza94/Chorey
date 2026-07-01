@@ -56,7 +56,9 @@ export function SocialAuthButton({
       <View style={{ flex: 1, alignItems: "center", paddingRight: 24 }}>
         <Text
           style={{
-            color: isApple ? palette.cream[4] : "#3C4043",
+            // Adapt to the button surface: white on the dark-mode surface, dark
+            // on light — a fixed grey vanished against bgModal in dark mode.
+            color: isApple ? palette.cream[4] : scheme.fg,
             fontSize: 16,
             fontWeight: "700",
           }}

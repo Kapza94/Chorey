@@ -128,8 +128,20 @@ describe("SubscriptionScreen", () => {
           currentPeriodEndsAt: null,
         }}
         offers={[
-          { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
-          { plan: "annual", priceString: "$59.99", packageIdentifier: "y" },
+          {
+            plan: "monthly",
+            priceString: "$4.99",
+            priceAmount: 4.99,
+            currencyCode: "USD",
+            packageIdentifier: "m",
+          },
+          {
+            plan: "annual",
+            priceString: "$59.99",
+            priceAmount: 59.99,
+            currencyCode: "USD",
+            packageIdentifier: "y",
+          },
         ]}
       />,
     );
@@ -150,8 +162,20 @@ describe("SubscriptionScreen", () => {
           currentPeriodEndsAt: null,
         }}
         offers={[
-          { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
-          { plan: "annual", priceString: "$59.99", packageIdentifier: "y" },
+          {
+            plan: "monthly",
+            priceString: "$4.99",
+            priceAmount: 4.99,
+            currencyCode: "USD",
+            packageIdentifier: "m",
+          },
+          {
+            plan: "annual",
+            priceString: "$59.99",
+            priceAmount: 59.99,
+            currencyCode: "USD",
+            packageIdentifier: "y",
+          },
         ]}
         onChoosePlan={onChoosePlan}
         onRestore={onRestore}
@@ -177,8 +201,20 @@ describe("SubscriptionScreen", () => {
           currentPeriodEndsAt: null,
         }}
         offers={[
-          { plan: "monthly", priceString: "$4.99", packageIdentifier: "m" },
-          { plan: "annual", priceString: "$59.99", packageIdentifier: "y" },
+          {
+            plan: "monthly",
+            priceString: "$4.99",
+            priceAmount: 4.99,
+            currencyCode: "USD",
+            packageIdentifier: "m",
+          },
+          {
+            plan: "annual",
+            priceString: "$59.99",
+            priceAmount: 59.99,
+            currencyCode: "USD",
+            packageIdentifier: "y",
+          },
         ]}
         onChoosePlan={onChoosePlan}
       />,
