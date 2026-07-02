@@ -23,11 +23,15 @@ export function OBShell({
   progress,
   footer,
   children,
+  scroll = true,
 }: {
   onBack?: () => void;
   progress?: { index: number; total: number };
   footer?: React.ReactNode;
   children: React.ReactNode;
+  /** Set false for pages with a drawing surface (signature) so finger drags
+   *  don't scroll the page out from under the pen. */
+  scroll?: boolean;
 }) {
   const { scheme } = useChoreyTheme();
   const insets = useSafeAreaInsets();
@@ -72,18 +76,31 @@ export function OBShell({
           <OBProgress index={progress.index} total={progress.total} />
         ) : null}
       </View>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal: 26,
-          paddingTop: 10,
-          paddingBottom: 20,
-        }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-      >
-        {children}
-      </ScrollView>
+      {scroll ? (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: 26,
+            paddingTop: 10,
+            paddingBottom: 20,
+          }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View
+          style={{
+            flex: 1,
+            paddingHorizontal: 26,
+            paddingTop: 10,
+            paddingBottom: 20,
+          }}
+        >
+          {children}
+        </View>
+      )}
       {footer ? (
         <View
           style={{
@@ -128,20 +145,27 @@ function BackChevron({ onPress }: { onPress?: () => void }) {
 
 export function OBProgress({ index, total }: { index: number; total: number }) {
   const { palette } = useChoreyTheme();
+  // Fill the track proportionally: page (index+1) of `total`. Full width of the
+  // header row (flex: 1), so two pages into an 8-page flow reads as 25%.
+  const pct = total > 0 ? Math.min(1, Math.max(0, (index + 1) / total)) : 0;
   return (
-    <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <View
-          key={i}
-          style={{
-            height: 4,
-            borderRadius: 999,
-            width: i === index ? 22 : 6,
-            backgroundColor:
-              i <= index ? palette.accent[600] : palette.border.strong,
-          }}
-        />
-      ))}
+    <View
+      style={{
+        flex: 1,
+        height: 5,
+        borderRadius: 999,
+        backgroundColor: palette.border.strong,
+        overflow: "hidden",
+      }}
+    >
+      <View
+        style={{
+          width: `${pct * 100}%`,
+          height: "100%",
+          borderRadius: 999,
+          backgroundColor: palette.accent[600],
+        }}
+      />
     </View>
   );
 }
@@ -264,6 +288,8 @@ export function OBField({
   maxLength,
   returnKeyType,
   onSubmitEditing,
+  onFocus,
+  onBlur,
   autoCapitalize,
   autoCorrect,
   autoComplete,
@@ -278,6 +304,8 @@ export function OBField({
   maxLength?: number;
   returnKeyType?: ReturnKeyTypeOptions;
   onSubmitEditing?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   autoCapitalize?: TextInputProps["autoCapitalize"];
   autoCorrect?: boolean;
   autoComplete?: TextInputProps["autoComplete"];
@@ -321,6 +349,8 @@ export function OBField({
           maxLength={maxLength}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          onFocus={onFocus}
+          onBlur={onBlur}
           autoCapitalize={autoCapitalize}
           autoCorrect={autoCorrect}
           autoComplete={autoComplete}

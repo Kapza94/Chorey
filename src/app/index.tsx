@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
@@ -6,6 +6,8 @@ import { createDefaultParentAuthActions } from "@/features/auth/default-parent-a
 import { loadChildSession } from "@/features/children/default-child-session";
 import { resolveChildAccessCode } from "@/features/children/default-child-access-actions";
 import { chooseSubscriptionPlan } from "@/features/entitlements/default-subscription-actions";
+import { createRevenueCatGateway } from "@/features/entitlements/default-purchase-actions";
+import type { PlanOffer } from "@/features/entitlements/purchases";
 import { getPrimaryHouseholdId } from "@/features/household/default-household-actions";
 import { OnboardingFlow, type OnboardingAuth } from "@/features/onboarding/onboarding-flow";
 import { persistOnboardingForSignedInParent } from "@/features/onboarding/default-onboarding-persistence";
@@ -20,7 +22,24 @@ export default function IndexRoute() {
   const [resumeOnboarding, setResumeOnboarding] = useState(false);
   const [launchError, setLaunchError] = useState(false);
   const [launchAttempt, setLaunchAttempt] = useState(0);
+  const [planOffers, setPlanOffers] = useState<PlanOffer[]>([]);
   const parentAuth = createDefaultParentAuthActions();
+  const billing = useMemo(() => createRevenueCatGateway(), []);
+
+  // Load localized store prices for the onboarding paywall. Best-effort: a null
+  // offering (RevenueCat not configured / offline) just leaves prices hidden.
+  useEffect(() => {
+    let active = true;
+    void billing
+      .loadOffers()
+      .then((offers) => {
+        if (active) setPlanOffers(offers);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [billing]);
 
   useEffect(() => {
     let active = true;
@@ -162,6 +181,7 @@ export default function IndexRoute() {
       auth={auth}
       persist={persistOnboardingForSignedInParent}
       choosePlan={chooseSubscriptionPlan}
+      planOffers={planOffers}
       resolveSignedInHousehold={getPrimaryHouseholdId}
       onExistingAccount={(householdId) => {
         router.replace({ pathname: "/parent/home", params: { householdId } });

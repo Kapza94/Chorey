@@ -1,16 +1,30 @@
 import { useState, type ReactNode } from "react";
-import { Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import {
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  Share,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import * as Application from "expo-application";
 import {
   ChevronRight,
   CreditCard,
+  FileText,
   KeyRound,
+  LifeBuoy,
   LogOut,
   MailPlus,
+  MessageSquarePlus,
   Monitor,
   Moon,
   Share2,
+  Shield,
   Sun,
+  Trash2,
   X,
 } from "lucide-react-native";
 
@@ -34,6 +48,18 @@ import {
 import type { SettlementFrequency } from "@/features/household/household-actions";
 import type { HouseholdInvite } from "@/features/household/household-invite-actions";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
+import { ToyAvatar } from "@/components/toybox";
+import type { ParentAccount } from "@/features/parent-app/parent-account";
+import { FeedbackForm } from "@/features/feedback/feedback-form";
+import { DeleteAccountConfirm } from "@/features/account/delete-account-confirm";
+import { PRIVACY_URL, TERMS_URL } from "@/features/legal/legal";
+import { useKeyboardHeight } from "@/components/use-keyboard-height";
+
+const PROVIDER_LABEL: Record<string, string> = {
+  google: "Google",
+  apple: "Apple",
+  email: "Email",
+};
 
 const BUDGET_STEP_CENTS = 500;
 const BUDGET_MIN_CENTS = 500;
@@ -58,6 +84,18 @@ type Props = {
   onLogOut?: () => void;
   headerRight?: ReactNode;
   appVersionLabel?: string;
+  /** The signed-in parent, shown as a tappable profile row at the top. */
+  account?: ParentAccount;
+  /** Opens the full "Account & family" edit screen. */
+  onOpenProfile?: () => void;
+  /** Opens the App Store / Play Store page to cancel or change billing. */
+  onManageStoreSubscription?: () => void;
+  /** Persists a "Contact us" support request. Shows the row when set. */
+  onSubmitContact?: (message: string) => Promise<void>;
+  /** Persists a "Send feedback" note. Shows the row when set. */
+  onSubmitFeedback?: (message: string) => Promise<void>;
+  /** Permanently deletes the account. Shows the danger row when set. */
+  onDeleteAccount?: () => Promise<void> | void;
 };
 
 function defaultAppVersionLabel() {
@@ -82,8 +120,21 @@ export function ParentSettingsScreen({
   onLogOut,
   headerRight,
   appVersionLabel = defaultAppVersionLabel(),
+  account,
+  onOpenProfile,
+  onManageStoreSubscription,
+  onSubmitContact,
+  onSubmitFeedback,
+  onDeleteAccount,
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
+  // Contact / feedback / delete each swap in a focused sheet over Settings,
+  // reusing the exact forms the account sheet uses — no duplicated logic.
+  const [accountView, setAccountView] = useState<
+    "none" | "contact" | "feedback" | "delete"
+  >("none");
+  const closeAccountView = () => setAccountView("none");
+  const keyboardHeight = useKeyboardHeight();
 
   return (
     <View style={{ flex: 1, backgroundColor: scheme.bgPage }}>
@@ -98,6 +149,67 @@ export function ParentSettingsScreen({
         <ParentHeader subtitle="Account" title="Settings." action={headerRight} />
 
         <View style={{ paddingHorizontal: 18 }}>
+          {/* Profile: the signed-in parent, same identity as the header avatar,
+              tapping through to the full Account & family editor. */}
+          {account ? (
+            <>
+              <Text
+                style={[
+                  typography.text.overline,
+                  { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+                ]}
+              >
+                Profile
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Account and family"
+                disabled={!onOpenProfile}
+                onPress={onOpenProfile}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  backgroundColor: pressed ? scheme.bgSunken : scheme.bgRaised,
+                  borderColor: palette.border.mid,
+                  borderWidth: 1.5,
+                  borderRadius: radius.md,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  marginBottom: 20,
+                })}
+              >
+                <ToyAvatar
+                  name={account.name}
+                  tone="savings"
+                  size={44}
+                  imageUrl={account.avatarUrl}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[typography.text.h3, { color: scheme.fg, fontSize: 16 }]}
+                    numberOfLines={1}
+                  >
+                    {account.name || "Your account"}
+                  </Text>
+                  <Text
+                    style={[
+                      typography.text.caption,
+                      { color: scheme.fgFaint, marginTop: 2 },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {account.email ||
+                      `Signed in with ${PROVIDER_LABEL[account.provider] ?? "your account"}`}
+                  </Text>
+                </View>
+                {onOpenProfile ? (
+                  <ChevronRight size={18} color={scheme.fgFaint} strokeWidth={2} />
+                ) : null}
+              </Pressable>
+            </>
+          ) : null}
+
           {/* Budget per kid */}
           <Text
             style={[
@@ -315,6 +427,66 @@ export function ParentSettingsScreen({
             </Text>
           </View>
 
+          {/* Account — the same actions the header avatar sheet offers, so
+              everything is reachable straight from Settings too. */}
+          {onManageStoreSubscription || onSubmitContact || onSubmitFeedback ? (
+            <>
+              <Text
+                style={[
+                  typography.text.overline,
+                  { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+                ]}
+              >
+                Account
+              </Text>
+              <View style={{ gap: 9, marginBottom: 20 }}>
+                {onManageStoreSubscription ? (
+                  <AccountActionRow
+                    Icon={CreditCard}
+                    label="Cancel or manage billing"
+                    onPress={onManageStoreSubscription}
+                  />
+                ) : null}
+                {onSubmitContact ? (
+                  <AccountActionRow
+                    Icon={LifeBuoy}
+                    label="Contact us"
+                    onPress={() => setAccountView("contact")}
+                  />
+                ) : null}
+                {onSubmitFeedback ? (
+                  <AccountActionRow
+                    Icon={MessageSquarePlus}
+                    label="Send feedback"
+                    onPress={() => setAccountView("feedback")}
+                  />
+                ) : null}
+              </View>
+            </>
+          ) : null}
+
+          {/* Legal — Terms + Privacy must stay reachable in-app at all times. */}
+          <Text
+            style={[
+              typography.text.overline,
+              { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+            ]}
+          >
+            Legal
+          </Text>
+          <View style={{ gap: 9, marginBottom: 20 }}>
+            <AccountActionRow
+              Icon={FileText}
+              label="Terms of Service"
+              onPress={() => void Linking.openURL(TERMS_URL)}
+            />
+            <AccountActionRow
+              Icon={Shield}
+              label="Privacy Policy"
+              onPress={() => void Linking.openURL(PRIVACY_URL)}
+            />
+          </View>
+
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Log out"
@@ -344,6 +516,17 @@ export function ParentSettingsScreen({
             </Text>
           </Pressable>
 
+          {onDeleteAccount ? (
+            <View style={{ marginTop: 10 }}>
+              <AccountActionRow
+                Icon={Trash2}
+                label="Delete account"
+                tone="danger"
+                onPress={() => setAccountView("delete")}
+              />
+            </View>
+          ) : null}
+
           <Text
             style={{
               textAlign: "center",
@@ -357,7 +540,98 @@ export function ParentSettingsScreen({
           </Text>
         </View>
       </ScrollView>
+
+      {/* Contact / feedback / delete — reuse the exact forms from the account
+          sheet, presented as a bottom sheet over Settings. */}
+      <Modal
+        visible={accountView !== "none"}
+        transparent
+        animationType="slide"
+        onRequestClose={closeAccountView}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={closeAccountView}
+          style={{ flex: 1, backgroundColor: "rgba(42,32,24,0.45)" }}
+        />
+        <View
+          style={{
+            backgroundColor: scheme.bgModal,
+            borderTopColor: scheme.toy.border,
+            borderTopWidth: toybox.borderWidth,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 18,
+            paddingTop: 20,
+            paddingBottom: 34,
+            marginBottom: keyboardHeight,
+          }}
+        >
+          {accountView === "delete" && onDeleteAccount ? (
+            <DeleteAccountConfirm
+              onConfirm={() => onDeleteAccount()}
+              onBack={closeAccountView}
+            />
+          ) : accountView === "contact" && onSubmitContact ? (
+            <FeedbackForm
+              kind="contact"
+              onSubmit={onSubmitContact}
+              onBack={closeAccountView}
+            />
+          ) : accountView === "feedback" && onSubmitFeedback ? (
+            <FeedbackForm
+              kind="feedback"
+              onSubmit={onSubmitFeedback}
+              onBack={closeAccountView}
+            />
+          ) : null}
+        </View>
+      </Modal>
     </View>
+  );
+}
+
+/** A tappable account/legal action row, styled to match the account sheet. */
+function AccountActionRow({
+  Icon,
+  label,
+  tone,
+  onPress,
+}: {
+  Icon: typeof CreditCard;
+  label: string;
+  tone?: "danger";
+  onPress?: () => void;
+}) {
+  const { scheme, typography, palette, toybox } = useChoreyTheme();
+  const color = tone === "danger" ? palette.semantic.danger[600] : scheme.fg;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 11,
+        paddingHorizontal: 14,
+        paddingVertical: 13,
+        backgroundColor: pressed ? scheme.bgSunken : scheme.bgModal,
+        borderColor: scheme.toy.border,
+        borderWidth: toybox.borderWidth,
+        borderRadius: 13,
+        ...(pressed ? null : scheme.toy.shadowSm),
+      })}
+    >
+      <Icon size={18} color={color} strokeWidth={2.2} />
+      <Text style={[typography.text.label, { flex: 1, color, fontSize: 14 }]}>
+        {label}
+      </Text>
+      {tone !== "danger" ? (
+        <ChevronRight size={16} color={scheme.fgFaint} strokeWidth={2} />
+      ) : null}
+    </Pressable>
   );
 }
 

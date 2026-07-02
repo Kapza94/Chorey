@@ -105,8 +105,10 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText("RSD")).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue"));
 
-    // Add a kid — the bottom Continue commits the filled-in kid and proceeds
+    // Add a kid — the bottom Continue commits the filled-in kid and proceeds.
+    // Both name and age are required before it can be committed.
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
+    fireEvent.changeText(screen.getByLabelText("Age"), "9");
     fireEvent.press(screen.getByText("Continue"));
 
     // Budget & the fixed 40/40/20 split
@@ -134,6 +136,9 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText(/Giving pointed at Animals/)).toBeOnTheScreen();
     expect(screen.getByText(/Free until/)).toBeOnTheScreen();
     expect(screen.queryByText(/\$\d/)).toBeNull();
+    // Apple 3.1.2: the purchase screen must carry functional EULA + Privacy links.
+    expect(screen.getByLabelText("Terms of Service")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Privacy Policy")).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Choose monthly billing"));
     fireEvent.press(screen.getByText("Start my free trial"));
     await waitFor(() => {
@@ -192,7 +197,8 @@ describe("OnboardingFlow", () => {
     expect(screen.queryByLabelText("Add child")).toBeNull();
 
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
-    // "Add another kid" appears once a name is entered
+    fireEvent.changeText(screen.getByLabelText("Age"), "9");
+    // "Add another kid" appears once name and age are both filled in
     fireEvent.press(screen.getByText("+ Add another child"));
 
     // Mia is committed (shows in the list) and the form resets for the next kid
@@ -200,10 +206,27 @@ describe("OnboardingFlow", () => {
     expect(screen.getByText("Mia")).toBeOnTheScreen();
   });
 
+  it("blocks Continue until the child's age is filled in", () => {
+    render(<OnboardingFlow initialStep="p_addkid" />);
+
+    // Name alone is not enough — age is required.
+    fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
+    expect(screen.getByText("Enter an age from 1 to 18.")).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Continue"));
+    expect(screen.queryByText("Budget & split.")).toBeNull();
+
+    // Filling a valid age unblocks it.
+    fireEvent.changeText(screen.getByLabelText("Age"), "9");
+    expect(screen.queryByText("Enter an age from 1 to 18.")).toBeNull();
+    fireEvent.press(screen.getByText("Continue"));
+    expect(screen.getByText("Budget & split.")).toBeOnTheScreen();
+  });
+
   it("does not continue with an age-only second kid draft", () => {
     render(<OnboardingFlow initialStep="p_addkid" />);
 
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
+    fireEvent.changeText(screen.getByLabelText("Age"), "9");
     fireEvent.press(screen.getByText("+ Add another child"));
     fireEvent.changeText(screen.getByLabelText("Age"), "8");
     fireEvent.press(screen.getByText("Continue"));
@@ -378,8 +401,10 @@ describe("OnboardingFlow", () => {
 
     // Add two kids — Chorey Family covers every kid in the household.
     fireEvent.changeText(screen.getByLabelText("Name"), "Mia");
+    fireEvent.changeText(screen.getByLabelText("Age"), "9");
     fireEvent.press(screen.getByText("+ Add another child"));
     fireEvent.changeText(screen.getByLabelText("Name"), "Eli");
+    fireEvent.changeText(screen.getByLabelText("Age"), "7");
     fireEvent.press(screen.getByText("Continue")); // commits Eli → split
 
     fireEvent.press(screen.getByText("Continue")); // split explainer → chores

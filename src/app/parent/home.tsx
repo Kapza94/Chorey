@@ -68,7 +68,6 @@ import { SubscriptionScreen } from "@/features/subscription/subscription-screen"
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
 import {
   getParentIdentity,
-  updateParentDisplayName,
   type ParentIdentity,
 } from "@/features/auth/parent-identity-actions";
 import { pickAndUploadParentAvatar } from "@/features/account/default-avatar-actions";
@@ -200,6 +199,9 @@ export default function ParentHomeRoute() {
 
     await Promise.allSettled([
       settle(listHouseholdKids(householdId), setKids, "kids"),
+      // Refresh identity on focus too, so a name/photo edit made on the
+      // Account & family screen is reflected in the header on return.
+      settle(getParentIdentity(), setIdentity, "identity"),
       settle(
         getHouseholdSettings(householdId),
         (settings) => {
@@ -595,10 +597,12 @@ export default function ParentHomeRoute() {
               }
             : undefined
         }
-        onEditName={async (name) => {
-          setIdentity((prev) => (prev ? { ...prev, name } : prev));
-          await updateParentDisplayName(name);
-        }}
+        onOpenProfile={() =>
+          router.push({
+            pathname: "/parent/profile",
+            params: { householdId: householdId ?? "" },
+          })
+        }
         onChangePhoto={async () => {
           const url = await pickAndUploadParentAvatar();
           if (url) {

@@ -10,19 +10,50 @@ import { resolveCurrencyFormat } from "@/features/money/currency";
 
 type CurrencyRow = { code: string; symbol: string };
 
+// A friendlier label for the big multi-country currencies (the bundled dataset
+// is alphabetical, so the first country would read "Åland Islands" for EUR).
+// Everything else falls back to its single country name.
+const CURRENCY_REGION: Record<string, string> = {
+  USD: "United States",
+  EUR: "Eurozone",
+  GBP: "United Kingdom",
+  XOF: "West Africa (CFA franc)",
+  XAF: "Central Africa (CFA franc)",
+  XCD: "East Caribbean",
+};
+
+type CurrencyEntry = CurrencyRow & {
+  /** short display name of the country/region this currency belongs to */
+  region: string;
+  /** lowercase code + all country names, for search matching */
+  search: string;
+};
+
 /**
  * Every distinct currency in the bundled country dataset, de-duplicated by ISO
- * code and sorted alphabetically. Kept module-level so the list is built once.
+ * code and sorted alphabetically. Each entry carries the country it belongs to
+ * (so people who don't know the code can find it) plus a search haystack of
+ * every country name using it. Kept module-level so the list is built once.
  */
-const CURRENCIES: CurrencyRow[] = (() => {
-  const seen = new Map<string, string>();
+const CURRENCIES: CurrencyEntry[] = (() => {
+  const byCode = new Map<string, { symbol: string; countries: string[] }>();
   for (const country of COUNTRIES) {
-    if (!seen.has(country.cur)) {
-      seen.set(country.cur, country.symbol);
+    const entry = byCode.get(country.cur);
+    if (entry) {
+      entry.countries.push(country.name);
+    } else {
+      byCode.set(country.cur, { symbol: country.symbol, countries: [country.name] });
     }
   }
-  return [...seen.entries()]
-    .map(([code, symbol]) => ({ code, symbol }))
+  return [...byCode.entries()]
+    .map(([code, { symbol, countries }]) => ({
+      code,
+      symbol,
+      region:
+        CURRENCY_REGION[code] ??
+        (countries.length > 1 ? `${countries[0]} & more` : countries[0]),
+      search: `${code} ${countries.join(" ")}`.toLowerCase(),
+    }))
     .sort((a, b) => a.code.localeCompare(b.code));
 })();
 
@@ -49,7 +80,7 @@ export function CurrencyPicker({ visible, selectedCode, onSelect, onClose }: Pro
     if (!q) {
       return CURRENCIES;
     }
-    return CURRENCIES.filter((c) => c.code.toLowerCase().includes(q));
+    return CURRENCIES.filter((c) => c.search.includes(q));
   }, [query]);
 
   const close = () => {
@@ -112,10 +143,10 @@ export function CurrencyPicker({ visible, selectedCode, onSelect, onClose }: Pro
             accessibilityLabel="Search currencies"
             value={query}
             onChangeText={setQuery}
-            placeholder="Search by currency code"
+            placeholder="Search by currency or country"
             placeholderTextColor={scheme.fgFaint}
             autoCorrect={false}
-            autoCapitalize="characters"
+            autoCapitalize="none"
             style={[
               fieldStyle(scheme, typography.family.body.regular),
               { paddingLeft: 36 },
@@ -158,9 +189,19 @@ export function CurrencyPicker({ visible, selectedCode, onSelect, onClose }: Pro
                   borderBottomColor: scheme.border,
                 }}
               >
-                <Text style={[typography.text.body, { flex: 1, color: scheme.fg }]}>
-                  {item.code}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.text.label, { color: scheme.fg }]}>
+                    {item.code}
+                  </Text>
+                  <Text
+                    style={[
+                      typography.text.caption,
+                      { color: scheme.fgFaint, marginTop: 1 },
+                    ]}
+                  >
+                    {item.region}
+                  </Text>
+                </View>
                 {resolveCurrencyFormat(item.code).symbol !== item.code ? (
                   <Text style={[typography.text.body, { color: scheme.fgFaint }]}>
                     {resolveCurrencyFormat(item.code).symbol}

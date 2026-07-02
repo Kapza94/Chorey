@@ -48,7 +48,10 @@ import {
 import { SignaturePad } from "@/features/onboarding/signature-pad";
 import { ToySticker } from "@/components/toybox";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
+import { authErrorMessage } from "@/features/auth/auth-error";
+import { LegalConsent } from "@/features/legal/legal-consent";
 import type { SubscriptionPlan } from "@/features/entitlements/subscription-actions";
+import { annualDeal, type PlanOffer } from "@/features/entitlements/purchases";
 
 /* ---------- reference data ---------- */
 
@@ -231,6 +234,7 @@ export function OnboardingFlow({
   auth,
   persist,
   choosePlan,
+  planOffers,
   resolveSignedInHousehold,
   onExistingAccount,
   validateKidCode,
@@ -246,6 +250,8 @@ export function OnboardingFlow({
   persist?: (result: ParentResult) => Promise<OnboardingPersistResult | void>;
   /** Record the chosen billing plan for the new household's trial. */
   choosePlan?: (householdId: string, plan: SubscriptionPlan) => Promise<void>;
+  /** Localized store prices (RevenueCat) shown on the plan-choice paywall. */
+  planOffers?: PlanOffer[];
   /** After account auth, detect existing families before writing new setup rows. */
   resolveSignedInHousehold?: () => Promise<string | null>;
   /** Existing signed-in family: leave setup and route there. */
@@ -396,6 +402,7 @@ export function OnboardingFlow({
       return (
         <OBPlanChoice
           data={data}
+          planOffers={planOffers}
           onChoose={async (plan) => {
             if (persisted?.householdId) {
               await choosePlan?.(persisted.householdId, plan);
@@ -471,7 +478,7 @@ function OBIdea({
   return (
     <OBShell
       onBack={onBack}
-      progress={{ index: 0, total: 4 }}
+      progress={{ index: 0, total: 8 }}
       footer={<OBPrimary onPress={onNext}>I&apos;m in</OBPrimary>}
     >
       <OBTitle
@@ -594,7 +601,7 @@ function OBFamily({
   return (
     <OBShell
       onBack={onBack}
-      progress={{ index: 2, total: 4 }}
+      progress={{ index: 3, total: 8 }}
       footer={
         <OBPrimary onPress={onNext} disabled={!ready}>
           Continue
@@ -655,7 +662,10 @@ function OBFamily({
           <View style={{ marginTop: 10 }}>
             <OBField
               label="Or type your own"
-              value={PARENT_LABELS.includes(data.parentLabel) ? "" : data.parentLabel}
+              // Bound straight to the value so you can type freely — "Dad" ➜
+              // "Daddy" — without a matching preset hijacking the field. A pill
+              // above just highlights when the text happens to equal it.
+              value={data.parentLabel}
               onChange={(v) => patch({ parentLabel: v })}
               placeholder="e.g. Papa, Mama, Baba"
               autoCapitalize="words"
@@ -802,14 +812,27 @@ function OBAddKid({
   const [age, setAge] = useState("");
   const [tone, setTone] = useState<KidTone>("allowance");
 
-  const hasDraft = !!name.trim();
-  const hasIncompleteDraft = !hasDraft && !!age;
-  const canContinue = hasDraft || (data.kids.length > 0 && !hasIncompleteDraft);
+  const trimmedName = name.trim();
+  const ageNum = Number(age);
+  const nameValid = trimmedName.length > 0;
+  const ageValid = age.length > 0 && ageNum >= 1 && ageNum <= 18;
+  const draftEmpty = name.length === 0 && age.length === 0;
+  const draftValid = nameValid && ageValid;
+  // A started draft must be complete before we let anyone continue. A blank
+  // form is only acceptable once at least one child is already on the list.
+  const canContinue = draftValid || (data.kids.length > 0 && draftEmpty);
+  // Whichever field the child is missing, name first.
+  const draftMessage =
+    draftEmpty || draftValid
+      ? null
+      : !nameValid
+        ? "Enter a name for this child."
+        : "Enter an age from 1 to 18.";
 
-  // Commit the in-progress kid into the list. Returns the updated count.
+  // Commit the in-progress kid into the list. Returns whether it committed.
   const commitDraft = (): boolean => {
-    if (!name.trim()) return false;
-    patch({ kids: [...data.kids, { name: name.trim(), age, tone }] });
+    if (!draftValid) return false;
+    patch({ kids: [...data.kids, { name: trimmedName, age, tone }] });
     return true;
   };
 
@@ -830,13 +853,25 @@ function OBAddKid({
   return (
     <OBShell
       onBack={onBack}
-      progress={{ index: 3, total: 4 }}
+      progress={{ index: 4, total: 8 }}
       footer={
         <>
+          {/* COPPA/GDPR-K: the parent affirms authority + consent at the moment
+              child data is first collected, not just buried in the ToS. */}
+          <Text
+            style={[
+              typography.text.caption,
+              { color: scheme.fgFaint, textAlign: "center", marginBottom: 10 },
+            ]}
+          >
+            By adding a child you confirm you&apos;re their parent or guardian
+            and agree to Chorey storing their details as described in our
+            Privacy Policy.
+          </Text>
           <OBPrimary onPress={handleContinue} disabled={!canContinue}>
             Continue
           </OBPrimary>
-          {hasDraft ? (
+          {draftValid ? (
             <OBSecondary onPress={handleAddAnother}>
               + Add another child
             </OBSecondary>
@@ -890,14 +925,14 @@ function OBAddKid({
             />
           </View>
         </View>
-        {hasIncompleteDraft ? (
+        {draftMessage ? (
           <Text
             style={[
               typography.text.caption,
               { color: palette.semantic.danger[600], marginBottom: 12 },
             ]}
           >
-            Enter a name for this child.
+            {draftMessage}
           </Text>
         ) : null}
         <Text
@@ -1151,6 +1186,7 @@ function OBBudgetSplit({
   return (
     <OBShell
       onBack={onBack}
+      progress={{ index: 5, total: 8 }}
       footer={<OBPrimary onPress={onNext}>Continue</OBPrimary>}
     >
       <OBTitle
@@ -1440,6 +1476,7 @@ function OBChores({
   return (
     <OBShell
       onBack={onBack}
+      progress={{ index: 6, total: 8 }}
       footer={
         <OBPrimary onPress={onNext} disabled={data.chores.length === 0}>
           {data.chores.length
@@ -1649,6 +1686,7 @@ function OBCauses({
   return (
     <OBShell
       onBack={onBack}
+      progress={{ index: 7, total: 8 }}
       footer={
         <>
           <OBPrimary
@@ -1846,7 +1884,7 @@ function OBAuth({
         await continueAfterAuth();
       }
     } catch (e) {
-      setError(errorMessage(e) ?? "Couldn't sign in. Try again.");
+      setError(authErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -1927,17 +1965,7 @@ function OBAuth({
   if (phase === "choose") {
     return (
       <OBShell
-        footer={
-          // ponytail: plain text until Terms/Privacy pages exist, then link them.
-          <Text
-            style={[
-              typography.text.caption,
-              { color: scheme.fgFaint, textAlign: "center" },
-            ]}
-          >
-            By continuing you agree to our Terms and Privacy.
-          </Text>
-        }
+        footer={<LegalConsent />}
       >
         <View style={{ alignItems: "center", paddingTop: 64, marginBottom: 36 }}>
           <Image
@@ -2097,9 +2125,9 @@ const PLAN_MONTHS = [
 ];
 
 /**
- * The parent picks monthly or annual before the 14-day trial begins. No
- * prices appear here — amounts come from the App Store at purchase time and
- * are never hard-coded in the app.
+ * The parent picks monthly or annual before the 7-day trial begins. Prices are
+ * the localized store prices from RevenueCat (`planOffers`) — never hard-coded;
+ * they simply don't render until offerings load.
  */
 /** "Mia" / "Mia & Leo" / "Mia, Leo & Zoe" */
 function listKidNames(names: string[]) {
@@ -2109,11 +2137,14 @@ function listKidNames(names: string[]) {
 
 function OBPlanChoice({
   data,
+  planOffers,
   onChoose,
   onContinue,
   onBack,
 }: {
   data: OnboardingData;
+  /** Localized store prices from RevenueCat; empty until offerings load. */
+  planOffers?: PlanOffer[];
   onChoose: (plan: SubscriptionPlan) => Promise<void>;
   onContinue: () => void;
   onBack: () => void;
@@ -2121,13 +2152,24 @@ function OBPlanChoice({
   const { scheme, typography, palette, toybox } = useChoreyTheme();
   const spend = bucketTokens.spend.ramp;
   const [plan, setPlan] = useState<SubscriptionPlan>("annual");
+  const priceFor = (id: SubscriptionPlan) =>
+    planOffers?.find((offer) => offer.plan === id)?.priceString;
+  // "N months free" is derived from the live monthly/annual prices so it's right
+  // in every region (see annualDeal); falls back to a generic label until loaded.
+  const deal = annualDeal(
+    planOffers?.find((offer) => offer.plan === "monthly"),
+    planOffers?.find((offer) => offer.plan === "annual"),
+  );
+  const annualCaption = deal?.monthsFree
+    ? `${deal.monthsFree} months free`
+    : "Best value";
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Captured once on mount: the trial clock started when the household was
-  // created moments ago, so "now + 14 days" matches the DB trigger.
+  // created moments ago, so "now + 7 days" matches the DB trigger.
   const [trialEnd] = useState(
-    () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+    () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   );
   const trialEndLabel = `${PLAN_MONTHS[trialEnd.getMonth()]} ${trialEnd.getDate()}, ${trialEnd.getFullYear()}`;
 
@@ -2159,56 +2201,55 @@ function OBPlanChoice({
         style={{
           flexDirection: "row",
           gap: 12,
-          marginTop: 4,
-          marginBottom: 14,
+          marginTop: 8,
+          marginBottom: 22,
         }}
       >
-        <ToySticker label="14 days free" />
+        <ToySticker label="7 days free" />
         <ToySticker label="Every child included" tone="giving" straight />
       </View>
 
       <OBTitle
         title="Try Chorey Family."
-        subtitle="Everything free for 14 days — every child, every parent, every chore."
+        subtitle="Everything free for 7 days — every child, every parent, every chore."
       />
 
       {data.kids.length > 0 ? (
+        // A plain recap, deliberately NOT a card/button — no toy border or
+        // shadow, so it doesn't read as tappable next to the plan options.
         <View
           style={{
-            backgroundColor: scheme.bgModal,
-            borderColor: scheme.toy.border,
-            borderWidth: toybox.borderWidth,
-            borderRadius: 14,
-            padding: 14,
-            marginBottom: 14,
+            paddingLeft: 12,
+            borderLeftWidth: 2,
+            borderLeftColor: scheme.border,
+            marginBottom: 24,
             gap: 4,
-            ...scheme.toy.shadowSm,
           }}
         >
           <Text style={[typography.text.overline, { color: scheme.fgFaint }]}>
             Already set up
           </Text>
-          <Text style={[typography.text.body, { color: scheme.fg }]}>
+          <Text style={[typography.text.body, { color: scheme.fgMuted }]}>
             {data.chores.length > 0
               ? `${data.chores.length} ${data.chores.length === 1 ? "chore" : "chores"} ready for ${listKidNames(data.kids.map((kid) => kid.name))}`
               : `${listKidNames(data.kids.map((kid) => kid.name))} ${data.kids.length === 1 ? "is" : "are"} ready to start`}
           </Text>
           {data.causes.length > 0 ? (
-            <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
+            <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
               Giving pointed at {data.causes.join(", ")}
             </Text>
           ) : null}
         </View>
       ) : null}
 
-      <View style={{ gap: 10, marginBottom: 14 }}>
+      <View style={{ gap: 12, marginBottom: 20 }}>
         {[
           {
             id: "monthly" as const,
             label: "Monthly",
             caption: "Simple, month to month",
           },
-          { id: "annual" as const, label: "Annual", caption: "5 months free" },
+          { id: "annual" as const, label: "Annual", caption: annualCaption },
         ].map((option) => {
           const selected = plan === option.id;
           return (
@@ -2265,20 +2306,42 @@ function OBPlanChoice({
                 ) : null}
               </View>
               <View
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 999,
-                  borderWidth: selected ? 0 : 1.5,
-                  borderColor: scheme.border,
-                  backgroundColor: selected ? spend[600] : "transparent",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
               >
-                {selected ? (
-                  <Check size={13} color={palette.cream[4]} strokeWidth={3} />
+                {priceFor(option.id) ? (
+                  <Text
+                    style={[
+                      typography.text.h3,
+                      { color: selected ? spend[800] : scheme.fg, fontSize: 15 },
+                    ]}
+                  >
+                    {priceFor(option.id)}
+                    <Text
+                      style={[
+                        typography.text.caption,
+                        { color: selected ? spend[600] : scheme.fgFaint },
+                      ]}
+                    >
+                      {option.id === "monthly" ? " /mo" : " /yr"}
+                    </Text>
+                  </Text>
                 ) : null}
+                <View
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 999,
+                    borderWidth: selected ? 0 : 1.5,
+                    borderColor: scheme.border,
+                    backgroundColor: selected ? spend[600] : "transparent",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {selected ? (
+                    <Check size={13} color={palette.cream[4]} strokeWidth={3} />
+                  ) : null}
+                </View>
               </View>
             </Pressable>
           );
@@ -2295,7 +2358,7 @@ function OBPlanChoice({
           borderWidth: 1,
           borderRadius: 14,
           padding: 12,
-          marginBottom: 10,
+          marginBottom: 16,
         }}
       >
         <Sparkles size={16} color={spend[600]} strokeWidth={2.2} />
@@ -2319,6 +2382,12 @@ function OBPlanChoice({
         You won&apos;t be charged today. Pricing is confirmed in the App Store
         before any charge.
       </Text>
+
+      {/* Apple 3.1.2 requires functional EULA + Privacy links on the purchase
+          screen itself, not just in settings. */}
+      <View style={{ marginTop: 12 }}>
+        <LegalConsent action="subscribing" />
+      </View>
 
       {errorMessage ? (
         <Text
@@ -2364,6 +2433,7 @@ function OBPledge({
   return (
     <OBShell
       onBack={onBack}
+      scroll={false}
       footer={
         <OBPrimary onPress={onNext} disabled={!signed}>
           {signed ? "We promise" : "Sign to promise"}
@@ -2469,8 +2539,6 @@ function OBParentDone({
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
-  const currency = currencyForCountry(data.country);
-  const totalCents = data.chores.reduce((s, c) => s + c.valueCents, 0);
   // Prefer the real generated access code; fall back to a derived placeholder
   // only when persistence didn't run (e.g. previews/tests without a backend).
   const code = persisted?.kids[0]?.accessCode ?? joinCodeFor(data.familyName);
@@ -2512,8 +2580,7 @@ function OBParentDone({
           ]}
         >
           {data.kids.length} {data.kids.length === 1 ? "child" : "children"} ·{" "}
-          {data.chores.length} chores · up to{" "}
-          {formatMoney(totalCents, currency)}/day.
+          {data.chores.length} {data.chores.length === 1 ? "chore" : "chores"}.
         </Text>
 
         <View

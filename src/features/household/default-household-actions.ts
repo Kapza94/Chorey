@@ -5,6 +5,7 @@ import {
 } from "@/features/household/household-actions";
 import { createSignedInHouseholdAction } from "@/features/household/signed-in-household-action";
 import type { Split } from "@/features/money/split";
+import type { CurrencyCode } from "@/features/money/currency";
 import { supabase } from "@/lib/supabase";
 
 export const createHouseholdForSignedInParent = createSignedInHouseholdAction(
@@ -23,6 +24,23 @@ export async function updateHouseholdSplit(
   split: Split,
 ): Promise<void> {
   return createHouseholdReadActions(supabase).updateHouseholdSplit(householdId, split);
+}
+
+export async function updateHouseholdName(
+  householdId: string,
+  name: string,
+): Promise<void> {
+  return createHouseholdReadActions(supabase).updateHouseholdName(householdId, name);
+}
+
+export async function updateHouseholdCurrency(
+  householdId: string,
+  currency: CurrencyCode,
+): Promise<void> {
+  return createHouseholdReadActions(supabase).updateHouseholdCurrency(
+    householdId,
+    currency,
+  );
 }
 
 /** The signed-in parent's primary household id, or null if they have none yet. */

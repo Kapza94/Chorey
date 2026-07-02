@@ -8,6 +8,7 @@ import { getRevenueCatConfig } from "@/lib/env";
 import type { SubscriptionPlan } from "@/features/entitlements/subscription-actions";
 import {
   entitlementFromCustomerInfo,
+  mockPaywallOffers,
   toPlanOffers,
   type PurchaseResult,
   type PurchasesGateway,
@@ -84,6 +85,14 @@ export function createRevenueCatGateway(): PurchasesGateway {
 
   return {
     async loadOffers() {
+      // DEV-ONLY: mock prices for Simulator screenshots when the store can't
+      // serve products. Gated on __DEV__, so it's dead in production builds.
+      if (__DEV__) {
+        const mock = mockPaywallOffers(process.env.EXPO_PUBLIC_MOCK_PAYWALL_PRICES);
+        if (mock) {
+          return mock;
+        }
+      }
       if (!isBillingConfigured()) {
         return [];
       }

@@ -52,6 +52,15 @@ jest.mock("@/features/onboarding/default-onboarding-persistence", () => ({
   persistOnboardingForSignedInParent: jest.fn(),
 }));
 
+// Avoid pulling the native react-native-purchases module into the test.
+jest.mock("@/features/entitlements/default-purchase-actions", () => ({
+  createRevenueCatGateway: () => ({
+    loadOffers: jest.fn().mockResolvedValue([]),
+    purchase: jest.fn(),
+    restore: jest.fn(),
+  }),
+}));
+
 jest.mock("@/features/onboarding/onboarding-flow", () => ({
   OnboardingFlow: MockOnboardingFlow,
 }));

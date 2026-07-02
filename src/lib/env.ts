@@ -52,7 +52,9 @@ export type PostHogConfig = {
 /**
  * PostHog analytics config, or null when it isn't set. Analytics stays disabled
  * until `EXPO_PUBLIC_POSTHOG_KEY` is provided (no-op like Sentry/billing). Host
- * defaults to PostHog US cloud when not specified.
+ * defaults to PostHog EU cloud — all Chorey data lives in the EU (Supabase
+ * eu-central-2), so a missing env var must never silently route analytics to
+ * the US (GDPR transfer posture).
  */
 export function getPostHogConfig(): PostHogConfig | null {
   const apiKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
@@ -65,7 +67,7 @@ export function getPostHogConfig(): PostHogConfig | null {
 
   return {
     apiKey,
-    host: host && host.length > 0 ? host : "https://us.i.posthog.com",
+    host: host && host.length > 0 ? host : "https://eu.i.posthog.com",
   };
 }
 

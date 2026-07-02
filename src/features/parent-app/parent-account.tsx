@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
 
 import { useKeyboardHeight } from "@/components/use-keyboard-height";
 import {
@@ -60,7 +60,7 @@ export function ParentAccountSheet({
   visible,
   account,
   subscriptionLabel,
-  onEditName,
+  onOpenProfile,
   onChangePhoto,
   onManageSubscription,
   onManageStoreSubscription,
@@ -73,7 +73,8 @@ export function ParentAccountSheet({
   visible: boolean;
   account: ParentAccount;
   subscriptionLabel?: string;
-  onEditName?: (name: string) => void;
+  /** Open the full "Account & family" edit screen (name, label, family, currency). */
+  onOpenProfile?: () => void;
   /** Pick + upload a new profile photo. Resolves when done (or cancelled). */
   onChangePhoto?: () => Promise<void> | void;
   onManageSubscription?: () => void;
@@ -91,8 +92,6 @@ export function ParentAccountSheet({
   const { scheme, typography, palette, toybox, isDark } = useChoreyTheme();
   const keyboardHeight = useKeyboardHeight();
   const peach = palette.allowance;
-  const [editing, setEditing] = useState(false);
-  const [draftName, setDraftName] = useState(account.name);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   // 'menu' is the account list; the others swap in a focused sub-view.
   const [view, setView] = useState<"menu" | "contact" | "feedback" | "delete">("menu");
@@ -110,14 +109,6 @@ export function ParentAccountSheet({
   };
 
   const providerLabel = PROVIDER_LABEL[account.provider] ?? "Account";
-
-  function saveName() {
-    const next = draftName.trim();
-    if (next && next !== account.name) {
-      onEditName?.(next);
-    }
-    setEditing(false);
-  }
 
   // Always reopen on the menu, never mid-form.
   function close() {
@@ -207,37 +198,17 @@ export function ParentAccountSheet({
             ) : null}
           </Pressable>
           <View style={{ flex: 1 }}>
-            {editing ? (
-              <TextInput
-                accessibilityLabel="Your name"
-                value={draftName}
-                onChangeText={setDraftName}
-                onBlur={saveName}
-                onSubmitEditing={saveName}
-                autoFocus
-                style={{
-                  fontFamily: typography.family.display.extra,
-                  fontSize: 21,
-                  letterSpacing: -0.5,
-                  color: scheme.fg,
-                  borderBottomColor: scheme.toy.border,
-                  borderBottomWidth: 2,
-                  paddingVertical: 2,
-                }}
-              />
-            ) : (
-              <Text
-                style={{
-                  fontFamily: typography.family.display.extra,
-                  fontSize: 21,
-                  letterSpacing: -0.5,
-                  color: scheme.fg,
-                }}
-                numberOfLines={1}
-              >
-                {account.name}
-              </Text>
-            )}
+            <Text
+              style={{
+                fontFamily: typography.family.display.extra,
+                fontSize: 21,
+                letterSpacing: -0.5,
+                color: scheme.fg,
+              }}
+              numberOfLines={1}
+            >
+              {account.name}
+            </Text>
             <Text style={[typography.text.caption, { color: scheme.fgFaint }]} numberOfLines={1}>
               {account.email}
             </Text>
@@ -283,8 +254,8 @@ export function ParentAccountSheet({
         <View style={{ marginTop: 14, gap: 9 }}>
           <AccountRow
             Icon={Pencil}
-            label={editing ? "Save name" : "Edit profile"}
-            onPress={() => (editing ? saveName() : setEditing(true))}
+            label="Account & family"
+            onPress={onOpenProfile}
           />
           <AccountRow
             Icon={Settings2}

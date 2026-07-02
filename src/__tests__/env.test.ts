@@ -87,20 +87,22 @@ describe("env config", () => {
       expect(getPostHogConfig()).toBeNull();
     });
 
-    it("defaults the host to PostHog US cloud when only the key is set", () => {
+    // EU is the safe default: all Chorey data lives in the EU, so a missing
+    // env var must never silently route analytics to the US.
+    it("defaults the host to PostHog EU cloud when only the key is set", () => {
       process.env.EXPO_PUBLIC_POSTHOG_KEY = "phc_test";
       expect(getPostHogConfig()).toEqual({
         apiKey: "phc_test",
-        host: "https://us.i.posthog.com",
+        host: "https://eu.i.posthog.com",
       });
     });
 
     it("uses the configured host when set", () => {
       process.env.EXPO_PUBLIC_POSTHOG_KEY = "phc_test";
-      process.env.EXPO_PUBLIC_POSTHOG_HOST = "https://eu.i.posthog.com";
+      process.env.EXPO_PUBLIC_POSTHOG_HOST = "https://us.i.posthog.com";
       expect(getPostHogConfig()).toEqual({
         apiKey: "phc_test",
-        host: "https://eu.i.posthog.com",
+        host: "https://us.i.posthog.com",
       });
     });
   });
