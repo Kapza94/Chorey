@@ -3,6 +3,7 @@ import { createParentAuthActions } from "@/features/auth/parent-auth-actions";
 function createAuthClient() {
   return {
     auth: {
+      getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
       signInWithOAuth: jest.fn().mockResolvedValue({
         data: { url: "https://accounts.google.com/o/oauth2/v2/auth?x=1" },
         error: null,
@@ -136,6 +137,44 @@ describe("parent auth actions", () => {
     const actions = createParentAuthActions(client, REDIRECT, browserReturning(""));
 
     await expect(actions.exchangeCode("stale")).rejects.toThrow("code expired");
+  });
+
+  // iOS delivers the OAuth callback URL to both the in-flow browser handler and
+  // the /auth/callback deep-link route — the auth code is single-use, so the
+  // second exchange must treat an existing session as success, not failure.
+  it("skips the exchange when a session already exists (double-delivered callback)", async () => {
+    const client = createAuthClient();
+    client.auth.getSession.mockResolvedValue({ data: { session: { user: {} } } });
+    const actions = createParentAuthActions(client, REDIRECT, browserReturning(""));
+
+    await actions.exchangeCode("already-used-code");
+
+    expect(client.auth.exchangeCodeForSession).not.toHaveBeenCalled();
+  });
+
+  it("treats a failed exchange as success when the other handler won the race", async () => {
+    const client = createAuthClient();
+    client.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null } })
+      .mockResolvedValueOnce({ data: { session: { user: {} } } });
+    client.auth.exchangeCodeForSession.mockResolvedValueOnce({
+      error: new Error("invalid flow state, no valid flow state found"),
+    });
+    const actions = createParentAuthActions(client, REDIRECT, browserReturning(""));
+
+    await expect(actions.exchangeCode("raced-code")).resolves.toBeUndefined();
+  });
+
+  it("signs in via OAuth even when its exchange lost the race to the deep link", async () => {
+    const client = createAuthClient();
+    client.auth.exchangeCodeForSession.mockResolvedValueOnce({
+      error: new Error("invalid flow state, no valid flow state found"),
+    });
+    client.auth.getSession.mockResolvedValue({ data: { session: { user: {} } } });
+    const openAuthSession = browserReturning(`${REDIRECT}?code=raced`);
+    const actions = createParentAuthActions(client, REDIRECT, openAuthSession);
+
+    await expect(actions.signInWithGoogle()).resolves.toBe(true);
   });
 
   it("signs the parent out", async () => {
