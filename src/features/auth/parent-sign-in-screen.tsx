@@ -45,11 +45,15 @@ export function ParentSignInScreen({
       const signedIn = await (provider === "apple"
         ? actions.signInWithApple()
         : actions.signInWithGoogle());
-      setMagicLinkStatus("idle");
       // Only advance when a session was actually created. Cancelling the
-      // browser must leave the parent right here, not fake a login.
+      // browser must leave the parent right here, not fake a login — but say
+      // so, never fail silently.
       if (signedIn) {
+        setMagicLinkStatus("idle");
         onSignedIn?.();
+      } else {
+        setMagicLinkStatus("error");
+        setMagicLinkMessage("Sign-in didn't finish. Give it another try.");
       }
     } catch (error) {
       setMagicLinkStatus("error");

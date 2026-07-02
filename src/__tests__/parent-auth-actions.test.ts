@@ -23,6 +23,9 @@ function browserReturning(url: string) {
 
 const REDIRECT = "chorey://auth/callback";
 
+// Tiny waits so tests that hit the session-wait path don't sleep for real.
+const FAST_WAIT = { pollMs: 1, timeoutMs: 10 };
+
 describe("parent auth actions", () => {
   it("opens the system browser to finish Google OAuth, then exchanges the code", async () => {
     const client = createAuthClient();
@@ -60,12 +63,38 @@ describe("parent auth actions", () => {
   it("does not sign in if the user closes the browser before finishing", async () => {
     const client = createAuthClient();
     const openAuthSession = jest.fn().mockResolvedValue({ type: "cancel" });
-    const actions = createParentAuthActions(client, REDIRECT, openAuthSession);
+    const actions = createParentAuthActions(
+      client,
+      REDIRECT,
+      openAuthSession,
+      FAST_WAIT,
+    );
 
     const signedIn = await actions.signInWithGoogle();
 
     expect(client.auth.exchangeCodeForSession).not.toHaveBeenCalled();
     expect(signedIn).toBe(false);
+  });
+
+  // iOS resolves "dismiss" even when the redirect fired (silent Google
+  // re-auth tears the sheet down before the success plumbing completes —
+  // expo#6289). The deep-link route still creates the session; a dismiss with
+  // a session must count as signed in, not as a cancel.
+  it("signs in when the browser reports dismiss but a session appears", async () => {
+    const client = createAuthClient();
+    client.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null } })
+      .mockResolvedValue({ data: { session: { user: {} } } });
+    const openAuthSession = jest.fn().mockResolvedValue({ type: "dismiss" });
+    const actions = createParentAuthActions(
+      client,
+      REDIRECT,
+      openAuthSession,
+      FAST_WAIT,
+    );
+
+    await expect(actions.signInWithGoogle()).resolves.toBe(true);
+    expect(client.auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 
   it("surfaces an error the provider returned on the callback", async () => {
@@ -134,7 +163,12 @@ describe("parent auth actions", () => {
     client.auth.exchangeCodeForSession.mockResolvedValueOnce({
       error: new Error("code expired"),
     });
-    const actions = createParentAuthActions(client, REDIRECT, browserReturning(""));
+    const actions = createParentAuthActions(
+      client,
+      REDIRECT,
+      browserReturning(""),
+      FAST_WAIT,
+    );
 
     await expect(actions.exchangeCode("stale")).rejects.toThrow("code expired");
   });

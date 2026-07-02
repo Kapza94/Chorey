@@ -1882,6 +1882,10 @@ function OBAuth({
       const signedIn = await run();
       if (signedIn) {
         await continueAfterAuth();
+      } else {
+        // Never leave the button looking dead — a real cancel and the iOS
+        // "dismiss despite success" bug are indistinguishable up the stack.
+        setError("Sign-in didn't finish. Give it another try.");
       }
     } catch (e) {
       setError(authErrorMessage(e));

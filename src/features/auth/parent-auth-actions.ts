@@ -61,6 +61,12 @@ export function createParentAuthActions(
   client: ParentAuthClient,
   redirectTo: string,
   openAuthSession: OpenAuthSession,
+  // Injectable so tests don't sleep for real. 3s covers the deep-link route's
+  // in-flight exchange without leaving a genuine cancel feeling stuck.
+  sessionWait: { pollMs: number; timeoutMs: number } = {
+    pollMs: 300,
+    timeoutMs: 3000,
+  },
 ) {
   /** Shared Apple/Google flow: get the provider URL, open the system browser,
    *  then trade the returned code for a session. Resolves `true` only when a
@@ -85,9 +91,13 @@ export function createParentAuthActions(
 
     const result = await openAuthSession(data.url, redirectTo);
 
-    // The user closed the browser before finishing — not an error, not a login.
+    // iOS can resolve "dismiss" even when the chorey:// redirect actually
+    // fired — with a silent Google re-auth (prompt=none) the sheet tears down
+    // before the success plumbing completes (expo#6289). The /auth/callback
+    // deep link may still be exchanging the code, so wait briefly for a
+    // session before calling this a cancel.
     if (result.type !== "success" || !result.url) {
-      return false;
+      return waitForSession();
     }
 
     const { code, error: callbackError } = parseCallback(result.url);
@@ -102,8 +112,10 @@ export function createParentAuthActions(
     if (exchangeError) {
       // On iOS the callback URL is delivered both here and to the /auth/callback
       // deep-link route; whichever exchanges second gets "invalid flow state"
-      // because the code is single-use. If a session exists, sign-in succeeded.
-      if (await hasSession()) return true;
+      // because the code is single-use. If a session exists (or lands within
+      // the wait window — the winning exchange may still be in flight),
+      // sign-in succeeded.
+      if (await waitForSession()) return true;
       throw exchangeError;
     }
 
@@ -113,6 +125,18 @@ export function createParentAuthActions(
   async function hasSession(): Promise<boolean> {
     const { data } = await client.auth.getSession();
     return Boolean(data?.session);
+  }
+
+  /** Poll for a session until the wait window closes. The competing exchange
+   *  (deep-link route vs. in-flow handler) finishes on its own schedule — a
+   *  single instantaneous check loses that race. */
+  async function waitForSession(): Promise<boolean> {
+    const deadline = Date.now() + sessionWait.timeoutMs;
+    for (;;) {
+      if (await hasSession()) return true;
+      if (Date.now() >= deadline) return false;
+      await new Promise((resolve) => setTimeout(resolve, sessionWait.pollMs));
+    }
   }
 
   return {
@@ -158,8 +182,9 @@ export function createParentAuthActions(
       const { error } = await client.auth.exchangeCodeForSession(code);
 
       if (error) {
-        // Lost the race: the other handler exchanged the code first.
-        if (await hasSession()) return;
+        // Lost the race: the other handler exchanged (or is still exchanging)
+        // the code. Wait for its session before declaring failure.
+        if (await waitForSession()) return;
         throw error;
       }
     },
