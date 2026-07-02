@@ -52,6 +52,18 @@ export function ChildAccessScreen({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // The CHOREY- prefix is fixed in the UI — kids type only the part after it.
+  // Tolerate pasting the whole code (a leading CHOREY collapses into the prefix).
+  const payload = accessCode.replace(/^CHOREY-?/, "");
+  const onTypeCode = (v: string) => {
+    const typed = v
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .replace(/^CHOREY-?/, "");
+    setAccessCode(typed.length > 0 ? `CHOREY-${typed}` : "");
+    if (errorMessage) setErrorMessage(null);
+  };
+
   async function handleAccess() {
     if (!accessCode.trim() || isSubmitting) {
       return;
@@ -104,12 +116,13 @@ export function ChildAccessScreen({
         </Text>
         <OBField
           label="Access code"
-          value={accessCode}
-          onChange={setAccessCode}
+          value={payload}
+          onChange={onTypeCode}
+          prefix="CHOREY-"
           autoCapitalize="characters"
           autoCorrect={false}
           autoComplete="off"
-          placeholder="CHOREY-XXXXXXXX"
+          placeholder="AB12CD34"
           returnKeyType="go"
           onSubmitEditing={handleAccess}
         />
