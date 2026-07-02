@@ -159,6 +159,12 @@ export type OnboardingResult =
     }
   | { role: "kid"; code: string; kidName: string; kidTone: KidTone };
 
+/** Result of checking a kid's join code: validity + the parent-given name. */
+export type KidCodeCheck = {
+  status: "ok" | "bad" | "unknown";
+  childName?: string;
+};
+
 type Step =
   | "auth"
   | "idea"
@@ -261,14 +267,19 @@ export function OnboardingFlow({
   acceptInvite?: (code: string) => Promise<{ householdId: string }>;
   /**
    * Check a kid's join code before the avatar step so a typo is caught up front
-   * instead of after they've picked a colour and a name. "unknown" (e.g. the
-   * device is offline) lets them through — the home screen resolves it later.
+   * instead of after they've picked a colour. On "ok" it carries the child's
+   * parent-given name from the database — kids never type their own name.
+   * "unknown" (e.g. the device is offline) lets them through — the home screen
+   * resolves the code (and the name) later.
    */
-  validateKidCode?: (code: string) => Promise<"ok" | "bad" | "unknown">;
+  validateKidCode?: (code: string) => Promise<KidCodeCheck>;
 }) {
   const [step, setStep] = useState<Step>(initialStep);
   const [data, setData] = useState<OnboardingData>(INITIAL);
   const [code, setCode] = useState("");
+  // True when the kid's name came from the database via the join code — the
+  // avatar step then greets them instead of asking them to type it.
+  const [kidNameFromCode, setKidNameFromCode] = useState(false);
   const [persisted, setPersisted] = useState<OnboardingPersistResult | null>(
     null,
   );
@@ -438,7 +449,17 @@ export function OnboardingFlow({
           code={code}
           setCode={setCode}
           validate={validateKidCode}
-          onNext={() => setStep("k_avatar")}
+          onNext={(childName) => {
+            // The parent already named this child — carry it into the session
+            // so the kid is greeted, never asked to type their own name.
+            if (childName) {
+              patch({ kidName: childName });
+              setKidNameFromCode(true);
+            } else {
+              setKidNameFromCode(false);
+            }
+            setStep("k_avatar");
+          }}
           onBack={() => setStep("auth")}
         />
       );
@@ -447,6 +468,7 @@ export function OnboardingFlow({
         <OBKidAvatar
           data={data}
           patch={patch}
+          nameLocked={kidNameFromCode}
           onNext={() => setStep("k_how")}
           onBack={() => setStep("k_code")}
         />
@@ -2748,22 +2770,29 @@ function OBKidCode({
 }: {
   code: string;
   setCode: (c: string) => void;
-  validate?: (code: string) => Promise<"ok" | "bad" | "unknown">;
-  onNext: () => void;
+  validate?: (code: string) => Promise<KidCodeCheck>;
+  /** Advance to the avatar step; carries the parent-given name when known. */
+  onNext: (childName?: string) => void;
   onBack: () => void;
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Access codes are CHOREY-XXXXXXXX (8 alphanumerics after the prefix). Keep
-  // letters, digits and the dash; uppercase; drop everything else. The server
-  // normalizes + validates on join, so gate on a sane minimum length rather
-  // than an exact format (a format change must never lock kids out of joining).
+  // The CHOREY- prefix is fixed in the UI — kids type only the 8 characters
+  // after it. Uppercase, strip everything else, and tolerate pasting the whole
+  // code (a leading CHOREY collapses into the prefix). The server normalizes +
+  // validates on join, so gate on a sane minimum length rather than an exact
+  // format (a format change must never lock kids out of joining).
+  const payload = code.replace(/^CHOREY-?/, "");
   const onType = (v: string) => {
-    setCode(v.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+    const typed = v
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .replace(/^CHOREY-?/, "");
+    setCode(typed.length > 0 ? `CHOREY-${typed}` : "");
     if (error) setError(null);
   };
-  const ready = code.replace(/[^A-Z0-9]/gi, "").length >= 8;
+  const ready = payload.length >= 8;
 
   // Check the code before the avatar step. A wrong code stops here with a clear
   // message instead of letting the kid set up a profile against a dead code; an
@@ -2776,11 +2805,11 @@ function OBKidCode({
     setChecking(true);
     const result = await validate(code);
     setChecking(false);
-    if (result === "bad") {
+    if (result.status === "bad") {
       setError("That code didn't work. Double-check it with a parent.");
       return;
     }
-    onNext();
+    onNext(result.childName);
   };
 
   return (
@@ -2794,13 +2823,14 @@ function OBKidCode({
     >
       <OBTitle
         title="Enter your code."
-        subtitle="Ask a parent for your join code — it looks like CHOREY-XXXXXXXX."
+        subtitle="Ask a parent for your join code — just the part after CHOREY."
       />
       <OBField
         label="Join code"
-        value={code}
+        value={payload}
         onChange={onType}
-        placeholder="CHOREY-XXXXXXXX"
+        prefix="CHOREY-"
+        placeholder="AB12CD34"
         autoCapitalize="characters"
         autoCorrect={false}
         autoComplete="off"
@@ -2840,11 +2870,14 @@ function OBKidCode({
 function OBKidAvatar({
   data,
   patch,
+  nameLocked,
   onNext,
   onBack,
 }: {
   data: OnboardingData;
   patch: (p: Partial<OnboardingData>) => void;
+  /** The name came from the database via the join code — greet, don't ask. */
+  nameLocked?: boolean;
   onNext: () => void;
   onBack: () => void;
 }) {
@@ -2862,8 +2895,16 @@ function OBKidAvatar({
       }
     >
       <OBTitle
-        title="Make it yours."
-        subtitle="Pick a color and tell us your name."
+        title={
+          nameLocked && data.kidName.trim()
+            ? `Hey, ${data.kidName.trim()}!`
+            : "Make it yours."
+        }
+        subtitle={
+          nameLocked && data.kidName.trim()
+            ? "Pick your color — this is you all over the app."
+            : "Pick a color and tell us your name."
+        }
       />
       <View style={{ alignItems: "center", marginBottom: 22 }}>
         <View
@@ -2905,13 +2946,17 @@ function OBKidAvatar({
           />
         ))}
       </View>
-      <OBField
-        label="Your name"
-        value={data.kidName}
-        onChange={(v) => patch({ kidName: capitalizeNameInput(v) })}
-        placeholder="e.g. Mia"
-        autoCapitalize="words"
-      />
+      {/* The parent already named this child — only ask as a fallback when the
+          code couldn't be resolved (offline "unknown" path). */}
+      {nameLocked && data.kidName.trim() ? null : (
+        <OBField
+          label="Your name"
+          value={data.kidName}
+          onChange={(v) => patch({ kidName: capitalizeNameInput(v) })}
+          placeholder="e.g. Mia"
+          autoCapitalize="words"
+        />
+      )}
     </OBShell>
   );
 }

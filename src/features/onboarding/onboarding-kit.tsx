@@ -367,7 +367,9 @@ export function OBField({
             // text center together on iOS — padding makes the caret float up.
             height: 52,
             paddingVertical: 0,
-            paddingLeft: prefix ? 28 : 16,
+            // Clear the fixed prefix whatever its length ("$" or "CHOREY-").
+            // ~9.6px/char approximates the semibold 16pt prefix width.
+            paddingLeft: prefix ? 16 + Math.ceil(prefix.length * 9.6) + 2 : 16,
             paddingRight: 16,
             fontFamily: typography.family.body.regular,
             fontSize: 16,

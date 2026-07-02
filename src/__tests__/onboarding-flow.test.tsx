@@ -405,6 +405,44 @@ describe("OnboardingFlow", () => {
     expect(persist).toHaveBeenCalledTimes(1);
   });
 
+  // The parent already named the child — a resolved code greets them by that
+  // name and never shows a name field. Kids type only the part after CHOREY-.
+  it("greets the kid with the parent-given name from the join code", async () => {
+    const onComplete = jest.fn();
+    const validateKidCode = jest
+      .fn()
+      .mockResolvedValue({ status: "ok", childName: "Mia" });
+    render(
+      <OnboardingFlow
+        initialStep="k_code"
+        onComplete={onComplete}
+        validateKidCode={validateKidCode}
+      />,
+    );
+
+    // The field holds only the payload; CHOREY- is a fixed prefix.
+    fireEvent.changeText(screen.getByLabelText("Join code"), "ab12cd34");
+    fireEvent.press(screen.getByText("Join family"));
+
+    // The full code is validated, the name comes back from the database.
+    await waitFor(() => {
+      expect(validateKidCode).toHaveBeenCalledWith("CHOREY-AB12CD34");
+    });
+    expect(await screen.findByText("Hey, Mia!")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Your name")).toBeNull();
+
+    fireEvent.press(screen.getByText("That's me"));
+    fireEvent.press(screen.getByText("Start earning"));
+
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: "kid",
+        code: "CHOREY-AB12CD34",
+        kidName: "Mia",
+      }),
+    );
+  });
+
   it("gates the kid branch on the join code and reports it", () => {
     const onComplete = jest.fn();
     render(<OnboardingFlow initialStep="k_code" onComplete={onComplete} />);

@@ -48,13 +48,15 @@ describe("ChildAccessScreen", () => {
       />,
     );
 
+    // The CHOREY- prefix is fixed in the UI — the kid types only the payload
+    // (messy input tolerated) and the screen resolves the full canonical code.
     fireEvent.changeText(screen.getByLabelText("Access code"), "123 456");
     await act(async () => {
       fireEvent.press(screen.getByLabelText("Continue as child"));
     });
 
     await waitFor(() => {
-      expect(onResolveAccessCode).toHaveBeenCalledWith("123 456");
+      expect(onResolveAccessCode).toHaveBeenCalledWith("CHOREY-123456");
     });
     expect(onChildAccess).toHaveBeenCalledWith(child);
   });
