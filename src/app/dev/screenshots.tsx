@@ -95,6 +95,8 @@ export default function DevScreenshotsRoute() {
     case "split":
       // key forces a remount so initialTab applies when hopping between stages
       return <KidApp key="split" {...kidAppProps} initialTab="you" />;
+    case "wishlist":
+      return <KidApp key="wish" {...kidAppProps} initialTab="wish" />;
     case "approvals":
       return (
         <ParentApp
