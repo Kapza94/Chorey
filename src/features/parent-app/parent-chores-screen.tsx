@@ -28,6 +28,7 @@ import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
   DEFAULT_CURRENCY,
   formatMoney,
+  formatMoneyDelta,
   type CurrencyCode,
 } from "@/features/money/currency";
 import { clampRewardInput, parseRewardCents } from "@/features/chores/money";
@@ -1076,14 +1077,17 @@ function AssignedVsCap({
           style={[
             typography.text.caption,
             {
-              color: over ? palette.semantic.warning[600] : scheme.fgFaint,
+              // Over the allowance = bonus chores, a good thing — never a warning.
+              color: over ? bucketTokens.giving.ramp[600] : scheme.fgFaint,
               fontWeight: "700",
               flexShrink: 0,
               marginLeft: "auto",
             },
           ]}
         >
-          {over ? "over cap" : `${formatMoney(leftCents, currency)} left`}
+          {over
+            ? `${formatMoneyDelta(kid.assignedCents - kid.budgetCents, currency)} bonus`
+            : `${formatMoney(leftCents, currency)} left`}
         </Text>
       </View>
       <Text
@@ -1111,7 +1115,7 @@ function AssignedVsCap({
             width: `${pct}%`,
             height: "100%",
             borderRadius: radius.pill,
-            backgroundColor: over ? palette.semantic.warning[600] : tone[400],
+            backgroundColor: over ? bucketTokens.giving.ramp[400] : tone[400],
           }}
         />
       </View>
@@ -1170,6 +1174,29 @@ function AddChoreSheet({
     rewardCents = 0;
   }
   const preview = splitCents(rewardCents, split);
+
+  // One-off rewards are bonuses on top of the allowance, so anchor the
+  // suggestions to what the kid's money already means: 5 / 10 / 20% of their
+  // per-period allowance, rounded to a clean 25-minor-unit step. Parents tap
+  // instead of doing arithmetic; the field stays for custom amounts.
+  // ponytail: for "Everyone" we size off the largest allowance — good enough.
+  const selectedBudgetCents =
+    assigneeId === "all"
+      ? Math.max(0, ...assignees.map((a) => a.budgetCents ?? 0))
+      : (assignees.find((a) => a.id === assigneeId)?.budgetCents ?? 0);
+  const bonusChips =
+    selectedBudgetCents > 0
+      ? [
+          ...new Set(
+            [0.05, 0.1, 0.2].map((share) =>
+              Math.max(
+                25,
+                Math.round((selectedBudgetCents * share) / 25) * 25,
+              ),
+            ),
+          ),
+        ]
+      : [];
 
   // Recurring chores are priced from the kid's allowance after creation (shared
   // across their repeating chores), so they need no typed amount. One-off chores
@@ -1357,6 +1384,55 @@ function AddChoreSheet({
             >
               Reward
             </Text>
+            {bonusChips.length > 0 ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                {bonusChips.map((cents) => {
+                  const selected = rewardCents === cents;
+                  return (
+                    <Pressable
+                      key={cents}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Reward ${formatMoney(cents, currency)}`}
+                      accessibilityState={{ selected }}
+                      onPress={() => setValue((cents / 100).toFixed(2))}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 9,
+                        borderRadius: radius.sm,
+                        backgroundColor: selected
+                          ? bucketTokens.spend.ramp[200]
+                          : scheme.bgPage,
+                        borderWidth: 1.5,
+                        borderColor: selected
+                          ? bucketTokens.spend.ramp[400]
+                          : palette.border.mid,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          typography.text.label,
+                          {
+                            color: selected
+                              ? bucketTokens.spend.ramp[800]
+                              : scheme.fgMuted,
+                            fontSize: 13,
+                          },
+                        ]}
+                      >
+                        {formatMoney(cents, currency)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
             <TextInput
               accessibilityLabel="Chore reward"
               keyboardType="decimal-pad"
@@ -1366,9 +1442,20 @@ function AddChoreSheet({
               placeholderTextColor={scheme.fgFaint}
               style={[
                 fieldStyle(scheme, typography.family.body.regular),
-                { marginBottom: 14 },
+                { marginBottom: rewardCents > 0 && selectedBudgetCents > 0 ? 6 : 14 },
               ]}
             />
+            {rewardCents > 0 && selectedBudgetCents > 0 ? (
+              <Text
+                style={[
+                  typography.text.caption,
+                  { color: scheme.fgFaint, marginBottom: 14 },
+                ]}
+              >
+                Paid on top of the {formatMoney(selectedBudgetCents, currency)}{" "}
+                allowance — a bonus, not part of it.
+              </Text>
+            ) : null}
           </>
         )}
 
