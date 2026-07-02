@@ -23,23 +23,26 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   return (
     <PostHogProvider
       apiKey={config.apiKey}
-      options={{ host: config.host }}
+      // defaultOptIn:false — analytics starts OFF and only turns on for parent
+      // screens (see RouteGate). Children are NEVER tracked, not even on the
+      // first frame before the gate runs.
+      options={{ host: config.host, defaultOptIn: false }}
       autocapture={{ captureTouches: true, captureScreens: false }}
     >
-      <ChildModeGate />
+      <RouteGate />
       {children}
     </PostHogProvider>
   );
 }
 
 /**
- * Opts PostHog out while the app is in child mode (any /child/* route) and back
- * in when a parent screen is active. Children are data subjects under
- * COPPA/GDPR-K/UK AADC — product analytics must not capture their sessions,
- * even anonymously. The provider stays mounted (unmounting it would remount the
- * whole navigator); only capture is toggled.
+ * Turns capture ON only on parent screens and OFF everywhere in child mode
+ * (any /child/* route). Children are data subjects under COPPA/GDPR-K/UK AADC —
+ * product analytics must never capture their sessions, even anonymously.
+ * Because the provider starts opted out (defaultOptIn:false), the child side is
+ * safe by default; this only ever *enables* capture, and never on /child.
  */
-function ChildModeGate() {
+function RouteGate() {
   const posthog = usePostHog();
   const pathname = usePathname();
   const childMode = pathname?.startsWith("/child") ?? false;
