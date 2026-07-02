@@ -700,7 +700,7 @@ function AccountActionRow({
   );
 }
 
-// Universal Link (website/ hosts the AASA + fallback page on chorey.co):
+// Universal Link (the chorey-site repo hosts the AASA + fallback page):
 // app installed → opens Chorey with the code prefilled; not installed →
 // the page shows the code and hands off to the App Store.
 const JOIN_LINK_BASE = "https://chorey.co/join?code=";
