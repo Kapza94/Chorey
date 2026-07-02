@@ -71,6 +71,29 @@ export function getPostHogConfig(): PostHogConfig | null {
   };
 }
 
+export type GoogleAuthConfig = {
+  /** The WEB client id — Supabase validates native ID tokens against it. */
+  webClientId: string;
+  /** The iOS client id the native Google SDK signs in with. */
+  iosClientId: string;
+};
+
+/**
+ * Native Google Sign-In config, or null when it isn't set. Sign-in then falls
+ * back to the browser OAuth flow (no-op pattern like Sentry/billing). These are
+ * public OAuth client identifiers, not secrets.
+ */
+export function getGoogleAuthConfig(): GoogleAuthConfig | null {
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+  if (!webClientId || !iosClientId) {
+    return null;
+  }
+
+  return { webClientId, iosClientId };
+}
+
 export type RevenueCatConfig = {
   iosKey: string;
   androidKey: string;
