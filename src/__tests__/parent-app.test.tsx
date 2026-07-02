@@ -949,6 +949,36 @@ describe("ParentApp · Settings", () => {
     expect(screen.getByText("482913")).toBeOnTheScreen();
   });
 
+  it("shows every parent on the family plan so co-parents are visible", () => {
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        householdParents={[
+          {
+            userId: "u1",
+            displayName: "Luka",
+            parentLabel: "Dad",
+            joinedAt: "2026-06-01T12:00:00Z",
+            isYou: true,
+          },
+          {
+            userId: "u2",
+            displayName: null,
+            parentLabel: "Mom",
+            joinedAt: "2026-07-01T12:00:00Z",
+            isYou: false,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Luka")).toBeOnTheScreen();
+    expect(screen.getByText("You")).toBeOnTheScreen();
+    // A parent with no display name still shows up via their kid-facing label.
+    expect(screen.getByText("Mom")).toBeOnTheScreen();
+  });
+
   it("creates and cancels co-parent invites from settings", async () => {
     const onCreateInvite = jest.fn().mockResolvedValue({
       id: "invite-2",
