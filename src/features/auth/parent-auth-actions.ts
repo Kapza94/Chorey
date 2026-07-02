@@ -14,6 +14,9 @@ type OpenAuthSession = (
 
 type ParentAuthClient = {
   auth: {
+    getSession(): Promise<{
+      data: { session: object | null };
+    }>;
     signInWithOAuth(args: {
       provider: OAuthProvider;
       options: {
@@ -97,10 +100,19 @@ export function createParentAuthActions(
 
     const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
     if (exchangeError) {
+      // On iOS the callback URL is delivered both here and to the /auth/callback
+      // deep-link route; whichever exchanges second gets "invalid flow state"
+      // because the code is single-use. If a session exists, sign-in succeeded.
+      if (await hasSession()) return true;
       throw exchangeError;
     }
 
     return true;
+  }
+
+  async function hasSession(): Promise<boolean> {
+    const { data } = await client.auth.getSession();
+    return Boolean(data?.session);
   }
 
   return {
@@ -134,13 +146,20 @@ export function createParentAuthActions(
         throw error;
       }
     },
-    /** Trade the `code` from an email magic-link callback for a session. Used by
-     *  the `/auth/callback` deep-link route when the parent taps the link in the
-     *  confirmation email (rather than typing the OTP code). */
+    /** Trade the `code` from an email magic-link or OAuth callback for a
+     *  session. Used by the `/auth/callback` deep-link route. The OAuth browser
+     *  flow may have already exchanged this same code (iOS delivers the callback
+     *  URL to both handlers), so an existing session counts as success — a
+     *  second exchange of a single-use code would fail and wrongly show
+     *  "sign in didn't work" over a completed login. */
     async exchangeCode(code: string) {
+      if (await hasSession()) return;
+
       const { error } = await client.auth.exchangeCodeForSession(code);
 
       if (error) {
+        // Lost the race: the other handler exchanged the code first.
+        if (await hasSession()) return;
         throw error;
       }
     },
