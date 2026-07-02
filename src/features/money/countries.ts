@@ -255,7 +255,7 @@ export const COUNTRIES: CountryInfo[] = [
   { code: "UA", name: "Ukraine", cur: "UAH", symbol: "₴" },
   { code: "AE", name: "United Arab Emirates", cur: "AED", symbol: "د.إ" },
   { code: "GB", name: "United Kingdom", cur: "GBP", symbol: "£" },
-  { code: "US", name: "United States", cur: "USD", symbol: "$" },
+  { code: "US", name: "United States of America", cur: "USD", symbol: "$" },
   { code: "UM", name: "United States Minor Outlying Islands", cur: "USD", symbol: "$" },
   { code: "VI", name: "United States Virgin Islands", cur: "USD", symbol: "$" },
   { code: "UY", name: "Uruguay", cur: "UYU", symbol: "$" },

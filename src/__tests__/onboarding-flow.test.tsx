@@ -242,6 +242,8 @@ describe("OnboardingFlow", () => {
     // 40 / 40 / 20 is the recommended default.
     expect(screen.getAllByText("40%")).toHaveLength(2);
     expect(screen.getByText("20%")).toBeOnTheScreen();
+    expect(screen.queryByText("+")).toBeNull();
+    expect(screen.queryByText("−")).toBeNull();
 
     // Spend is adjustable; Savings absorbs the change.
     fireEvent.press(screen.getByLabelText("Increase Spend"));
@@ -254,6 +256,19 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Decrease Give")); // floored at 10
     expect(screen.getByText("10%")).toBeOnTheScreen();
     expect(screen.queryByText("5%")).toBeNull();
+  });
+
+  it("shows the United States as the United States of America", () => {
+    render(<OnboardingFlow initialStep="p_family" />);
+
+    fireEvent.press(screen.getByLabelText("Choose your country"));
+    fireEvent.changeText(
+      screen.getByLabelText("Search countries"),
+      "United States",
+    );
+
+    expect(screen.getByLabelText("United States of America")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("United States")).toBeNull();
   });
 
   it("keeps a typed budget amount when the parent taps Continue", async () => {

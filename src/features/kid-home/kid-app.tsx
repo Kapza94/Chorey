@@ -115,6 +115,7 @@ export function KidApp({
           givingCents={givingCents}
           totalPoints={totalPoints}
           onOpenChore={setSelectedChoreId}
+          onUndoChore={onUndoChore}
           onOpenJourney={() => setJourneyOpen(true)}
           onRefresh={onRefresh}
           refreshing={refreshing}
@@ -166,6 +167,7 @@ export function KidApp({
           if (!onSubmitChore) {
             throw new Error("This chore cannot be updated right now.");
           }
+          setSelectedChoreId(null);
           await onSubmitChore(choreId, photoBase64);
         }}
         onUndo={async (choreId) => {

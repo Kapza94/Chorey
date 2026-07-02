@@ -47,6 +47,7 @@ type Props = {
   /** lifetime game points (every approved chore earns some) */
   totalPoints?: number;
   onOpenChore?: (id: string) => void;
+  onUndoChore?: (id: string) => void | Promise<void>;
   /** tap the level row to open the journey map */
   onOpenJourney?: () => void;
   /** pull-to-refresh — re-fetch chores/balances so new chores show up live. */
@@ -75,6 +76,7 @@ export function KidHomeScreen({
   givingCents = 0,
   totalPoints = 0,
   onOpenChore,
+  onUndoChore,
   onOpenJourney,
   onRefresh,
   refreshing = false,
@@ -324,6 +326,7 @@ export function KidHomeScreen({
                 currency={currency}
                 isLast={index === chores.length - 1}
                 onOpen={onOpenChore}
+                onUndo={onUndoChore}
               />
             ))
           )}
@@ -448,11 +451,13 @@ function ChoreRow({
   currency,
   isLast,
   onOpen,
+  onUndo,
 }: {
   chore: KidChore;
   currency: CurrencyCode;
   isLast: boolean;
   onOpen?: (id: string) => void;
+  onUndo?: (id: string) => void | Promise<void>;
 }) {
   const { scheme, typography, palette, bucketInk } = useChoreyTheme();
   const giving = bucketTokens.giving.ramp;
@@ -545,7 +550,7 @@ function ChoreRow({
           </Text>
         ) : null}
       </View>
-      <View style={{ alignItems: "flex-end", gap: 1 }}>
+      <View style={{ alignItems: "flex-end", gap: 6 }}>
         <Text
           style={[
             typography.text.money,
@@ -559,6 +564,35 @@ function ChoreRow({
         <Text style={[typography.text.caption, { fontSize: 11, color: bucketInk("savings") }]}>
           +{pointsForChore(chore.valueCents)} pts
         </Text>
+        {waiting && onUndo ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Undo ${chore.name}`}
+            onPress={() => void onUndo(chore.id)}
+            hitSlop={8}
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: palette.semantic.warning[600],
+              backgroundColor: scheme.tint.warning,
+            }}
+          >
+            <Text
+              style={[
+                typography.text.caption,
+                {
+                  color: palette.semantic.warning[600],
+                  fontSize: 11,
+                  fontWeight: "800",
+                },
+              ]}
+            >
+              Undo
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </Pressable>
   );
