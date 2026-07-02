@@ -59,12 +59,12 @@ describe("ParentApp · Kids", () => {
     expect(onSelectKid).toHaveBeenCalledWith("k1");
   });
 
-  it("flags a kid that is over budget", () => {
+  it("shows chores beyond the allowance as a bonus, not a warning", () => {
     const over: ParentKid = { ...eli, assignedCents: 1800, budgetCents: 1500 };
     render(<ParentApp kids={[over]} />);
 
-    // 1800 - 1500 = 300 extra
-    expect(screen.getByText("+$3.00 extra")).toBeOnTheScreen();
+    // 1800 - 1500 = 300 on top of the allowance
+    expect(screen.getByText("+$3.00 bonus")).toBeOnTheScreen();
   });
 
   it("switches to another tab", () => {
@@ -620,6 +620,37 @@ describe("ParentApp · Chores", () => {
     expect(onAddChore).toHaveBeenCalledWith({
       name: "Dishes",
       rewardCents: 250,
+      assigneeId: "k1",
+      recurrence: undefined,
+    });
+  });
+
+  // One-off rewards suggest 5/10/20% of the kid's allowance as tappable chips
+  // ($2000 budget → $1 / $2 / $4) so the parent never does arithmetic.
+  it("offers allowance-anchored reward chips for a one-off chore", () => {
+    const onAddChore = jest.fn();
+    render(
+      <ParentApp
+        initialTab="chores"
+        kids={[mia]}
+        chores={chores}
+        assignees={[{ id: "k1", name: "Mia", budgetCents: 2000 }]}
+        onAddChore={onAddChore}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("New chore"));
+    fireEvent.changeText(screen.getByLabelText("Chore name"), "Wash the car");
+    fireEvent.press(screen.getByLabelText("Reward $2.00"));
+    // Tapping a chip fills the reward and explains it's on top of the allowance.
+    expect(
+      screen.getByText(/Paid on top of the \$20\.00 allowance/),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Add chore"));
+
+    expect(onAddChore).toHaveBeenCalledWith({
+      name: "Wash the car",
+      rewardCents: 200,
       assigneeId: "k1",
       recurrence: undefined,
     });

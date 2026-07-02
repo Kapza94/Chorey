@@ -21,7 +21,7 @@ export function KidCard({
   currency?: CurrencyCode;
   onTap?: () => void;
 }) {
-  const { scheme, typography, palette, toybox, motion } = useChoreyTheme();
+  const { scheme, typography, toybox, motion } = useChoreyTheme();
   const tone: ChoreyBucket = kid.tone === "allowance" ? "spend" : kid.tone;
 
   const cadenceWord = kid.cadence === "monthly" ? "month" : "week";
@@ -91,23 +91,24 @@ export function KidCard({
         <BucketTile bucket="giving" label="Give" cents={kid.givingCents} currency={currency} />
       </View>
 
-      {/* Budget cap meter */}
+      {/* Allowance meter. The allowance is a baseline, not a cap — one-off
+          chores on top are bonuses (extra work, extra pay), never a warning. */}
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <Text style={[typography.text.caption, { color: scheme.fgMuted }]}>
             <Text style={{ color: scheme.fg, fontWeight: "700" }}>
               {formatMoney(kid.earnedCents, currency)}
             </Text>{" "}
-            of {formatMoney(kid.budgetCents, currency)} {cadenceAdj} budget
+            of {formatMoney(kid.budgetCents, currency)} {cadenceAdj} allowance
           </Text>
           {over ? (
             <Text
               style={[
                 typography.text.caption,
-                { color: palette.semantic.warning[600], fontWeight: "700" },
+                { color: bucketTokens.giving.ramp[600], fontWeight: "700" },
               ]}
             >
-              {formatMoneyDelta(extraCents, currency)} extra
+              {formatMoneyDelta(extraCents, currency)} bonus
             </Text>
           ) : null}
         </View>
