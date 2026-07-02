@@ -646,7 +646,7 @@ function ParentInviteCard({
 }) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
   const [email, setEmail] = useState("");
-  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const activeInvites = invites.filter((invite) => invite.status === "pending");
@@ -659,12 +659,13 @@ function ParentInviteCard({
 
     setSending(true);
     setMessage(null);
-    setCreatedUrl(null);
+    setCreatedCode(null);
     try {
       const invite = await onCreateInvite(trimmed);
-      setCreatedUrl(invite.inviteUrl ?? null);
+      setCreatedCode(invite.inviteCode ?? null);
       setEmail("");
-      setMessage("Invite link ready.");
+      // No email is sent — the code travels by text/voice, like a kid code.
+      setMessage("Code ready — share it with them however you like.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Invite could not be created.");
     } finally {
@@ -734,28 +735,41 @@ function ParentInviteCard({
         })}
       >
         <Text style={[typography.text.label, { color: palette.cream[4], fontSize: 14 }]}>
-          {sending ? "Creating..." : "Create invite link"}
+          {sending ? "Creating..." : "Create family code"}
         </Text>
       </Pressable>
 
-      {createdUrl ? (
+      {createdCode ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Share co-parent invite"
           onPress={() =>
             Share.share({
-              message: `Join our Chorey family: ${createdUrl}`,
+              message: `Join our family on Chorey! 🧸\n\nYour family code: ${createdCode}\n\nDownload Chorey, tap "I'm joining my family", sign in, and enter the code. It expires in 7 days.`,
             })
           }
           style={{
+            alignItems: "center",
             borderRadius: radius.md,
             backgroundColor: scheme.bgSunken,
             paddingHorizontal: 12,
-            paddingVertical: 10,
+            paddingVertical: 12,
+            gap: 2,
           }}
         >
-          <Text selectable style={[typography.text.caption, { color: scheme.fg }]}>
-            {createdUrl}
+          <Text
+            selectable
+            style={{
+              fontFamily: typography.family.display.bold,
+              fontSize: 24,
+              letterSpacing: 1,
+              color: scheme.fg,
+            }}
+          >
+            {createdCode}
+          </Text>
+          <Text style={[typography.text.caption, { color: scheme.fgFaint }]}>
+            Tap to share — they enter it after signing in
           </Text>
         </Pressable>
       ) : null}

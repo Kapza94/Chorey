@@ -111,18 +111,23 @@ export function createHouseholdActions(
 /** Read-only household settings (currency + split) for any household member. */
 export function createHouseholdReadActions(client: HouseholdClient) {
   return {
-    /** Household ids the signed-in parent belongs to (RLS-scoped), oldest first. */
+    /** Household ids the signed-in parent belongs to (RLS scopes the rows to
+     *  their own memberships), most recently JOINED first — a parent who
+     *  accepts a family invite must land in that family, not in a household
+     *  they created earlier and abandoned. */
     async listHouseholdIds(): Promise<string[]> {
       const result = await client
-        .from("households")
-        .select("id")
-        .order("created_at", { ascending: true });
+        .from("household_members")
+        .select("household_id, created_at")
+        .order("created_at", { ascending: false });
 
       if (result.error) {
         throw result.error;
       }
 
-      return (result.data ?? []).map((row: { id: string }) => row.id);
+      return (result.data ?? []).map(
+        (row: { household_id: string }) => row.household_id,
+      );
     },
 
     /**

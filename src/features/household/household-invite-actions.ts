@@ -16,6 +16,8 @@ export type HouseholdInvite = {
   createdAt: string;
   acceptedAt?: string | null;
   cancelledAt?: string | null;
+  /** Human-typeable family code (FAM-XXXXXXXX) — returned once at creation. */
+  inviteCode?: string;
   inviteUrl?: string;
 };
 
@@ -50,6 +52,9 @@ function mapInvite(row: any): HouseholdInvite {
     invite.cancelledAt = row.cancelled_at;
   }
 
+  if (row.invite_token) {
+    invite.inviteCode = row.invite_token;
+  }
   const url = inviteUrl(row.invite_token);
   if (url) {
     invite.inviteUrl = url;

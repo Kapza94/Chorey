@@ -9,6 +9,7 @@ import { chooseSubscriptionPlan } from "@/features/entitlements/default-subscrip
 import { createRevenueCatGateway } from "@/features/entitlements/default-purchase-actions";
 import type { PlanOffer } from "@/features/entitlements/purchases";
 import { getPrimaryHouseholdId } from "@/features/household/default-household-actions";
+import { acceptParentInvite } from "@/features/household/default-household-invite-actions";
 import { OnboardingFlow, type OnboardingAuth } from "@/features/onboarding/onboarding-flow";
 import { persistOnboardingForSignedInParent } from "@/features/onboarding/default-onboarding-persistence";
 import { supabase } from "@/lib/supabase";
@@ -186,6 +187,7 @@ export default function IndexRoute() {
       onExistingAccount={(householdId) => {
         router.replace({ pathname: "/parent/home", params: { householdId } });
       }}
+      acceptInvite={acceptParentInvite}
       validateKidCode={async (code) => {
         try {
           await resolveChildAccessCode(code);

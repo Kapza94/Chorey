@@ -333,6 +333,58 @@ describe("OnboardingFlow", () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
+  // The co-parent path: "I'm joining my family" → sign in → enter the family
+  // code → land in the partner's household. Never reaches family setup, so a
+  // second household (and a second subscription) is never created.
+  it("joins the partner's household via a family code after sign-in", async () => {
+    const persist = jest.fn();
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+    const resolveSignedInHousehold = jest.fn().mockResolvedValue(null);
+    const onExistingAccount = jest.fn();
+    const acceptInvite = jest
+      .fn()
+      .mockResolvedValue({ householdId: "household-9" });
+
+    render(
+      <OnboardingFlow
+        auth={auth}
+        persist={persist}
+        resolveSignedInHousehold={resolveSignedInHousehold}
+        onExistingAccount={onExistingAccount}
+        acceptInvite={acceptInvite}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("I'm joining my family — I have a code"));
+    fireEvent.press(screen.getByText("Continue with email"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Email"),
+      "wife@example.com",
+    );
+    fireEvent.press(screen.getByText("Email me a code"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Verification code"),
+      "ABCD1234",
+    );
+    fireEvent.press(screen.getByText("Continue"));
+
+    // Signed in with no household + join intent → the family-code step.
+    fireEvent.changeText(
+      await screen.findByLabelText("Family code"),
+      "fam-ab12cd34",
+    );
+    fireEvent.press(screen.getByText("Join family"));
+
+    await waitFor(() => {
+      expect(onExistingAccount).toHaveBeenCalledWith("household-9");
+    });
+    expect(acceptInvite).toHaveBeenCalledWith("fam-ab12cd34");
+    expect(persist).not.toHaveBeenCalled();
+  });
+
   it("persists the family only once if you go back from the promise and continue again", async () => {
     const persist = jest.fn().mockResolvedValue({ householdId: "h1", kids: [] });
     render(<OnboardingFlow initialStep="p_causes" persist={persist} />);

@@ -954,7 +954,8 @@ describe("ParentApp · Settings", () => {
       status: "pending",
       expiresAt: "2026-07-07T12:00:00Z",
       createdAt: "2026-06-30T12:00:00Z",
-      inviteUrl: "chorey://parent/invite?token=raw-token",
+      inviteCode: "FAM-AB12CD34",
+      inviteUrl: "chorey://parent/invite?token=FAM-AB12CD34",
     });
     const onCancelInvite = jest.fn();
 
@@ -981,7 +982,8 @@ describe("ParentApp · Settings", () => {
     fireEvent.press(screen.getByLabelText("Create co-parent invite"));
 
     expect(onCreateInvite).toHaveBeenCalledWith("step@example.com");
-    expect(await screen.findByText("chorey://parent/invite?token=raw-token")).toBeOnTheScreen();
+    // The human-typeable family code is the deliverable, not a link.
+    expect(await screen.findByText("FAM-AB12CD34")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("Cancel invite for dad@example.com"));
     expect(onCancelInvite).toHaveBeenCalledWith("invite-1");

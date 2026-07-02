@@ -237,6 +237,7 @@ export function OnboardingFlow({
   planOffers,
   resolveSignedInHousehold,
   onExistingAccount,
+  acceptInvite,
   validateKidCode,
 }: {
   onComplete?: (
@@ -256,6 +257,8 @@ export function OnboardingFlow({
   resolveSignedInHousehold?: () => Promise<string | null>;
   /** Existing signed-in family: leave setup and route there. */
   onExistingAccount?: (householdId: string) => void;
+  /** Redeem a family invite code (co-parent join path on the landing step). */
+  acceptInvite?: (code: string) => Promise<{ householdId: string }>;
   /**
    * Check a kid's join code before the avatar step so a typo is caught up front
    * instead of after they've picked a colour and a name. "unknown" (e.g. the
@@ -321,6 +324,7 @@ export function OnboardingFlow({
           auth={auth}
           resolveSignedInHousehold={resolveSignedInHousehold}
           onExistingAccount={onExistingAccount}
+          acceptInvite={acceptInvite}
           onNext={() => setStep("idea")}
           onKid={() => setStep("k_code")}
         />
@@ -1823,17 +1827,26 @@ function OBAuth({
   auth,
   resolveSignedInHousehold,
   onExistingAccount,
+  acceptInvite,
   onNext,
   onKid,
 }: {
   auth?: OnboardingAuth;
   resolveSignedInHousehold?: () => Promise<string | null>;
   onExistingAccount?: (householdId: string) => void;
+  /** Redeem a family invite code (FAM-XXXXXXXX) after sign-in. */
+  acceptInvite?: (code: string) => Promise<{ householdId: string }>;
   onNext: () => void;
   onKid: () => void;
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
-  const [phase, setPhase] = useState<"choose" | "email" | "code">("choose");
+  const [phase, setPhase] = useState<"choose" | "email" | "code" | "join">(
+    "choose",
+  );
+  // The co-parent path: sign in first, then redeem the family code instead of
+  // setting up a new household (which would mean a second subscription).
+  const [joinIntent, setJoinIntent] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
   const [email, setEmail] = useState("");
   const [codeValue, setCodeValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1858,13 +1871,36 @@ function OBAuth({
   const continueAfterAuth = async () => {
     // Auth is the first step, so there's no family data yet. A parent who
     // already finished onboarding has a household → jump straight home;
-    // everyone else heads into setup (their family is persisted at the end).
+    // a joining co-parent enters their family code; everyone else heads into
+    // setup (their family is persisted at the end).
     const householdId = await resolveSignedInHousehold?.();
     if (householdId) {
       onExistingAccount?.(householdId);
       return;
     }
+    if (joinIntent && acceptInvite) {
+      setError(null);
+      setPhase("join");
+      return;
+    }
     onNext();
+  };
+
+  const redeemJoinCode = async () => {
+    if (busy || joinCode.trim().length === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const accepted = await acceptInvite!(joinCode);
+      onExistingAccount?.(accepted.householdId);
+    } catch (e) {
+      setError(
+        errorMessage(e) ??
+          "That code didn't work. Check it with your partner and try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   // One-tap Apple/Google sign-up: only persist + advance when a session was
@@ -2000,7 +2036,9 @@ function OBAuth({
               },
             ]}
           >
-            Create an account so your family stays in sync across devices.
+            {joinIntent
+              ? "Sign in first — then enter the family code your partner shared."
+              : "Create an account so your family stays in sync across devices."}
           </Text>
         </View>
         <View style={{ gap: 10 }}>
@@ -2015,9 +2053,59 @@ function OBAuth({
             Continue with email
           </OBPrimary>
         </View>
-        <View style={{ marginTop: 24 }}>
-          <OBSecondary onPress={onKid}>I&apos;m a kid — enter a code</OBSecondary>
+        <View style={{ marginTop: 24, gap: 4 }}>
+          {joinIntent ? (
+            <OBSecondary onPress={() => setJoinIntent(false)}>
+              Actually, I&apos;m setting up a new family
+            </OBSecondary>
+          ) : (
+            <>
+              {acceptInvite ? (
+                <OBSecondary onPress={() => setJoinIntent(true)}>
+                  I&apos;m joining my family — I have a code
+                </OBSecondary>
+              ) : null}
+              <OBSecondary onPress={onKid}>
+                I&apos;m a kid — enter a code
+              </OBSecondary>
+            </>
+          )}
         </View>
+        {errorText}
+      </OBShell>
+    );
+  }
+
+  // Co-parent join: signed in, no household yet — redeem the family code.
+  if (phase === "join") {
+    return (
+      <OBShell
+        onBack={() => setPhase("choose")}
+        footer={
+          <>
+            <OBPrimary
+              onPress={redeemJoinCode}
+              disabled={busy || joinCode.trim().length === 0}
+            >
+              {busy ? "Joining..." : "Join family"}
+            </OBPrimary>
+            <OBSecondary onPress={onNext}>
+              No code? Set up a new family
+            </OBSecondary>
+          </>
+        }
+      >
+        <OBTitle
+          title="Join your family."
+          subtitle="Enter the invite code your partner shared — it looks like FAM-1A2B3C4D."
+        />
+        <OBField
+          label="Family code"
+          value={joinCode}
+          onChange={setJoinCode}
+          placeholder="FAM-XXXXXXXX"
+          autoCapitalize="characters"
+        />
         {errorText}
       </OBShell>
     );
