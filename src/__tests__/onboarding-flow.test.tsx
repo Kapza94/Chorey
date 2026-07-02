@@ -348,6 +348,54 @@ describe("OnboardingFlow", () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
+  // A share link (chorey.co/join?code=…) opens onboarding in join mode with
+  // the code already filled in — the co-parent only signs in and taps Join.
+  it("prefills the family code when arriving via a join link", async () => {
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+    const acceptInvite = jest
+      .fn()
+      .mockResolvedValue({ householdId: "household-9" });
+    const onExistingAccount = jest.fn();
+
+    render(
+      <OnboardingFlow
+        auth={auth}
+        resolveSignedInHousehold={jest.fn().mockResolvedValue(null)}
+        onExistingAccount={onExistingAccount}
+        acceptInvite={acceptInvite}
+        initialJoinCode="FAM-AB12CD34"
+      />,
+    );
+
+    // Join mode is on from the first screen — banner, no manual toggle.
+    expect(screen.getByText("Joining your family")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByText("Continue with email"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Email"),
+      "wife@example.com",
+    );
+    fireEvent.press(screen.getByText("Email me a code"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Verification code"),
+      "ABCD1234",
+    );
+    fireEvent.press(screen.getByText("Continue"));
+
+    // The code came in with the link — it's already in the field.
+    const codeField = await screen.findByLabelText("Family code");
+    expect(codeField.props.value).toBe("FAM-AB12CD34");
+
+    fireEvent.press(screen.getByText("Join family"));
+    await waitFor(() => {
+      expect(onExistingAccount).toHaveBeenCalledWith("household-9");
+    });
+    expect(acceptInvite).toHaveBeenCalledWith("FAM-AB12CD34");
+  });
+
   // The co-parent path: "I'm joining my family" → sign in → enter the family
   // code → land in the partner's household. Never reaches family setup, so a
   // second household (and a second subscription) is never created.

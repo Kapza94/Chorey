@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Join your family on Chorey</title>
+  <style>
+    /* Chorey toybox palette — cream page, ink text, warm accent. */
+    :root {
+      --bg: #F6EFE3;
+      --fg: #2A2018;
+      --muted: #7A6B5C;
+      --accent: #C96F4A;
+      --card: #FFFDF7;
+      --border: #2A2018;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 24px;
+      text-align: center;
+    }
+    main { max-width: 380px; width: 100%; }
+    /* Rounded display faces for the headline + code echo the app's toybox
+       look without shipping a webfont on a page seen for two seconds. */
+    h1, .code {
+      font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold",
+        -apple-system, sans-serif;
+    }
+    h1 { font-size: 28px; letter-spacing: -0.5px; margin: 0 0 8px; }
+    p { color: var(--muted); font-size: 15px; line-height: 1.5; margin: 0 0 20px; }
+    .code {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 4px 4px 0 var(--border);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin: 0 auto 8px;
+      padding: 18px 12px;
+      user-select: all;
+    }
+    .hint { font-size: 13px; margin-bottom: 24px; }
+    a.btn {
+      background: var(--accent);
+      border: 2px solid var(--border);
+      border-radius: 999px;
+      box-shadow: 3px 3px 0 var(--border);
+      color: #FFFDF7;
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 12px;
+      padding: 15px 24px;
+      text-decoration: none;
+    }
+    a.link { color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Join your family on Chorey&nbsp;🧸</h1>
+    <p id="intro">
+      Get the app, sign in as a parent, then tap
+      “I’m joining my family” and enter this code:
+    </p>
+    <div class="code" id="code">FAM-????????</div>
+    <p class="hint">Long-press the code to copy it before you head to the App&nbsp;Store.</p>
+    <a class="btn" href="https://apps.apple.com/app/id6780607393">Get Chorey on the App&nbsp;Store</a>
+    <a class="link" id="open-app" href="#">Already installed? Open the app</a>
+  </main>
+  <script>
+    // If this page shows instead of the app (app not installed, or the link
+    // was opened in-browser), surface the code + a manual app hand-off.
+    var code = new URLSearchParams(location.search).get("code") || "";
+    if (code) {
+      document.getElementById("code").textContent = code;
+      document.getElementById("open-app").href =
+        "chorey://join?code=" + encodeURIComponent(code);
+    } else {
+      document.getElementById("code").style.display = "none";
+      document.getElementById("intro").textContent =
+        "Get the app, sign in as a parent, then enter the family code your partner shared.";
+      document.getElementById("open-app").href = "chorey://";
+    }
+  </script>
+</body>
+</html>

@@ -700,9 +700,10 @@ function AccountActionRow({
   );
 }
 
-// Fixed by the App Store Connect app record (ascAppId in eas.json) — the URL
-// is dead until the app is live, then works forever without a code change.
-const APP_STORE_URL = "https://apps.apple.com/app/id6780607393";
+// Universal Link (website/ hosts the AASA + fallback page on chorey.co):
+// app installed → opens Chorey with the code prefilled; not installed →
+// the page shows the code and hands off to the App Store.
+const JOIN_LINK_BASE = "https://chorey.co/join?code=";
 
 function ParentInviteCard({
   invites,
@@ -789,7 +790,7 @@ function ParentInviteCard({
           accessibilityLabel="Share co-parent invite"
           onPress={() =>
             Share.share({
-              message: `Join our family on Chorey! 🧸\n\nYour family code: ${createdCode}\n\nGet the app: ${APP_STORE_URL}\n\nSign in as a parent, tap "I'm joining my family", and enter the code. It expires in 7 days.`,
+              message: `Join our family on Chorey! 🧸\n\nYour family code: ${createdCode}\n\nTap to join: ${JOIN_LINK_BASE}${encodeURIComponent(createdCode)}\n\nNo app yet? The same link takes you to the App Store — sign in as a parent afterwards and enter the code. It expires in 7 days.`,
             })
           }
           style={{
