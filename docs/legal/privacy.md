@@ -90,7 +90,7 @@ We use a small set of service providers under data-processing agreements:
 |---|---|---|
 | Supabase | Database, authentication, file storage — all app data | **EU (Zurich, Switzerland — AWS eu-central-2)** |
 | PostHog | Anonymous usage analytics, parents only | EU cloud |
-| Sentry | Crash and error reporting | United States (Sentry default — confirm in your Sentry org settings) |
+| Sentry | Crash and error reporting | EU (Germany) |
 | RevenueCat | Subscription management | US |
 | Expo | App infrastructure and push-notification delivery | US |
 | Apple / Google | Sign-in, payments, push delivery | Global |
