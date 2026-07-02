@@ -472,7 +472,9 @@ export function ParentSettingsScreen({
           <Text
             style={[
               typography.text.overline,
-              { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+              // Match the other section headings' top gap so Legal doesn't
+              // crowd the section above it.
+              { color: scheme.fgFaint, paddingHorizontal: 4, paddingTop: 20, paddingBottom: 8 },
             ]}
           >
             Legal
@@ -711,12 +713,17 @@ function ParentInviteCard({
         placeholder="parent@example.com"
         placeholderTextColor={scheme.fgFaint}
         style={{
-          minHeight: 46,
+          height: 48,
           borderRadius: radius.md,
           borderWidth: toybox.borderWidth,
           borderColor: scheme.toy.border,
           backgroundColor: scheme.bgPage,
           paddingHorizontal: 14,
+          // Fixed height + centered text vertically centres the placeholder and
+          // typed value on both platforms (Android otherwise top-aligns).
+          paddingVertical: 0,
+          textAlignVertical: "center",
+          includeFontPadding: false,
           color: scheme.fg,
           fontFamily: typography.family.body.regular,
           fontSize: 15,
