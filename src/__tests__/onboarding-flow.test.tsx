@@ -348,9 +348,10 @@ describe("OnboardingFlow", () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
-  // A share link (chorey.co/join?code=…) opens onboarding in join mode with
-  // the code already filled in — the co-parent only signs in and taps Join.
-  it("prefills the family code when arriving via a join link", async () => {
+  // A share link (chorey.co/join?code=…) opens straight on the code screen
+  // with the code filled in; sign-in comes after, and the code redeems the
+  // moment auth completes — no extra taps.
+  it("opens code-first with the link's code and joins right after sign-in", async () => {
     const auth = {
       sendEmailCode: jest.fn().mockResolvedValue(undefined),
       verifyEmailCode: jest.fn().mockResolvedValue(undefined),
@@ -370,9 +371,13 @@ describe("OnboardingFlow", () => {
       />,
     );
 
-    // Join mode is on from the first screen — banner, no manual toggle.
-    expect(screen.getByText("Joining your family")).toBeOnTheScreen();
+    // The code screen is first — prefilled from the link.
+    const codeField = await screen.findByLabelText("Family code");
+    expect(codeField.props.value).toBe("FAM-AB12CD34");
+    fireEvent.press(screen.getByText("Continue"));
 
+    // Then the join-flavored sign-in screen.
+    expect(screen.getByText("Almost in!")).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue with email"));
     fireEvent.changeText(
       await screen.findByLabelText("Email"),
@@ -385,21 +390,18 @@ describe("OnboardingFlow", () => {
     );
     fireEvent.press(screen.getByText("Continue"));
 
-    // The code came in with the link — it's already in the field.
-    const codeField = await screen.findByLabelText("Family code");
-    expect(codeField.props.value).toBe("FAM-AB12CD34");
-
-    fireEvent.press(screen.getByText("Join family"));
+    // Auth done → the code redeems itself.
     await waitFor(() => {
       expect(onExistingAccount).toHaveBeenCalledWith("household-9");
     });
     expect(acceptInvite).toHaveBeenCalledWith("FAM-AB12CD34");
   });
 
-  // The co-parent path: "I'm joining my family" → sign in → enter the family
-  // code → land in the partner's household. Never reaches family setup, so a
-  // second household (and a second subscription) is never created.
-  it("joins the partner's household via a family code after sign-in", async () => {
+  // The co-parent path: "I'm joining my family" → enter the family code →
+  // sign in → land in the partner's household. Code comes first so the flow
+  // never reaches family setup — a second household (and a second
+  // subscription) is never created.
+  it("joins the partner's household via a family code entered before sign-in", async () => {
     const persist = jest.fn();
     const auth = {
       sendEmailCode: jest.fn().mockResolvedValue(undefined),
@@ -422,8 +424,16 @@ describe("OnboardingFlow", () => {
     );
 
     fireEvent.press(screen.getByText("I'm joining my family — I have a code"));
-    // Join mode is a loud banner, not a subtitle swap — co-parents missed it.
-    expect(screen.getByText("Joining your family")).toBeOnTheScreen();
+
+    // Code first — no sign-in yet.
+    fireEvent.changeText(
+      await screen.findByLabelText("Family code"),
+      "fam-ab12cd34",
+    );
+    fireEvent.press(screen.getByText("Continue"));
+
+    // Then sign in; the join banner keeps the context loud.
+    expect(screen.getByText("Almost in!")).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue with email"));
     fireEvent.changeText(
       await screen.findByLabelText("Email"),
@@ -436,18 +446,64 @@ describe("OnboardingFlow", () => {
     );
     fireEvent.press(screen.getByText("Continue"));
 
-    // Signed in with no household + join intent → the family-code step.
+    // Auth done → the earlier code redeems automatically.
+    await waitFor(() => {
+      expect(onExistingAccount).toHaveBeenCalledWith("household-9");
+    });
+    expect(acceptInvite).toHaveBeenCalledWith("fam-ab12cd34");
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  // A wrong code surfaces after sign-in (redeeming needs auth). The user is
+  // bounced back to the code screen; fixing it re-joins without re-auth.
+  it("returns to the code screen on a bad code and redeems the fixed one", async () => {
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+    const onExistingAccount = jest.fn();
+    const acceptInvite = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("Invite code not found or expired."))
+      .mockResolvedValueOnce({ householdId: "household-9" });
+
+    render(
+      <OnboardingFlow
+        auth={auth}
+        resolveSignedInHousehold={jest.fn().mockResolvedValue(null)}
+        onExistingAccount={onExistingAccount}
+        acceptInvite={acceptInvite}
+        initialJoinCode="FAM-TYPO0000"
+      />,
+    );
+
+    fireEvent.press(await screen.findByText("Continue"));
+    fireEvent.press(screen.getByText("Continue with email"));
     fireEvent.changeText(
-      await screen.findByLabelText("Family code"),
-      "fam-ab12cd34",
+      await screen.findByLabelText("Email"),
+      "wife@example.com",
+    );
+    fireEvent.press(screen.getByText("Email me a code"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Verification code"),
+      "ABCD1234",
+    );
+    fireEvent.press(screen.getByText("Continue"));
+
+    // Bad code → back on the code screen with the error, signed in.
+    expect(
+      await screen.findByText("Invite code not found or expired."),
+    ).toBeOnTheScreen();
+    fireEvent.changeText(
+      screen.getByLabelText("Family code"),
+      "FAM-AB12CD34",
     );
     fireEvent.press(screen.getByText("Join family"));
 
     await waitFor(() => {
       expect(onExistingAccount).toHaveBeenCalledWith("household-9");
     });
-    expect(acceptInvite).toHaveBeenCalledWith("fam-ab12cd34");
-    expect(persist).not.toHaveBeenCalled();
+    expect(acceptInvite).toHaveBeenLastCalledWith("FAM-AB12CD34");
   });
 
   it("persists the family only once if you go back from the promise and continue again", async () => {

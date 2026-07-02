@@ -1870,13 +1870,17 @@ function OBAuth({
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
   const joinGiving = bucketTokens.giving.ramp;
+  // The co-parent path is code-first: enter the family code, then sign in,
+  // then the code redeems automatically. Sign-in never comes first — a fresh
+  // co-parent must not wander into new-family setup (a second subscription).
   const [phase, setPhase] = useState<"choose" | "email" | "code" | "join">(
-    "choose",
+    initialJoinCode ? "join" : "choose",
   );
-  // The co-parent path: sign in first, then redeem the family code instead of
-  // setting up a new household (which would mean a second subscription).
   const [joinIntent, setJoinIntent] = useState(!!initialJoinCode);
   const [joinCode, setJoinCode] = useState(initialJoinCode ?? "");
+  // Sign-in already happened this session — a bad code bounces back to the
+  // code screen, and its Continue must redeem instead of re-asking for auth.
+  const [authed, setAuthed] = useState(false);
   const [email, setEmail] = useState("");
   const [codeValue, setCodeValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1899,13 +1903,17 @@ function OBAuth({
   }, [lockRemaining, phase, resendRemaining]);
 
   const continueAfterAuth = async () => {
-    // Auth is the first step, so there's no family data yet. A parent who
-    // already finished onboarding has a household → jump straight home;
-    // a joining co-parent enters their family code; everyone else heads into
-    // setup (their family is persisted at the end).
+    setAuthed(true);
+    // A parent who already finished onboarding has a household → jump straight
+    // home; a joining co-parent's code (entered before sign-in) redeems now;
+    // everyone else heads into setup (their family is persisted at the end).
     const householdId = await resolveSignedInHousehold?.();
     if (householdId) {
       onExistingAccount?.(householdId);
+      return;
+    }
+    if (joinIntent && acceptInvite && joinCode.trim().length > 0) {
+      await redeemJoinCode();
       return;
     }
     if (joinIntent && acceptInvite) {
@@ -1917,17 +1925,33 @@ function OBAuth({
   };
 
   const redeemJoinCode = async () => {
-    if (busy || joinCode.trim().length === 0) return;
-    setBusy(true);
     setError(null);
     try {
       const accepted = await acceptInvite!(joinCode);
       onExistingAccount?.(accepted.householdId);
     } catch (e) {
+      // Bad or expired code — back to the code screen to fix it. They're
+      // signed in now, so the retry redeems straight away.
+      setPhase("join");
       setError(
         errorMessage(e) ??
           "That code didn't work. Check it with your partner and try again.",
       );
+    }
+  };
+
+  // Code screen's Continue: pre-auth it leads to sign-in; post-auth (a bad
+  // code bounced them back here) it redeems immediately.
+  const continueWithJoinCode = async () => {
+    if (busy || joinCode.trim().length === 0) return;
+    setError(null);
+    if (!authed) {
+      setPhase("choose");
+      return;
+    }
+    setBusy(true);
+    try {
+      await redeemJoinCode();
     } finally {
       setBusy(false);
     }
@@ -2035,6 +2059,7 @@ function OBAuth({
   if (phase === "choose") {
     return (
       <OBShell
+        onBack={joinIntent ? () => setPhase("join") : undefined}
         footer={<LegalConsent />}
       >
         <View style={{ alignItems: "center", paddingTop: 64, marginBottom: 36 }}>
@@ -2091,7 +2116,7 @@ function OBAuth({
             <Text style={{ fontSize: 26 }}>👨‍👩‍👧</Text>
             <View style={{ flex: 1 }}>
               <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
-                Joining your family
+                Almost in!
               </Text>
               <Text
                 style={[
@@ -2099,8 +2124,8 @@ function OBAuth({
                   { color: scheme.fgMuted, marginTop: 2 },
                 ]}
               >
-                Step 1: sign in below — any option works.{"\n"}Step 2: enter the
-                family code you were sent.
+                Code {joinCode.trim().toUpperCase()} is ready — pick any
+                sign-in below and you&apos;ll join your family right away.
               </Text>
             </View>
           </View>
@@ -2125,7 +2150,13 @@ function OBAuth({
           ) : (
             <>
               {acceptInvite ? (
-                <OBSecondary onPress={() => setJoinIntent(true)}>
+                <OBSecondary
+                  onPress={() => {
+                    setError(null);
+                    setJoinIntent(true);
+                    setPhase("join");
+                  }}
+                >
                   I&apos;m joining my family — I have a code
                 </OBSecondary>
               ) : null}
@@ -2140,20 +2171,35 @@ function OBAuth({
     );
   }
 
-  // Co-parent join: signed in, no household yet — redeem the family code.
+  // Co-parent join, code first: the code is checked in hand before any
+  // sign-in, so a joining parent can never drift into new-family setup.
   if (phase === "join") {
     return (
       <OBShell
-        onBack={() => setPhase("choose")}
+        onBack={() => {
+          setError(null);
+          setJoinIntent(false);
+          setPhase("choose");
+        }}
         footer={
           <>
             <OBPrimary
-              onPress={redeemJoinCode}
+              onPress={continueWithJoinCode}
               disabled={busy || joinCode.trim().length === 0}
             >
-              {busy ? "Joining..." : "Join family"}
+              {busy ? "Joining..." : authed ? "Join family" : "Continue"}
             </OBPrimary>
-            <OBSecondary onPress={onNext}>
+            <OBSecondary
+              onPress={() => {
+                if (authed) {
+                  onNext();
+                } else {
+                  setError(null);
+                  setJoinIntent(false);
+                  setPhase("choose");
+                }
+              }}
+            >
               No code? Set up a new family
             </OBSecondary>
           </>
@@ -2161,7 +2207,11 @@ function OBAuth({
       >
         <OBTitle
           title="Join your family."
-          subtitle="Enter the invite code your partner shared — it looks like FAM-1A2B3C4D."
+          subtitle={
+            authed
+              ? "Enter the invite code your partner shared — it looks like FAM-1A2B3C4D."
+              : "Enter the invite code your partner shared — it looks like FAM-1A2B3C4D. You'll pick how to sign in right after."
+          }
         />
         <OBField
           label="Family code"
