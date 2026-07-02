@@ -506,12 +506,12 @@ export default function ParentHomeRoute() {
             params: { householdId },
           })
         }
-        onCreateParentInvite={async (email) => {
+        onCreateParentInvite={async () => {
           if (!householdId) {
             throw new Error("Household is missing.");
           }
 
-          const invite = await createParentInvite({ householdId, email });
+          const invite = await createParentInvite({ householdId });
           await reload();
           return invite;
         }}

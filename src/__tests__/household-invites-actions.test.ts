@@ -6,7 +6,7 @@ describe("household invite actions", () => {
       rpc: jest.fn().mockResolvedValue({
         data: {
           id: "invite-1",
-          email: "step@example.com",
+          email: null,
           role: "parent_admin",
           status: "pending",
           expires_at: "2026-07-07T12:00:00Z",
@@ -20,11 +20,10 @@ describe("household invite actions", () => {
     await expect(
       createHouseholdInviteActions(client).createInvite({
         householdId: "household-1",
-        email: " Step@Example.com ",
       }),
     ).resolves.toEqual({
       id: "invite-1",
-      email: "step@example.com",
+      email: null,
       role: "parent_admin",
       status: "pending",
       expiresAt: "2026-07-07T12:00:00Z",
@@ -35,7 +34,6 @@ describe("household invite actions", () => {
 
     expect(client.rpc).toHaveBeenCalledWith("create_household_invite", {
       input_household_id: "household-1",
-      input_email: "step@example.com",
     });
   });
 
