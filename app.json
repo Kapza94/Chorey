@@ -130,6 +130,12 @@
           "disableAutoUpload": true
         }
       ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.204899407391-vv3r6lvqtq2gmudp7bjgj94hnj46sq99"
+        }
+      ],
       "expo-localization"
     ],
     "experiments": {
