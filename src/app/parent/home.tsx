@@ -71,7 +71,7 @@ import {
   type ParentIdentity,
 } from "@/features/auth/parent-identity-actions";
 import { pickAndUploadParentAvatar } from "@/features/account/default-avatar-actions";
-import { notifyChildOfNewChore } from "@/features/notifications/default-notification-actions";
+import { registerParentForPushNotifications } from "@/features/notifications/default-notification-actions";
 import {
   approveChoreForHousehold,
   createChoreForHousehold,
@@ -157,6 +157,9 @@ export default function ParentHomeRoute() {
 
   useEffect(() => {
     void getParentIdentity().then(setIdentity);
+    // Register this device for "<kid> finished a chore" pushes. Best-effort
+    // and idempotent — no-op on simulator or denied permission.
+    void registerParentForPushNotifications();
   }, []);
 
   useEffect(() => {
@@ -716,12 +719,9 @@ export default function ParentHomeRoute() {
             );
           }
 
-          // Nudge each assigned child's devices (best-effort, fire-and-forget).
-          void Promise.all(
-            targetIds.map((childProfileId) =>
-              notifyChildOfNewChore({ childProfileId, title }),
-            ),
-          );
+          // The "new chore" push now fires from a DB trigger (see the
+          // chore_push_notifications migration) so every write path notifies
+          // exactly once — no client-side send, no double ping.
 
           await reload();
         }}
