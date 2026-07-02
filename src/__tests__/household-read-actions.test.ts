@@ -1,9 +1,11 @@
 import { createHouseholdReadActions } from "@/features/household/household-actions";
 
 describe("createHouseholdReadActions.listHouseholdIds", () => {
-  it("returns the signed-in parent's household ids oldest-first", async () => {
+  // Most recently JOINED household wins: a co-parent who accepts a family
+  // invite must land in that family, not a household they created earlier.
+  it("returns the signed-in parent's household ids newest-membership-first", async () => {
     const order = jest.fn().mockResolvedValue({
-      data: [{ id: "h-old" }, { id: "h-new" }],
+      data: [{ household_id: "h-joined" }, { household_id: "h-own" }],
       error: null,
     });
     const select = jest.fn(() => ({ order }));
@@ -11,10 +13,10 @@ describe("createHouseholdReadActions.listHouseholdIds", () => {
 
     const ids = await createHouseholdReadActions(client as any).listHouseholdIds();
 
-    expect(client.from).toHaveBeenCalledWith("households");
-    expect(select).toHaveBeenCalledWith("id");
-    expect(order).toHaveBeenCalledWith("created_at", { ascending: true });
-    expect(ids).toEqual(["h-old", "h-new"]);
+    expect(client.from).toHaveBeenCalledWith("household_members");
+    expect(select).toHaveBeenCalledWith("household_id, created_at");
+    expect(order).toHaveBeenCalledWith("created_at", { ascending: false });
+    expect(ids).toEqual(["h-joined", "h-own"]);
   });
 
   it("returns an empty list when the parent has no household", async () => {

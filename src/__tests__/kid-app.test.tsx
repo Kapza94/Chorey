@@ -49,7 +49,22 @@ describe("KidApp shell", () => {
     await waitFor(() => expect(onSubmitChore).toHaveBeenCalledWith("c1", null));
   });
 
-  it("opens a waiting chore and forwards confirmed undo", async () => {
+  it("closes the chore modal immediately after marking a chore finished", async () => {
+    const onSubmitChore = jest.fn(() => new Promise<void>(() => undefined));
+    render(<KidApp {...baseProps} onSubmitChore={onSubmitChore} />);
+
+    fireEvent.press(screen.getByLabelText("Make the bed"));
+    expect(screen.getByLabelText("Close chore")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Mark as finished"));
+
+    expect(onSubmitChore).toHaveBeenCalledWith("c1", null);
+    await waitFor(() => {
+      expect(screen.queryByLabelText("Close chore")).toBeNull();
+    });
+  });
+
+  it("undoes a waiting chore from the chore row", async () => {
     const onUndoChore = jest.fn().mockResolvedValue(undefined);
     render(
       <KidApp
@@ -66,11 +81,10 @@ describe("KidApp shell", () => {
       />,
     );
 
-    fireEvent.press(screen.getByLabelText("Walk the dog"));
-    fireEvent.press(screen.getByLabelText("Undo finished"));
-    fireEvent.press(screen.getByLabelText("Confirm move to To do"));
+    fireEvent.press(screen.getByLabelText("Undo Walk the dog"));
 
     await waitFor(() => expect(onUndoChore).toHaveBeenCalledWith("c2"));
+    expect(screen.queryByLabelText("Close chore")).toBeNull();
   });
 
   it("shows a Request button on an affordable wish and reports it", () => {

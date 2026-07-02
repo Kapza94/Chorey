@@ -97,21 +97,28 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000f0003', true);
 
-select throws_ok(
-  $$ select public.accept_household_invite((select token from created_invites where email = 'other-target@example.com')) $$,
-  'Invite must be accepted by the invited email address.'
+-- Possession-based acceptance (like kid access codes): any signed-in parent
+-- holding the code may join — the invited email is a label, not a lock.
+-- (An email match would permanently break Sign in with Apple + Hide My Email.)
+select is(
+  (select household_id from public.accept_household_invite(
+    (select token from created_invites where email = 'other-target@example.com')
+  )),
+  '00000000-0000-0000-0000-0000000f1001'::uuid,
+  'any signed-in parent with the code can join (no email lock)'
 );
 
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000f0002', true);
 
+-- Codes are forgiving to type: lowercase, spaces, and a stray dash all land.
 select is(
   (select household_id from public.accept_household_invite(
-    (select token from created_invites where email = 'coparent@example.com')
+    lower(' ' || replace((select token from created_invites where email = 'coparent@example.com'), '-', ' - ') || ' ')
   )),
   '00000000-0000-0000-0000-0000000f1001'::uuid,
-  'invited parent accepts and joins the household'
+  'invited parent accepts with a sloppily-typed code and joins the household'
 );
 
 select is(

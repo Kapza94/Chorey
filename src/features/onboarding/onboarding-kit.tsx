@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Children, isValidElement, useEffect, useState } from "react";
 import {
   Keyboard,
   Platform,
@@ -11,7 +11,7 @@ import {
   type ReturnKeyTypeOptions,
   type TextInputProps,
 } from "react-native";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, Minus, Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useChoreyTheme } from "@/theme/use-chorey-theme";
@@ -35,6 +35,14 @@ export function OBShell({
 }) {
   const { scheme } = useChoreyTheme();
   const insets = useSafeAreaInsets();
+  const childArray = Children.toArray(children);
+  const title =
+    childArray.length > 0 &&
+    isValidElement(childArray[0]) &&
+    childArray[0].type === OBTitle
+      ? childArray[0]
+      : null;
+  const bodyChildren = title ? childArray.slice(1) : childArray;
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const footerBottomPadding =
     keyboardHeight > 0 ? keyboardHeight + 12 : Math.max(insets.bottom + 16, 30);
@@ -76,29 +84,32 @@ export function OBShell({
           <OBProgress index={progress.index} total={progress.total} />
         ) : null}
       </View>
+      {title ? (
+        <View style={{ paddingHorizontal: 26, paddingTop: 10 }}>{title}</View>
+      ) : null}
       {scroll ? (
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
             paddingHorizontal: 26,
-            paddingTop: 10,
+            paddingTop: title ? 0 : 10,
             paddingBottom: 20,
           }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
-          {children}
+          {bodyChildren}
         </ScrollView>
       ) : (
         <View
           style={{
             flex: 1,
             paddingHorizontal: 26,
-            paddingTop: 10,
+            paddingTop: title ? 0 : 10,
             paddingBottom: 20,
           }}
         >
-          {children}
+          {bodyChildren}
         </View>
       )}
       {footer ? (
@@ -367,7 +378,9 @@ export function OBField({
             // text center together on iOS — padding makes the caret float up.
             height: 52,
             paddingVertical: 0,
-            paddingLeft: prefix ? 28 : 16,
+            // Clear the fixed prefix whatever its length ("$" or "CHOREY-").
+            // ~9.6px/char approximates the semibold 16pt prefix width.
+            paddingLeft: prefix ? 16 + Math.ceil(prefix.length * 9.6) + 2 : 16,
             paddingRight: 16,
             fontFamily: typography.family.body.regular,
             fontSize: 16,
@@ -394,6 +407,7 @@ export function OBStepButton({
 }) {
   const { palette } = useChoreyTheme();
   const ramp = bucketTokens[tone].ramp;
+  const Icon = symbol === "+" ? Plus : Minus;
   return (
     <Pressable
       accessibilityRole="button"
@@ -410,16 +424,7 @@ export function OBStepButton({
         justifyContent: "center",
       }}
     >
-      <Text
-        style={{
-          fontSize: 18,
-          fontWeight: "700",
-          color: ramp[800],
-          lineHeight: 20,
-        }}
-      >
-        {symbol}
-      </Text>
+      <Icon size={16} strokeWidth={3} color={ramp[800]} />
     </Pressable>
   );
 }

@@ -29,6 +29,7 @@ describe("household invite actions", () => {
       status: "pending",
       expiresAt: "2026-07-07T12:00:00Z",
       createdAt: "2026-06-30T12:00:00Z",
+      inviteCode: "raw-token",
       inviteUrl: "chorey://parent/invite?token=raw-token",
     });
 

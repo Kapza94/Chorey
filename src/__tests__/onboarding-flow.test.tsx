@@ -242,6 +242,8 @@ describe("OnboardingFlow", () => {
     // 40 / 40 / 20 is the recommended default.
     expect(screen.getAllByText("40%")).toHaveLength(2);
     expect(screen.getByText("20%")).toBeOnTheScreen();
+    expect(screen.queryByText("+")).toBeNull();
+    expect(screen.queryByText("−")).toBeNull();
 
     // Spend is adjustable; Savings absorbs the change.
     fireEvent.press(screen.getByLabelText("Increase Spend"));
@@ -254,6 +256,19 @@ describe("OnboardingFlow", () => {
     fireEvent.press(screen.getByLabelText("Decrease Give")); // floored at 10
     expect(screen.getByText("10%")).toBeOnTheScreen();
     expect(screen.queryByText("5%")).toBeNull();
+  });
+
+  it("shows the United States as the United States of America", () => {
+    render(<OnboardingFlow initialStep="p_family" />);
+
+    fireEvent.press(screen.getByLabelText("Choose your country"));
+    fireEvent.changeText(
+      screen.getByLabelText("Search countries"),
+      "United States",
+    );
+
+    expect(screen.getByLabelText("United States of America")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("United States")).toBeNull();
   });
 
   it("keeps a typed budget amount when the parent taps Continue", async () => {
@@ -333,6 +348,58 @@ describe("OnboardingFlow", () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
+  // The co-parent path: "I'm joining my family" → sign in → enter the family
+  // code → land in the partner's household. Never reaches family setup, so a
+  // second household (and a second subscription) is never created.
+  it("joins the partner's household via a family code after sign-in", async () => {
+    const persist = jest.fn();
+    const auth = {
+      sendEmailCode: jest.fn().mockResolvedValue(undefined),
+      verifyEmailCode: jest.fn().mockResolvedValue(undefined),
+    };
+    const resolveSignedInHousehold = jest.fn().mockResolvedValue(null);
+    const onExistingAccount = jest.fn();
+    const acceptInvite = jest
+      .fn()
+      .mockResolvedValue({ householdId: "household-9" });
+
+    render(
+      <OnboardingFlow
+        auth={auth}
+        persist={persist}
+        resolveSignedInHousehold={resolveSignedInHousehold}
+        onExistingAccount={onExistingAccount}
+        acceptInvite={acceptInvite}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("I'm joining my family — I have a code"));
+    fireEvent.press(screen.getByText("Continue with email"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Email"),
+      "wife@example.com",
+    );
+    fireEvent.press(screen.getByText("Email me a code"));
+    fireEvent.changeText(
+      await screen.findByLabelText("Verification code"),
+      "ABCD1234",
+    );
+    fireEvent.press(screen.getByText("Continue"));
+
+    // Signed in with no household + join intent → the family-code step.
+    fireEvent.changeText(
+      await screen.findByLabelText("Family code"),
+      "fam-ab12cd34",
+    );
+    fireEvent.press(screen.getByText("Join family"));
+
+    await waitFor(() => {
+      expect(onExistingAccount).toHaveBeenCalledWith("household-9");
+    });
+    expect(acceptInvite).toHaveBeenCalledWith("fam-ab12cd34");
+    expect(persist).not.toHaveBeenCalled();
+  });
+
   it("persists the family only once if you go back from the promise and continue again", async () => {
     const persist = jest.fn().mockResolvedValue({ householdId: "h1", kids: [] });
     render(<OnboardingFlow initialStep="p_causes" persist={persist} />);
@@ -351,6 +418,44 @@ describe("OnboardingFlow", () => {
 
     // The household must not be created twice.
     expect(persist).toHaveBeenCalledTimes(1);
+  });
+
+  // The parent already named the child — a resolved code greets them by that
+  // name and never shows a name field. Kids type only the part after CHOREY-.
+  it("greets the kid with the parent-given name from the join code", async () => {
+    const onComplete = jest.fn();
+    const validateKidCode = jest
+      .fn()
+      .mockResolvedValue({ status: "ok", childName: "Mia" });
+    render(
+      <OnboardingFlow
+        initialStep="k_code"
+        onComplete={onComplete}
+        validateKidCode={validateKidCode}
+      />,
+    );
+
+    // The field holds only the payload; CHOREY- is a fixed prefix.
+    fireEvent.changeText(screen.getByLabelText("Join code"), "ab12cd34");
+    fireEvent.press(screen.getByText("Join family"));
+
+    // The full code is validated, the name comes back from the database.
+    await waitFor(() => {
+      expect(validateKidCode).toHaveBeenCalledWith("CHOREY-AB12CD34");
+    });
+    expect(await screen.findByText("Hey, Mia!")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Your name")).toBeNull();
+
+    fireEvent.press(screen.getByText("That's me"));
+    fireEvent.press(screen.getByText("Start earning"));
+
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: "kid",
+        code: "CHOREY-AB12CD34",
+        kidName: "Mia",
+      }),
+    );
   });
 
   it("gates the kid branch on the join code and reports it", () => {

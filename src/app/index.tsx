@@ -9,6 +9,7 @@ import { chooseSubscriptionPlan } from "@/features/entitlements/default-subscrip
 import { createRevenueCatGateway } from "@/features/entitlements/default-purchase-actions";
 import type { PlanOffer } from "@/features/entitlements/purchases";
 import { getPrimaryHouseholdId } from "@/features/household/default-household-actions";
+import { acceptParentInvite } from "@/features/household/default-household-invite-actions";
 import { OnboardingFlow, type OnboardingAuth } from "@/features/onboarding/onboarding-flow";
 import { persistOnboardingForSignedInParent } from "@/features/onboarding/default-onboarding-persistence";
 import { supabase } from "@/lib/supabase";
@@ -186,15 +187,18 @@ export default function IndexRoute() {
       onExistingAccount={(householdId) => {
         router.replace({ pathname: "/parent/home", params: { householdId } });
       }}
+      acceptInvite={acceptParentInvite}
       validateKidCode={async (code) => {
         try {
-          await resolveChildAccessCode(code);
-          return "ok";
+          // The parent already named this child — the join code carries the
+          // name into the kid's session so they're greeted, never asked.
+          const resolved = await resolveChildAccessCode(code);
+          return { status: "ok", childName: resolved.childName };
         } catch (e) {
           // "not found" is a wrong code; anything else (offline, RPC down) is
           // unknown, so we let the kid through and resolve it on the home screen.
           const message = e instanceof Error ? e.message : "";
-          return /not found/i.test(message) ? "bad" : "unknown";
+          return { status: /not found/i.test(message) ? "bad" : "unknown" };
         }
       }}
       onComplete={(result, persisted) => {

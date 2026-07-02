@@ -16,6 +16,7 @@ import {
 } from "@/features/parent-app/parent-payments-screen";
 import {
   ParentChoresScreen,
+  AddChoreSheet,
   type ChoreAssignee,
   type ChoreBoardItem,
   type ChoreLibraryItem,
@@ -36,9 +37,9 @@ import type {
   HouseholdWishlistItem,
   WishNote,
 } from "@/features/spend-wishlist/spend-wishlist-actions";
-import type { CurrencyCode } from "@/features/money/currency";
+import { DEFAULT_CURRENCY, type CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
-import type { Split } from "@/features/money/split";
+import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
 import type { HouseholdInvite } from "@/features/household/household-invite-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
@@ -176,6 +177,9 @@ export function ParentApp({
   const { scheme } = useChoreyTheme();
   const [tab, setTab] = useState<ParentTab>(initialTab);
   const [accountOpen, setAccountOpen] = useState(false);
+  // The New Chore sheet is hoisted here so the dock's raised "+" can open it
+  // from any tab (it's a Modal, so it layers over whatever's on screen).
+  const [addChoreOpen, setAddChoreOpen] = useState(false);
 
   // The same identity affordance rides the top-right of every tab's header.
   const headerRight = account ? (
@@ -273,7 +277,23 @@ export function ParentApp({
       <ParentTabBar
         active={tab}
         onChange={setTab}
+        onAdd={() => setAddChoreOpen(true)}
         badges={{ chores: choresWaiting, kids: kidsWaiting }}
+      />
+
+      <AddChoreSheet
+        visible={addChoreOpen}
+        currency={currency ?? DEFAULT_CURRENCY}
+        split={split ?? DEFAULT_SPLIT}
+        assignees={assignees ?? []}
+        recurringLocked={recurringLocked ?? false}
+        onClose={() => setAddChoreOpen(false)}
+        onConfirm={(input) => {
+          onAddChore?.(input);
+          setAddChoreOpen(false);
+          // Land on the Chores tab so the parent sees the chore they just added.
+          setTab("chores");
+        }}
       />
 
       {account ? (
