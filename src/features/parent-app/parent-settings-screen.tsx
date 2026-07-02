@@ -17,7 +17,6 @@ import {
   KeyRound,
   LifeBuoy,
   LogOut,
-  MailPlus,
   MessageSquarePlus,
   Monitor,
   Moon,
@@ -25,6 +24,7 @@ import {
   Shield,
   Sun,
   Trash2,
+  UserPlus,
   X,
 } from "lucide-react-native";
 
@@ -77,7 +77,7 @@ type Props = {
   /** one-line status, e.g. "Free trial · ends Jun 25, 2026" */
   subscriptionLabel?: string;
   onManageSubscription?: () => void;
-  onCreateParentInvite?: (email: string) => Promise<HouseholdInvite>;
+  onCreateParentInvite?: () => Promise<HouseholdInvite>;
   onCancelParentInvite?: (inviteId: string) => Promise<void> | void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
@@ -640,25 +640,27 @@ function AccountActionRow({
   );
 }
 
+// Fixed by the App Store Connect app record (ascAppId in eas.json) — the URL
+// is dead until the app is live, then works forever without a code change.
+const APP_STORE_URL = "https://apps.apple.com/app/id6780607393";
+
 function ParentInviteCard({
   invites,
   onCreateInvite,
   onCancelInvite,
 }: {
   invites: HouseholdInvite[];
-  onCreateInvite?: (email: string) => Promise<HouseholdInvite>;
+  onCreateInvite?: () => Promise<HouseholdInvite>;
   onCancelInvite?: (inviteId: string) => Promise<void> | void;
 }) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
-  const [email, setEmail] = useState("");
   const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const activeInvites = invites.filter((invite) => invite.status === "pending");
 
   const createInvite = async () => {
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !onCreateInvite) {
+    if (!onCreateInvite) {
       return;
     }
 
@@ -666,9 +668,8 @@ function ParentInviteCard({
     setMessage(null);
     setCreatedCode(null);
     try {
-      const invite = await onCreateInvite(trimmed);
+      const invite = await onCreateInvite();
       setCreatedCode(invite.inviteCode ?? null);
-      setEmail("");
       // No email is sent — the code travels by text/voice, like a kid code.
       setMessage("Code ready — share it with them however you like.");
     } catch (error) {
@@ -692,7 +693,7 @@ function ParentInviteCard({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <MailPlus size={17} color={scheme.fgMuted} strokeWidth={2} />
+        <UserPlus size={17} color={scheme.fgMuted} strokeWidth={2} />
         <View style={{ flex: 1 }}>
           <Text style={[typography.text.label, { color: scheme.fg }]}>
             Invite another parent
@@ -703,44 +704,17 @@ function ParentInviteCard({
         </View>
       </View>
 
-      <TextInput
-        accessibilityLabel="Co-parent email"
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-        placeholder="parent@example.com"
-        placeholderTextColor={scheme.fgFaint}
-        style={{
-          height: 48,
-          borderRadius: radius.md,
-          borderWidth: toybox.borderWidth,
-          borderColor: scheme.toy.border,
-          backgroundColor: scheme.bgPage,
-          paddingHorizontal: 14,
-          // Fixed height + centered text vertically centres the placeholder and
-          // typed value on both platforms (Android otherwise top-aligns).
-          paddingVertical: 0,
-          textAlignVertical: "center",
-          includeFontPadding: false,
-          color: scheme.fg,
-          fontFamily: typography.family.body.regular,
-          fontSize: 15,
-        }}
-      />
-
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Create co-parent invite"
-        accessibilityState={{ disabled: sending || !email.trim() || !onCreateInvite }}
-        disabled={sending || !email.trim() || !onCreateInvite}
+        accessibilityLabel="Create family code"
+        accessibilityState={{ disabled: sending || !onCreateInvite }}
+        disabled={sending || !onCreateInvite}
         onPress={createInvite}
         style={({ pressed }) => ({
           alignItems: "center",
           borderRadius: radius.pill,
           backgroundColor: pressed ? palette.accent[800] : palette.accent[600],
-          opacity: sending || !email.trim() || !onCreateInvite ? 0.45 : 1,
+          opacity: sending || !onCreateInvite ? 0.45 : 1,
           paddingVertical: 12,
         })}
       >
@@ -755,7 +729,7 @@ function ParentInviteCard({
           accessibilityLabel="Share co-parent invite"
           onPress={() =>
             Share.share({
-              message: `Join our family on Chorey! 🧸\n\nYour family code: ${createdCode}\n\nDownload Chorey, tap "I'm joining my family", sign in, and enter the code. It expires in 7 days.`,
+              message: `Join our family on Chorey! 🧸\n\nYour family code: ${createdCode}\n\nGet the app: ${APP_STORE_URL}\n\nSign in as a parent, tap "I'm joining my family", and enter the code. It expires in 7 days.`,
             })
           }
           style={{
@@ -809,11 +783,11 @@ function ParentInviteCard({
                 numberOfLines={1}
                 style={[typography.text.caption, { flex: 1, color: scheme.fgMuted }]}
               >
-                Pending: {invite.email}
+                Pending family code{invite.email ? ` · ${invite.email}` : ""}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Cancel invite for ${invite.email}`}
+                accessibilityLabel="Cancel pending family code"
                 hitSlop={8}
                 onPress={() => onCancelInvite?.(invite.id)}
               >

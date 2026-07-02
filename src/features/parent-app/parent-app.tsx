@@ -97,7 +97,7 @@ type Props = {
   parentInvites?: HouseholdInvite[];
   subscriptionLabel?: string;
   onManageSubscription?: () => void;
-  onCreateParentInvite?: (email: string) => Promise<HouseholdInvite>;
+  onCreateParentInvite?: () => Promise<HouseholdInvite>;
   onCancelParentInvite?: (inviteId: string) => Promise<void> | void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;

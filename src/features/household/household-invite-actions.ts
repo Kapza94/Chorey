@@ -9,7 +9,8 @@ export type HouseholdInviteStatus = "pending" | "accepted" | "cancelled" | "expi
 
 export type HouseholdInvite = {
   id: string;
-  email: string;
+  /** Legacy display label — invites created before family codes carried one. */
+  email: string | null;
   role: "parent_admin";
   status: HouseholdInviteStatus;
   expiresAt: string;
@@ -27,10 +28,6 @@ export type AcceptedHouseholdInvite = {
 
 const INVITE_LINK_BASE = "chorey://parent/invite";
 
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
-
 function inviteUrl(token?: string | null) {
   return token ? `${INVITE_LINK_BASE}?token=${encodeURIComponent(token)}` : undefined;
 }
@@ -38,7 +35,7 @@ function inviteUrl(token?: string | null) {
 function mapInvite(row: any): HouseholdInvite {
   const invite: HouseholdInvite = {
     id: row.id,
-    email: row.email,
+    email: row.email ?? null,
     role: row.role,
     status: row.status,
     expiresAt: row.expires_at,
@@ -67,16 +64,9 @@ export function createHouseholdInviteActions(client: RpcClient) {
   return {
     async createInvite(input: {
       householdId: string;
-      email: string;
     }): Promise<HouseholdInvite> {
-      const email = normalizeEmail(input.email);
-      if (!email) {
-        throw new Error("Email is required.");
-      }
-
       const result = await client.rpc("create_household_invite", {
         input_household_id: input.householdId,
-        input_email: email,
       });
 
       if (result.error) {

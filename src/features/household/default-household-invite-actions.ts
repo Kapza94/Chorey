@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabase";
 
 export async function createParentInvite(input: {
   householdId: string;
-  email: string;
 }): Promise<HouseholdInvite> {
   return createHouseholdInviteActions(supabase).createInvite(input);
 }
