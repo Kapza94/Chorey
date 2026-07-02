@@ -244,6 +244,7 @@ export function OnboardingFlow({
   resolveSignedInHousehold,
   onExistingAccount,
   acceptInvite,
+  initialJoinCode,
   validateKidCode,
 }: {
   onComplete?: (
@@ -265,6 +266,8 @@ export function OnboardingFlow({
   onExistingAccount?: (householdId: string) => void;
   /** Redeem a family invite code (co-parent join path on the landing step). */
   acceptInvite?: (code: string) => Promise<{ householdId: string }>;
+  /** Family code arriving via a share link — opens in join mode, prefilled. */
+  initialJoinCode?: string;
   /**
    * Check a kid's join code before the avatar step so a typo is caught up front
    * instead of after they've picked a colour. On "ok" it carries the child's
@@ -336,6 +339,7 @@ export function OnboardingFlow({
           resolveSignedInHousehold={resolveSignedInHousehold}
           onExistingAccount={onExistingAccount}
           acceptInvite={acceptInvite}
+          initialJoinCode={initialJoinCode}
           onNext={() => setStep("idea")}
           onKid={() => setStep("k_code")}
         />
@@ -1850,6 +1854,7 @@ function OBAuth({
   resolveSignedInHousehold,
   onExistingAccount,
   acceptInvite,
+  initialJoinCode,
   onNext,
   onKid,
 }: {
@@ -1858,6 +1863,8 @@ function OBAuth({
   onExistingAccount?: (householdId: string) => void;
   /** Redeem a family invite code (FAM-XXXXXXXX) after sign-in. */
   acceptInvite?: (code: string) => Promise<{ householdId: string }>;
+  /** Code carried in by a share link — start in join mode with it filled in. */
+  initialJoinCode?: string;
   onNext: () => void;
   onKid: () => void;
 }) {
@@ -1868,8 +1875,8 @@ function OBAuth({
   );
   // The co-parent path: sign in first, then redeem the family code instead of
   // setting up a new household (which would mean a second subscription).
-  const [joinIntent, setJoinIntent] = useState(false);
-  const [joinCode, setJoinCode] = useState("");
+  const [joinIntent, setJoinIntent] = useState(!!initialJoinCode);
+  const [joinCode, setJoinCode] = useState(initialJoinCode ?? "");
   const [email, setEmail] = useState("");
   const [codeValue, setCodeValue] = useState("");
   const [busy, setBusy] = useState(false);

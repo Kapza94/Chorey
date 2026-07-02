@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { createDefaultParentAuthActions } from "@/features/auth/default-parent-auth-actions";
@@ -19,6 +19,12 @@ import { useChoreyTheme } from "@/theme/use-chorey-theme";
 export default function IndexRoute() {
   const { scheme, palette } = useChoreyTheme();
   const router = useRouter();
+  // A family code forwarded by /join (share link) — opens onboarding in join
+  // mode with the code prefilled.
+  const params = useLocalSearchParams<{ joinCode?: string }>();
+  const joinCode = Array.isArray(params.joinCode)
+    ? params.joinCode[0]
+    : params.joinCode;
   const [sessionChecked, setSessionChecked] = useState(false);
   const [resumeOnboarding, setResumeOnboarding] = useState(false);
   const [launchError, setLaunchError] = useState(false);
@@ -59,10 +65,11 @@ export default function IndexRoute() {
         if (!active) return;
 
         if (!session) {
-          // No parent signed in — a kid may still own this device.
+          // No parent signed in — a kid may still own this device. A join
+          // link overrides the kid shortcut: the tapping adult wants join mode.
           const childSession = loadChildSession();
 
-          if (childSession) {
+          if (childSession && !joinCode) {
             router.replace("/child/home");
             return;
           }
@@ -96,7 +103,7 @@ export default function IndexRoute() {
     return () => {
       active = false;
     };
-  }, [launchAttempt, router]);
+  }, [joinCode, launchAttempt, router]);
 
   if (launchError) {
     return (
@@ -188,6 +195,7 @@ export default function IndexRoute() {
         router.replace({ pathname: "/parent/home", params: { householdId } });
       }}
       acceptInvite={acceptParentInvite}
+      initialJoinCode={joinCode}
       validateKidCode={async (code) => {
         try {
           // The parent already named this child — the join code carries the
