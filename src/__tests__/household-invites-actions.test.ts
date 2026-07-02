@@ -6,7 +6,7 @@ describe("household invite actions", () => {
       rpc: jest.fn().mockResolvedValue({
         data: {
           id: "invite-1",
-          email: "step@example.com",
+          email: null,
           role: "parent_admin",
           status: "pending",
           expires_at: "2026-07-07T12:00:00Z",
@@ -20,11 +20,10 @@ describe("household invite actions", () => {
     await expect(
       createHouseholdInviteActions(client).createInvite({
         householdId: "household-1",
-        email: " Step@Example.com ",
       }),
     ).resolves.toEqual({
       id: "invite-1",
-      email: "step@example.com",
+      email: null,
       role: "parent_admin",
       status: "pending",
       expiresAt: "2026-07-07T12:00:00Z",
@@ -35,7 +34,6 @@ describe("household invite actions", () => {
 
     expect(client.rpc).toHaveBeenCalledWith("create_household_invite", {
       input_household_id: "household-1",
-      input_email: "step@example.com",
     });
   });
 
@@ -83,6 +81,53 @@ describe("household invite actions", () => {
     expect(client.rpc).toHaveBeenNthCalledWith(2, "cancel_household_invite", {
       input_household_id: "household-1",
       input_invite_id: "invite-1",
+    });
+  });
+
+  it("lists the household's parents with a marker for the caller", async () => {
+    const client = {
+      rpc: jest.fn().mockResolvedValue({
+        data: [
+          {
+            user_id: "u1",
+            display_name: "Luka",
+            parent_label: "Dad",
+            joined_at: "2026-06-01T12:00:00Z",
+            is_you: true,
+          },
+          {
+            user_id: "u2",
+            display_name: null,
+            parent_label: null,
+            joined_at: "2026-07-01T12:00:00Z",
+            is_you: false,
+          },
+        ],
+        error: null,
+      }),
+    };
+
+    await expect(
+      createHouseholdInviteActions(client).listParents("household-1"),
+    ).resolves.toEqual([
+      {
+        userId: "u1",
+        displayName: "Luka",
+        parentLabel: "Dad",
+        joinedAt: "2026-06-01T12:00:00Z",
+        isYou: true,
+      },
+      {
+        userId: "u2",
+        displayName: null,
+        parentLabel: null,
+        joinedAt: "2026-07-01T12:00:00Z",
+        isYou: false,
+      },
+    ]);
+
+    expect(client.rpc).toHaveBeenCalledWith("list_household_parents", {
+      input_household_id: "household-1",
     });
   });
 

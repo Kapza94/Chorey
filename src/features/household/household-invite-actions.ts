@@ -9,7 +9,8 @@ export type HouseholdInviteStatus = "pending" | "accepted" | "cancelled" | "expi
 
 export type HouseholdInvite = {
   id: string;
-  email: string;
+  /** Legacy display label — invites created before family codes carried one. */
+  email: string | null;
   role: "parent_admin";
   status: HouseholdInviteStatus;
   expiresAt: string;
@@ -25,11 +26,16 @@ export type AcceptedHouseholdInvite = {
   householdId: string;
 };
 
-const INVITE_LINK_BASE = "chorey://parent/invite";
+export type HouseholdParent = {
+  userId: string;
+  displayName: string | null;
+  /** What the kids call them (Mom, Dad, ...) — set in the account sheet. */
+  parentLabel: string | null;
+  joinedAt: string;
+  isYou: boolean;
+};
 
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
+const INVITE_LINK_BASE = "chorey://parent/invite";
 
 function inviteUrl(token?: string | null) {
   return token ? `${INVITE_LINK_BASE}?token=${encodeURIComponent(token)}` : undefined;
@@ -38,7 +44,7 @@ function inviteUrl(token?: string | null) {
 function mapInvite(row: any): HouseholdInvite {
   const invite: HouseholdInvite = {
     id: row.id,
-    email: row.email,
+    email: row.email ?? null,
     role: row.role,
     status: row.status,
     expiresAt: row.expires_at,
@@ -67,16 +73,9 @@ export function createHouseholdInviteActions(client: RpcClient) {
   return {
     async createInvite(input: {
       householdId: string;
-      email: string;
     }): Promise<HouseholdInvite> {
-      const email = normalizeEmail(input.email);
-      if (!email) {
-        throw new Error("Email is required.");
-      }
-
       const result = await client.rpc("create_household_invite", {
         input_household_id: input.householdId,
-        input_email: email,
       });
 
       if (result.error) {
@@ -101,6 +100,24 @@ export function createHouseholdInviteActions(client: RpcClient) {
       }
 
       return (result.data ?? []).map(mapInvite);
+    },
+
+    async listParents(householdId: string): Promise<HouseholdParent[]> {
+      const result = await client.rpc("list_household_parents", {
+        input_household_id: householdId,
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return (result.data ?? []).map((row: any) => ({
+        userId: row.user_id,
+        displayName: row.display_name ?? null,
+        parentLabel: row.parent_label ?? null,
+        joinedAt: row.joined_at,
+        isYou: !!row.is_you,
+      }));
     },
 
     async cancelInvite(input: {

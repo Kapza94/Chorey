@@ -18,6 +18,7 @@ function MockOnboardingFlow() {
 
 jest.mock("expo-router", () => ({
   useRouter: () => mockRouter,
+  useLocalSearchParams: () => ({}),
 }));
 
 jest.mock("@/lib/supabase", () => ({

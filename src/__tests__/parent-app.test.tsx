@@ -949,10 +949,40 @@ describe("ParentApp · Settings", () => {
     expect(screen.getByText("482913")).toBeOnTheScreen();
   });
 
+  it("shows every parent on the family plan so co-parents are visible", () => {
+    render(
+      <ParentApp
+        initialTab="settings"
+        kids={[mia]}
+        householdParents={[
+          {
+            userId: "u1",
+            displayName: "Luka",
+            parentLabel: "Dad",
+            joinedAt: "2026-06-01T12:00:00Z",
+            isYou: true,
+          },
+          {
+            userId: "u2",
+            displayName: null,
+            parentLabel: "Mom",
+            joinedAt: "2026-07-01T12:00:00Z",
+            isYou: false,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Luka")).toBeOnTheScreen();
+    expect(screen.getByText("You")).toBeOnTheScreen();
+    // A parent with no display name still shows up via their kid-facing label.
+    expect(screen.getByText("Mom")).toBeOnTheScreen();
+  });
+
   it("creates and cancels co-parent invites from settings", async () => {
     const onCreateInvite = jest.fn().mockResolvedValue({
       id: "invite-2",
-      email: "step@example.com",
+      email: null,
       role: "parent_admin",
       status: "pending",
       expiresAt: "2026-07-07T12:00:00Z",
@@ -969,7 +999,7 @@ describe("ParentApp · Settings", () => {
         parentInvites={[
           {
             id: "invite-1",
-            email: "dad@example.com",
+            email: null,
             role: "parent_admin",
             status: "pending",
             expiresAt: "2026-07-07T12:00:00Z",
@@ -981,14 +1011,14 @@ describe("ParentApp · Settings", () => {
       />,
     );
 
-    fireEvent.changeText(screen.getByLabelText("Co-parent email"), " step@example.com ");
-    fireEvent.press(screen.getByLabelText("Create co-parent invite"));
+    // No email step — one tap mints the code.
+    fireEvent.press(screen.getByLabelText("Create family code"));
 
-    expect(onCreateInvite).toHaveBeenCalledWith("step@example.com");
+    expect(onCreateInvite).toHaveBeenCalledWith();
     // The human-typeable family code is the deliverable, not a link.
     expect(await screen.findByText("FAM-AB12CD34")).toBeOnTheScreen();
 
-    fireEvent.press(screen.getByLabelText("Cancel invite for dad@example.com"));
+    fireEvent.press(screen.getByLabelText("Cancel pending family code"));
     expect(onCancelInvite).toHaveBeenCalledWith("invite-1");
   });
 

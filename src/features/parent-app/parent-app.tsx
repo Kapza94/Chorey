@@ -41,7 +41,10 @@ import { DEFAULT_CURRENCY, type CurrencyCode } from "@/features/money/currency";
 import type { PayoutMethod } from "@/features/payments/payment-actions";
 import { DEFAULT_SPLIT, type Split } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
-import type { HouseholdInvite } from "@/features/household/household-invite-actions";
+import type {
+  HouseholdInvite,
+  HouseholdParent,
+} from "@/features/household/household-invite-actions";
 import type { SettlementPeriod } from "@/features/settlement/settlement-actions";
 import type { Recurrence } from "@/features/chores/recurrence";
 
@@ -95,9 +98,10 @@ type Props = {
   // Settings
   accessCodes?: { kidId: string; accessCode: string }[];
   parentInvites?: HouseholdInvite[];
+  householdParents?: HouseholdParent[];
   subscriptionLabel?: string;
   onManageSubscription?: () => void;
-  onCreateParentInvite?: (email: string) => Promise<HouseholdInvite>;
+  onCreateParentInvite?: () => Promise<HouseholdInvite>;
   onCancelParentInvite?: (inviteId: string) => Promise<void> | void;
   onChangeBudget?: (kidId: string, budgetCents: number) => void;
   onChangeCadence?: (kidId: string, cadence: SettlementFrequency) => void;
@@ -156,6 +160,7 @@ export function ParentApp({
   onAddChore,
   accessCodes,
   parentInvites,
+  householdParents,
   subscriptionLabel,
   onManageSubscription,
   onCreateParentInvite,
@@ -255,6 +260,7 @@ export function ParentApp({
           kids={kids}
           accessCodes={accessCodes}
           parentInvites={parentInvites}
+          householdParents={householdParents}
           subscriptionLabel={subscriptionLabel}
           onManageSubscription={onManageSubscription}
           onCreateParentInvite={onCreateParentInvite}

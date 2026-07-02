@@ -9,6 +9,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.chorey.mobile",
+      "associatedDomains": ["applinks:chorey.co"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },

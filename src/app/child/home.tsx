@@ -149,11 +149,15 @@ export default function ChildHomeRoute() {
 
   // Register this device for push once we know the child — so a late daily
   // chore can nudge them. Best-effort and idempotent (no-op without EAS/perms).
-  useEffect(() => {
-    if (accessCode) {
-      void registerChildForPushNotifications(accessCode);
-    }
-  }, [accessCode]);
+  // On focus, not mount, so the token re-binds to the kid whenever this device
+  // returns to kid mode (mirrors the parent-home registration).
+  useFocusEffect(
+    useCallback(() => {
+      if (accessCode) {
+        void registerChildForPushNotifications(accessCode);
+      }
+    }, [accessCode]),
+  );
 
   const [refreshing, setRefreshing] = useState(false);
   // Guards against setting state after the screen has gone away (the poll and
