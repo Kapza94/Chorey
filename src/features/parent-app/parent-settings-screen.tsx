@@ -434,7 +434,9 @@ export function ParentSettingsScreen({
               <Text
                 style={[
                   typography.text.overline,
-                  { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
+                  // paddingTop matches the other post-content section headings
+                  // (Appearance, Child sign-in codes) so sections breathe evenly.
+                  { color: scheme.fgFaint, paddingHorizontal: 4, paddingTop: 20, paddingBottom: 8 },
                 ]}
               >
                 Account
