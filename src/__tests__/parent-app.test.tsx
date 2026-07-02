@@ -770,12 +770,15 @@ describe("ParentApp · Chores", () => {
 });
 
 describe("ParentApp · Settings", () => {
-  it("shows the split and per-kid budget cards", () => {
+  it("shows the split and per-kid allowance cards with the cross-cadence value", () => {
     render(<ParentApp initialTab="settings" kids={[mia]} />);
 
     expect(screen.getByText("Settings.")).toBeOnTheScreen();
     expect(screen.getByText("40 / 40 / 20")).toBeOnTheScreen();
-    expect(screen.getByText("Budget cap")).toBeOnTheScreen();
+    // Mia is weekly, so the heading and the "what this means monthly" line
+    // make the weekly/monthly toggle stop being silent ($25/wk ≈ $108.33/mo).
+    expect(screen.getByText("Weekly allowance")).toBeOnTheScreen();
+    expect(screen.getByText("≈ $108.33 / month")).toBeOnTheScreen();
     expect(screen.getByText(/chorey · v/)).toBeOnTheScreen();
   });
 

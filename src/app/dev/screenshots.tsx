@@ -98,6 +98,7 @@ export default function DevScreenshotsRoute() {
     case "approvals":
       return (
         <ParentApp
+          key="approvals"
           subtitle="Saturday · This week"
           initialTab="chores"
           kids={[mia, eli]}
@@ -110,8 +111,20 @@ export default function DevScreenshotsRoute() {
       );
     case "levels":
       return <KidJourneyScreen visible level={7} fromLevel={7} />;
+    case "settings":
+      return (
+        <ParentApp
+          key="settings"
+          initialTab="settings"
+          kids={[mia, eli]}
+          onChangeBudget={() => {}}
+          onChangeCadence={() => {}}
+        />
+      );
     case "hero":
-      return <ParentApp subtitle="Saturday · This week" kids={[mia, eli]} />;
+      return (
+        <ParentApp key="hero" subtitle="Saturday · This week" kids={[mia, eli]} />
+      );
     case "kid-home":
     default:
       return <KidApp key="home" {...kidAppProps} />;
