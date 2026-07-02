@@ -36,6 +36,7 @@ import {
 import { buckets as bucketTokens } from "@/theme/chorey-theme";
 import {
   resolveCurrencyFormat,
+  formatMoney,
   DEFAULT_CURRENCY,
   type CurrencyCode,
 } from "@/features/money/currency";
@@ -217,7 +218,7 @@ export function ParentSettingsScreen({
               { color: scheme.fgFaint, paddingHorizontal: 4, paddingBottom: 8 },
             ]}
           >
-            Budget per child
+            Allowance per child
           </Text>
           <View style={{ gap: 10, marginBottom: 20 }}>
             {kids.map((kid) => (
@@ -235,8 +236,8 @@ export function ParentSettingsScreen({
                 { color: scheme.fgFaint, paddingHorizontal: 4 },
               ]}
             >
-              Chores add up toward the budget. You can still assign extra chores beyond it —
-              anything over just keeps earning.
+              Recurring chores share this allowance. You can still add one-off
+              chores on top — those are bonuses that keep earning.
             </Text>
           </View>
 
@@ -928,7 +929,7 @@ function BudgetCard({
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <View>
           <Text style={[typography.text.overline, { color: scheme.fgFaint, fontSize: 10 }]}>
-            Budget cap
+            {cadence === "monthly" ? "Monthly" : "Weekly"} allowance
           </Text>
           <BudgetCapField
             cents={budgetCents}
@@ -943,8 +944,29 @@ function BudgetCard({
           <CapButton label="Increase budget" symbol="+" onPress={() => step(1)} />
         </View>
       </View>
+
+      {/* Weekly and monthly are NOT the same generosity — flipping the toggle
+          keeps the number but changes its real value ~4.3x. Show the other
+          cadence so the choice is never silent. */}
+      <Text
+        accessibilityLabel="Allowance equivalent"
+        style={[typography.text.caption, { color: scheme.fgFaint, marginTop: 8 }]}
+      >
+        {cadence === "monthly"
+          ? `≈ ${formatMoney(monthlyToWeeklyCents(budgetCents), currency)} / week`
+          : `≈ ${formatMoney(weeklyToMonthlyCents(budgetCents), currency)} / month`}
+      </Text>
     </View>
   );
+}
+
+// A month averages 52/12 ≈ 4.333 weeks. Keep the parent-facing translation
+// honest (a real "about this much") rather than a naive x4.
+function weeklyToMonthlyCents(cents: number): number {
+  return Math.round((cents * 52) / 12);
+}
+function monthlyToWeeklyCents(cents: number): number {
+  return Math.round((cents * 12) / 52);
 }
 
 // Tappable budget cap: type a custom amount (whole major units) instead of only
