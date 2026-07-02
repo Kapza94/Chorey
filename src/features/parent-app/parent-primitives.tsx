@@ -213,14 +213,6 @@ export function ParentTabBar({
           >
             <Plus size={28} color={palette.cream[4]} strokeWidth={2.8} />
           </Pressable>
-          <Text
-            style={[
-              typography.text.caption,
-              { color: scheme.fgFaint, fontWeight: "700", marginTop: 40 },
-            ]}
-          >
-            Add
-          </Text>
         </View>
       ) : null}
       {renderTab(tabs[2])}

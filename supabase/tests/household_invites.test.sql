@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(12);
 
 insert into auth.users (id, email)
 values
@@ -117,6 +117,31 @@ select is(
      and role = 'parent_admin'),
   1::bigint,
   'accepted invite creates a parent admin membership for the invited user'
+);
+
+-- Settings shows who's on the family plan: both parents, joined parent second,
+-- and the caller flagged so the UI can say "You".
+select is(
+  (select count(*) from public.list_household_parents('00000000-0000-0000-0000-0000000f1001')),
+  3::bigint,
+  'household members can list the family''s parent accounts'
+);
+
+select is(
+  (select is_you from public.list_household_parents('00000000-0000-0000-0000-0000000f1001')
+   where user_id = '00000000-0000-0000-0000-0000000f0002'),
+  true,
+  'the caller is flagged as themselves in the parent list'
+);
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000f0009', true);
+
+select is(
+  (select count(*) from public.list_household_parents('00000000-0000-0000-0000-0000000f1001')),
+  0::bigint,
+  'outsiders cannot list another family''s parents'
 );
 
 reset role;

@@ -84,6 +84,53 @@ describe("household invite actions", () => {
     });
   });
 
+  it("lists the household's parents with a marker for the caller", async () => {
+    const client = {
+      rpc: jest.fn().mockResolvedValue({
+        data: [
+          {
+            user_id: "u1",
+            display_name: "Luka",
+            parent_label: "Dad",
+            joined_at: "2026-06-01T12:00:00Z",
+            is_you: true,
+          },
+          {
+            user_id: "u2",
+            display_name: null,
+            parent_label: null,
+            joined_at: "2026-07-01T12:00:00Z",
+            is_you: false,
+          },
+        ],
+        error: null,
+      }),
+    };
+
+    await expect(
+      createHouseholdInviteActions(client).listParents("household-1"),
+    ).resolves.toEqual([
+      {
+        userId: "u1",
+        displayName: "Luka",
+        parentLabel: "Dad",
+        joinedAt: "2026-06-01T12:00:00Z",
+        isYou: true,
+      },
+      {
+        userId: "u2",
+        displayName: null,
+        parentLabel: null,
+        joinedAt: "2026-07-01T12:00:00Z",
+        isYou: false,
+      },
+    ]);
+
+    expect(client.rpc).toHaveBeenCalledWith("list_household_parents", {
+      input_household_id: "household-1",
+    });
+  });
+
   it("accepts an invite and returns the joined household", async () => {
     const client = {
       rpc: jest.fn().mockResolvedValue({

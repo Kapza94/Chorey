@@ -26,6 +26,15 @@ export type AcceptedHouseholdInvite = {
   householdId: string;
 };
 
+export type HouseholdParent = {
+  userId: string;
+  displayName: string | null;
+  /** What the kids call them (Mom, Dad, ...) — set in the account sheet. */
+  parentLabel: string | null;
+  joinedAt: string;
+  isYou: boolean;
+};
+
 const INVITE_LINK_BASE = "chorey://parent/invite";
 
 function inviteUrl(token?: string | null) {
@@ -91,6 +100,24 @@ export function createHouseholdInviteActions(client: RpcClient) {
       }
 
       return (result.data ?? []).map(mapInvite);
+    },
+
+    async listParents(householdId: string): Promise<HouseholdParent[]> {
+      const result = await client.rpc("list_household_parents", {
+        input_household_id: householdId,
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return (result.data ?? []).map((row: any) => ({
+        userId: row.user_id,
+        displayName: row.display_name ?? null,
+        parentLabel: row.parent_label ?? null,
+        joinedAt: row.joined_at,
+        isYou: !!row.is_you,
+      }));
     },
 
     async cancelInvite(input: {

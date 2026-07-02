@@ -374,6 +374,8 @@ describe("OnboardingFlow", () => {
     );
 
     fireEvent.press(screen.getByText("I'm joining my family — I have a code"));
+    // Join mode is a loud banner, not a subtitle swap — co-parents missed it.
+    expect(screen.getByText("Joining your family")).toBeOnTheScreen();
     fireEvent.press(screen.getByText("Continue with email"));
     fireEvent.changeText(
       await screen.findByLabelText("Email"),

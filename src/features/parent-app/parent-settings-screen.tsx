@@ -25,6 +25,7 @@ import {
   Sun,
   Trash2,
   UserPlus,
+  UserRound,
   X,
 } from "lucide-react-native";
 
@@ -47,7 +48,10 @@ import {
   type Split,
 } from "@/features/money/split";
 import type { SettlementFrequency } from "@/features/household/household-actions";
-import type { HouseholdInvite } from "@/features/household/household-invite-actions";
+import type {
+  HouseholdInvite,
+  HouseholdParent,
+} from "@/features/household/household-invite-actions";
 import { ParentHeader, type ParentKid } from "@/features/parent-app/parent-primitives";
 import { ToyAvatar } from "@/components/toybox";
 import type { ParentAccount } from "@/features/parent-app/parent-account";
@@ -74,6 +78,8 @@ type Props = {
   kids?: ParentKid[];
   accessCodes?: KidAccessCode[];
   parentInvites?: HouseholdInvite[];
+  /** Everyone on the family plan — so co-parents can see each other. */
+  householdParents?: HouseholdParent[];
   /** one-line status, e.g. "Free trial · ends Jun 25, 2026" */
   subscriptionLabel?: string;
   onManageSubscription?: () => void;
@@ -111,6 +117,7 @@ export function ParentSettingsScreen({
   kids = [],
   accessCodes = [],
   parentInvites = [],
+  householdParents = [],
   subscriptionLabel,
   onManageSubscription,
   onCreateParentInvite,
@@ -315,6 +322,59 @@ export function ParentSettingsScreen({
           >
             Parent accounts
           </Text>
+          {householdParents.length > 0 ? (
+            <View
+              style={{
+                backgroundColor: scheme.bgModal,
+                borderColor: scheme.toy.border,
+                borderWidth: toybox.borderWidth,
+                ...scheme.toy.shadowSm,
+                borderRadius: 16,
+                overflow: "hidden",
+                marginBottom: 10,
+              }}
+            >
+              {householdParents.map((parent, index) => (
+                <View
+                  key={parent.userId}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderBottomWidth: index < householdParents.length - 1 ? 1 : 0,
+                    borderBottomColor: scheme.border,
+                  }}
+                >
+                  <UserRound size={16} color={scheme.fgMuted} strokeWidth={2} />
+                  <Text
+                    numberOfLines={1}
+                    style={[typography.text.label, { flex: 1, color: scheme.fg }]}
+                  >
+                    {parent.displayName ?? parent.parentLabel ?? "Parent"}
+                  </Text>
+                  {parent.isYou ? (
+                    <Text
+                      style={[
+                        typography.text.caption,
+                        {
+                          color: scheme.fgMuted,
+                          backgroundColor: scheme.bgSunken,
+                          borderRadius: radius.pill,
+                          paddingHorizontal: 10,
+                          paddingVertical: 3,
+                          overflow: "hidden",
+                        },
+                      ]}
+                    >
+                      You
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : null}
           <ParentInviteCard
             invites={parentInvites}
             onCreateInvite={onCreateParentInvite}

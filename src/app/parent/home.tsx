@@ -20,9 +20,13 @@ import {
 import {
   cancelParentInvite,
   createParentInvite,
+  listHouseholdParents,
   listParentInvites,
 } from "@/features/household/default-household-invite-actions";
-import type { HouseholdInvite } from "@/features/household/household-invite-actions";
+import type {
+  HouseholdInvite,
+  HouseholdParent,
+} from "@/features/household/household-invite-actions";
 import {
   formatPayoutDate,
   toPayoutHistoryRows,
@@ -132,6 +136,7 @@ export default function ParentHomeRoute() {
     { kidId: string; accessCode: string }[]
   >([]);
   const [parentInvites, setParentInvites] = useState<HouseholdInvite[]>([]);
+  const [householdParents, setHouseholdParents] = useState<HouseholdParent[]>([]);
   const [subscription, setSubscription] = useState<HouseholdSubscription>({
     status: "trialing",
     plan: null,
@@ -157,10 +162,17 @@ export default function ParentHomeRoute() {
 
   useEffect(() => {
     void getParentIdentity().then(setIdentity);
-    // Register this device for "<kid> finished a chore" pushes. Best-effort
-    // and idempotent — no-op on simulator or denied permission.
-    void registerParentForPushNotifications();
   }, []);
+
+  // Register this device for "<kid> finished a chore" pushes. On focus, not
+  // mount: the push token binds to whoever used the app last, so a parent who
+  // peeked at the kid view would otherwise keep receiving the kid's pushes
+  // until a full app restart remounted this screen.
+  useFocusEffect(
+    useCallback(() => {
+      void registerParentForPushNotifications();
+    }, []),
+  );
 
   useEffect(() => {
     if (!householdId) {
@@ -266,6 +278,7 @@ export default function ParentHomeRoute() {
         "accessCodes",
       ),
       settle(listParentInvites(householdId), setParentInvites, "parentInvites"),
+      settle(listHouseholdParents(householdId), setHouseholdParents, "householdParents"),
     ]);
   }, [householdId]);
 
@@ -499,6 +512,7 @@ export default function ParentHomeRoute() {
         shareStats={shareStatsActions}
         accessCodes={accessCodes}
         parentInvites={parentInvites}
+        householdParents={householdParents}
         subscriptionLabel={describeSubscription(subscription)}
         onManageSubscription={() =>
           router.push({

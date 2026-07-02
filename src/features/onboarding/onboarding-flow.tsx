@@ -1862,6 +1862,7 @@ function OBAuth({
   onKid: () => void;
 }) {
   const { scheme, typography, palette } = useChoreyTheme();
+  const joinGiving = bucketTokens.giving.ramp;
   const [phase, setPhase] = useState<"choose" | "email" | "code" | "join">(
     "choose",
   );
@@ -2046,23 +2047,57 @@ function OBAuth({
           >
             chorey
           </Text>
-          <Text
-            style={[
-              typography.text.body,
-              {
-                fontSize: 16,
-                color: scheme.fgMuted,
-                textAlign: "center",
-                marginTop: 12,
-                maxWidth: 280,
-              },
-            ]}
-          >
-            {joinIntent
-              ? "Sign in first — then enter the family code your partner shared."
-              : "Create an account so your family stays in sync across devices."}
-          </Text>
+          {joinIntent ? null : (
+            <Text
+              style={[
+                typography.text.body,
+                {
+                  fontSize: 16,
+                  color: scheme.fgMuted,
+                  textAlign: "center",
+                  marginTop: 12,
+                  maxWidth: 280,
+                },
+              ]}
+            >
+              Create an account so your family stays in sync across devices.
+            </Text>
+          )}
         </View>
+        {joinIntent ? (
+          /* Join mode must be unmissable — a subtitle swap alone went
+             unnoticed and co-parents didn't realize they had to sign in. */
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 12,
+              alignItems: "center",
+              backgroundColor: scheme.tint.giving,
+              borderColor: joinGiving[400],
+              borderWidth: 1.5,
+              borderRadius: 16,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              marginBottom: 20,
+            }}
+          >
+            <Text style={{ fontSize: 26 }}>👨‍👩‍👧</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.text.h3, { color: scheme.fg, fontSize: 15 }]}>
+                Joining your family
+              </Text>
+              <Text
+                style={[
+                  typography.text.bodySm,
+                  { color: scheme.fgMuted, marginTop: 2 },
+                ]}
+              >
+                Step 1: sign in below — any option works.{"\n"}Step 2: enter the
+                family code you were sent.
+              </Text>
+            </View>
+          </View>
+        ) : null}
         <View style={{ gap: 10 }}>
           {hasSocial ? (
             <SocialAuthButtons
