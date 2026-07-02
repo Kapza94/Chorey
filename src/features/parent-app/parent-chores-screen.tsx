@@ -18,7 +18,6 @@ import {
   ChevronRight,
   Clock,
   Lock,
-  Plus,
   Trash2,
   Undo2,
 } from "lucide-react-native";
@@ -135,7 +134,6 @@ export function ParentChoresScreen({
   headerRight,
 }: Props) {
   const { scheme, typography, palette, radius, toybox } = useChoreyTheme();
-  const [showAdd, setShowAdd] = useState(false);
   // The chore whose detail card is open (tap any row to inspect it).
   const [detailId, setDetailId] = useState<string | null>(null);
   const detailChore = board.find((item) => item.id === detailId) ?? null;
@@ -171,43 +169,9 @@ export function ParentChoresScreen({
         contentContainerStyle={{ paddingBottom: 120 }}
         style={{ flex: 1 }}
       >
-        <ParentHeader
-          subtitle="This week"
-          title="Chores."
-          action={
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="New chore"
-                onPress={() => setShowAdd(true)}
-                style={({ pressed }) => ({
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: radius.pill,
-                  backgroundColor: pressed
-                    ? palette.accent[800]
-                    : palette.accent[600],
-                })}
-              >
-                <Plus size={14} color={palette.cream[4]} strokeWidth={2.6} />
-                <Text
-                  style={[
-                    typography.text.label,
-                    { color: palette.cream[4], fontSize: 13 },
-                  ]}
-                >
-                  New
-                </Text>
-              </Pressable>
-              {headerRight}
-            </View>
-          }
-        />
+        {/* Adding a chore now lives on the raised "+" in the dock, so the
+            header just carries the account affordance. */}
+        <ParentHeader subtitle="This week" title="Chores." action={headerRight} />
 
         {/* Repeat-cadence tabs — big, clear, tappable. */}
         {board.length > 0 ? (
@@ -399,19 +363,6 @@ export function ParentChoresScreen({
           </>
         ) : null}
       </ScrollView>
-
-      <AddChoreSheet
-        visible={showAdd}
-        currency={currency}
-        split={split}
-        assignees={assignees}
-        recurringLocked={recurringLocked}
-        onClose={() => setShowAdd(false)}
-        onConfirm={(input) => {
-          onAddChore?.(input);
-          setShowAdd(false);
-        }}
-      />
 
       <ChoreDetailSheet
         key={detailId ?? "none"}
@@ -1123,7 +1074,7 @@ function AssignedVsCap({
   );
 }
 
-function AddChoreSheet({
+export function AddChoreSheet({
   visible,
   currency,
   split,
